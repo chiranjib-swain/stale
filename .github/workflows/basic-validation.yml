@@ -11,6 +11,11 @@ on:
     paths-ignore:
       - '**.md'
 
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
 jobs:
   call-basic-validation:
     name: Basic validation
