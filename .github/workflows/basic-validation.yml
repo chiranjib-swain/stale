@@ -10,16 +10,13 @@ on:
       - releases/*
     paths-ignore:
       - '**.md'
-
-permissions:
-  contents: read
-  actions: read
-  pull-requests: write
-  issues: write
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   call-basic-validation:
     name: Basic validation
     uses: actions/reusable-workflows/.github/workflows/basic-validation.yml@main
     with:
-      node-version: '20.x'
+      node-version: '20.x'  
+    
