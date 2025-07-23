@@ -643,11 +643,23 @@ export class IssuesProcessor {
 
   async getRateLimit(): Promise<IRateLimit | undefined> {
     const logger: Logger = new Logger();
+
     try {
       const rateLimitResult = await this.client.rest.rateLimit.get();
       return new RateLimit(rateLimitResult.data.rate);
-    } catch (error) {
-      logger.error(`Error when getting rateLimit: ${error.message}`);
+    } catch (error: any) {
+      if (
+        error.status === 404 &&
+        error.message?.includes('Rate limiting is not enabled')
+      ) {
+        logger.warning(
+          'Rate limiting is not enabled on this GHES instance. Proceeding without rate limit checks.'
+        );
+        return undefined; // Gracefully skip rate limiting logic
+      } else {
+        logger.error(`Error when getting rateLimit: ${error.message}`);
+        return undefined; // Ensure fallback return in all error paths
+      }
     }
   }
 

@@ -742,6 +742,7 @@ class IssuesProcessor {
         });
     }
     getRateLimit() {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const logger = new logger_1.Logger();
             try {
@@ -749,7 +750,15 @@ class IssuesProcessor {
                 return new rate_limit_1.RateLimit(rateLimitResult.data.rate);
             }
             catch (error) {
-                logger.error(`Error when getting rateLimit: ${error.message}`);
+                if (error.status === 404 &&
+                    ((_a = error.message) === null || _a === void 0 ? void 0 : _a.includes('Rate limiting is not enabled'))) {
+                    logger.warning('Rate limiting is not enabled on this GHES instance. Proceeding without rate limit checks.');
+                    return undefined; // Gracefully skip rate limiting logic
+                }
+                else {
+                    logger.error(`Error when getting rateLimit: ${error.message}`);
+                    return undefined; // Ensure fallback return in all error paths
+                }
             }
         });
     }
