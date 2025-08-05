@@ -39,9 +39,9 @@ import nock from 'nock';
 export function setupRateLimitMock(): void {
   nock('https://api.github.com')
     .get(uri => uri.includes('/rate_limit'))
-    .reply(429, {message: 'Rate limit exceeded'}, {'Retry-After': '2'})
-    .get(uri => uri.includes('/rate_limit'))
-    .reply(200, {rate: {limit: 3000, remaining: 2999, reset: 1234567890}});
+    .reply(429, {message: 'Rate limit exceeded'}, {'Retry-After': '2'});
+  // .get(uri => uri.includes('/rate_limit'))
+  // .reply(200, {rate: {limit: 3000, remaining: 2999, reset: 1234567890}});
 }
 
 export class IssuesProcessor {

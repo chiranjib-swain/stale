@@ -394,9 +394,9 @@ const nock_1 = __importDefault(__nccwpck_require__(8437));
 function setupRateLimitMock() {
     (0, nock_1.default)('https://api.github.com')
         .get(uri => uri.includes('/rate_limit'))
-        .reply(429, { message: 'Rate limit exceeded' }, { 'Retry-After': '2' })
-        .get(uri => uri.includes('/rate_limit'))
-        .reply(200, { rate: { limit: 3000, remaining: 2999, reset: 1234567890 } });
+        .reply(429, { message: 'Rate limit exceeded' }, { 'Retry-After': '2' });
+    // .get(uri => uri.includes('/rate_limit'))
+    // .reply(200, {rate: {limit: 3000, remaining: 2999, reset: 1234567890}});
 }
 exports.setupRateLimitMock = setupRateLimitMock;
 class IssuesProcessor {
