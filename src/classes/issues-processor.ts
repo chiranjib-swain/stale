@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
-import {context, getOctokit} from '@actions/github';
-import {GitHub} from '@actions/github/lib/utils';
+// import {context, getOctokit} from '@actions/github';
+import {context} from '@actions/github';
+// import {GitHub} from '@actions/github/lib/utils';
 import {Option} from '../enums/option';
 import {getHumanizedDate} from '../functions/dates/get-humanized-date';
 import {isDateMoreRecentThan} from '../functions/dates/is-date-more-recent-than';
@@ -31,6 +32,7 @@ import {IRateLimit} from '../interfaces/rate-limit';
 import {RateLimit} from './rate-limit';
 import {getSortField} from '../functions/get-sort-field';
 import nock from 'nock';
+import {Octokit} from '@octokit/core';
 /***
  * Handle processing of issues for staleness/closure.
  */
@@ -58,6 +60,8 @@ export function setupRateLimitMock(): void {
     })
     .reply(200, []); // Return an empty list of issues for testing
 }
+// Extend Octokit with the retry plugin
+const MyOctokit = Octokit.plugin(retry);
 
 export class IssuesProcessor {
   private static _updatedSince(timestamp: string, num_days: number): boolean {
@@ -91,7 +95,8 @@ export class IssuesProcessor {
   }
 
   readonly operations: StaleOperations;
-  readonly client: InstanceType<typeof GitHub>;
+  // readonly client: InstanceType<typeof GitHub>;
+  readonly client: InstanceType<typeof MyOctokit>;
   readonly options: IIssuesProcessorOptions;
   readonly staleIssues: Issue[] = [];
   readonly closedIssues: Issue[] = [];
@@ -106,7 +111,15 @@ export class IssuesProcessor {
   constructor(options: IIssuesProcessorOptions, state: IState) {
     this.options = options;
     this.state = state;
-    this.client = getOctokit(this.options.repoToken, undefined, retry);
+    // this.client = getOctokit(this.options.repoToken, undefined, retry);
+    // Create a custom Octokit instance with retry plugin
+    this.client = new MyOctokit({
+      auth: this.options.repoToken,
+      request: {
+        retries: 3, // Number of retry attempts
+        retryAfter: 2 // Retry delay in seconds
+      }
+    });
     this.operations = new StaleOperations(this.options);
     // Set up the rate limit mock
     setupRateLimitMock();
@@ -566,21 +579,46 @@ export class IssuesProcessor {
   }
 
   // Grab comments for an issue since a given date
+  // async listIssueComments(
+  //   issue: Readonly<Issue>,
+  //   sinceDate: Readonly<string>
+  // ): Promise<IComment[]> {
+  //   // Find any comments since date on the given issue
+  //   try {
+  //     this._consumeIssueOperation(issue);
+  //     this.statistics?.incrementFetchedItemsCommentsCount();
+  //     const comments = await this.client.rest.issues.listComments({
+  //       owner: context.repo.owner,
+  //       repo: context.repo.repo,
+  //       issue_number: issue.number,
+  //       since: sinceDate
+  //     });
+  //     return comments.data;
+  //   } catch (error) {
+  //     this._logger.error(`List issue comments error: ${error.message}`);
+  //     return Promise.resolve([]);
+  //   }
+  // }
   async listIssueComments(
     issue: Readonly<Issue>,
     sinceDate: Readonly<string>
   ): Promise<IComment[]> {
-    // Find any comments since date on the given issue
+    // Find any comments since the given date on the issue
     try {
       this._consumeIssueOperation(issue);
       this.statistics?.incrementFetchedItemsCommentsCount();
-      const comments = await this.client.rest.issues.listComments({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        issue_number: issue.number,
-        since: sinceDate
-      });
-      return comments.data;
+
+      const commentsResponse = await this.client.request(
+        'GET /repos/{owner}/{repo}/issues/{issue_number}/comments',
+        {
+          owner: context.repo.owner,
+          repo: context.repo.repo,
+          issue_number: issue.number,
+          since: sinceDate
+        }
+      );
+
+      return commentsResponse.data;
     } catch (error) {
       this._logger.error(`List issue comments error: ${error.message}`);
       return Promise.resolve([]);
@@ -588,18 +626,43 @@ export class IssuesProcessor {
   }
 
   // grab issues from github in batches of 100
+  // async getIssues(page: number): Promise<Issue[]> {
+  //   try {
+  //     this.operations.consumeOperation();
+  //     const issueResult = await this.client.rest.issues.listForRepo({
+  //       owner: context.repo.owner,
+  //       repo: context.repo.repo,
+  //       state: 'open',
+  //       per_page: 100,
+  //       direction: this.options.ascending ? 'asc' : 'desc',
+  //       sort: getSortField(this.options.sortBy),
+  //       page
+  //     });
+  //     this.statistics?.incrementFetchedItemsCount(issueResult.data.length);
+
+  //     return issueResult.data.map(
+  //       (issue): Issue =>
+  //         new Issue(this.options, issue as Readonly<OctokitIssue>)
+  //     );
+  //   } catch (error) {
+  //     throw Error(`Getting issues was blocked by the error: ${error.message}`);
+  //   }
+  // }
   async getIssues(page: number): Promise<Issue[]> {
     try {
       this.operations.consumeOperation();
-      const issueResult = await this.client.rest.issues.listForRepo({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        state: 'open',
-        per_page: 100,
-        direction: this.options.ascending ? 'asc' : 'desc',
-        sort: getSortField(this.options.sortBy),
-        page
-      });
+      const issueResult = await this.client.request(
+        'GET /repos/{owner}/{repo}/issues',
+        {
+          owner: context.repo.owner,
+          repo: context.repo.repo,
+          state: 'open',
+          per_page: 100,
+          direction: this.options.ascending ? 'asc' : 'desc',
+          sort: getSortField(this.options.sortBy),
+          page
+        }
+      );
       this.statistics?.incrementFetchedItemsCount(issueResult.data.length);
 
       return issueResult.data.map(
@@ -613,6 +676,39 @@ export class IssuesProcessor {
 
   // returns the creation date of a given label on an issue (or nothing if no label existed)
   ///see https://developer.github.com/v3/activity/events/
+  // async getLabelCreationDate(
+  //   issue: Issue,
+  //   label: string
+  // ): Promise<string | undefined> {
+  //   const issueLogger: IssueLogger = new IssueLogger(issue);
+
+  //   issueLogger.info(`Checking for label on this $$type`);
+
+  //   this._consumeIssueOperation(issue);
+  //   this.statistics?.incrementFetchedItemsEventsCount();
+  //   const options = this.client.rest.issues.listEvents.endpoint.merge({
+  //     owner: context.repo.owner,
+  //     repo: context.repo.repo,
+  //     per_page: 100,
+  //     issue_number: issue.number
+  //   });
+
+  //   const events: IIssueEvent[] = await this.client.paginate(options);
+  //   const reversedEvents = events.reverse();
+
+  //   const staleLabeledEvent = reversedEvents.find(
+  //     event =>
+  //       event.event === 'labeled' &&
+  //       cleanLabel(event.label.name) === cleanLabel(label)
+  //   );
+
+  //   if (!staleLabeledEvent) {
+  //     // Must be old rather than labeled
+  //     return undefined;
+  //   }
+
+  //   return staleLabeledEvent.created_at;
+  // }
   async getLabelCreationDate(
     issue: Issue,
     label: string
@@ -623,28 +719,42 @@ export class IssuesProcessor {
 
     this._consumeIssueOperation(issue);
     this.statistics?.incrementFetchedItemsEventsCount();
-    const options = this.client.rest.issues.listEvents.endpoint.merge({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      per_page: 100,
-      issue_number: issue.number
-    });
 
-    const events: IIssueEvent[] = await this.client.paginate(options);
-    const reversedEvents = events.reverse();
+    try {
+      const eventsResponse = await this.client.request(
+        'GET /repos/{owner}/{repo}/issues/{issue_number}/events',
+        {
+          owner: context.repo.owner,
+          repo: context.repo.repo,
+          issue_number: issue.number,
+          per_page: 100
+        }
+      );
 
-    const staleLabeledEvent = reversedEvents.find(
-      event =>
-        event.event === 'labeled' &&
-        cleanLabel(event.label.name) === cleanLabel(label)
-    );
+      // Filter events to only include those with a `label` property
+      const events: IIssueEvent[] = eventsResponse.data.filter(
+        (event: any): event is IIssueEvent => event.label !== undefined
+      );
 
-    if (!staleLabeledEvent) {
-      // Must be old rather than labeled
+      const reversedEvents = events.reverse();
+
+      const staleLabeledEvent = reversedEvents.find(
+        event =>
+          event.event === 'labeled' &&
+          event.label &&
+          cleanLabel(event.label.name) === cleanLabel(label)
+      );
+
+      if (!staleLabeledEvent) {
+        // Must be old rather than labeled
+        return undefined;
+      }
+
+      return staleLabeledEvent.created_at;
+    } catch (error) {
+      issueLogger.error(`Error when fetching issue events: ${error.message}`);
       return undefined;
     }
-
-    return staleLabeledEvent.created_at;
   }
 
   async getPullRequest(issue: Issue): Promise<IPullRequest | undefined | void> {
@@ -654,11 +764,19 @@ export class IssuesProcessor {
       this._consumeIssueOperation(issue);
       this.statistics?.incrementFetchedPullRequestsCount();
 
-      const pullRequest = await this.client.rest.pulls.get({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        pull_number: issue.number
-      });
+      // const pullRequest = await this.client.rest.pulls.get({
+      //   owner: context.repo.owner,
+      //   repo: context.repo.repo,
+      //   pull_number: issue.number
+      // });
+      const pullRequest = await this.client.request(
+        'GET /repos/{owner}/{repo}/pulls/{pull_number}',
+        {
+          owner: context.repo.owner,
+          repo: context.repo.repo,
+          pull_number: issue.number
+        }
+      );
 
       return pullRequest.data;
     } catch (error) {
@@ -671,7 +789,8 @@ export class IssuesProcessor {
 
     try {
       logger.info('🔄 Attempting to fetch rate limit info...');
-      const rateLimitResult = await this.client.rest.rateLimit.get();
+      // const rateLimitResult = await this.client.rest.rateLimit.get();
+      const rateLimitResult = await this.client.request('GET /rate_limit');
       logger.info(JSON.stringify(rateLimitResult.data, null, 2));
       logger.info('✅ Successfully retrieved rate limit info.');
       return new RateLimit(rateLimitResult.data.rate);
@@ -895,12 +1014,21 @@ export class IssuesProcessor {
         this.statistics?.incrementAddedItemsComment(issue);
 
         if (!this.options.debugOnly) {
-          await this.client.rest.issues.createComment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: issue.number,
-            body: staleMessage
-          });
+          // await this.client.rest.issues.createComment({
+          //   owner: context.repo.owner,
+          //   repo: context.repo.repo,
+          //   issue_number: issue.number,
+          //   body: staleMessage
+          // });
+          await this.client.request(
+            'POST /repos/{owner}/{repo}/issues/{issue_number}/comments',
+            {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: staleMessage
+            }
+          );
         }
       } catch (error) {
         issueLogger.error(`Error when creating a comment: ${error.message}`);
@@ -913,12 +1041,21 @@ export class IssuesProcessor {
       this.statistics?.incrementStaleItemsCount(issue);
 
       if (!this.options.debugOnly) {
-        await this.client.rest.issues.addLabels({
-          owner: context.repo.owner,
-          repo: context.repo.repo,
-          issue_number: issue.number,
-          labels: [staleLabel]
-        });
+        // await this.client.rest.issues.addLabels({
+        //   owner: context.repo.owner,
+        //   repo: context.repo.repo,
+        //   issue_number: issue.number,
+        //   labels: [staleLabel]
+        // });
+        await this.client.request(
+          'POST /repos/{owner}/{repo}/issues/{issue_number}/labels',
+          {
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: issue.number,
+            labels: [staleLabel]
+          }
+        );
       }
     } catch (error) {
       issueLogger.error(`Error when adding a label: ${error.message}`);
@@ -943,12 +1080,21 @@ export class IssuesProcessor {
         this.addedCloseCommentIssues.push(issue);
 
         if (!this.options.debugOnly) {
-          await this.client.rest.issues.createComment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: issue.number,
-            body: closeMessage
-          });
+          // await this.client.rest.issues.createComment({
+          //   owner: context.repo.owner,
+          //   repo: context.repo.repo,
+          //   issue_number: issue.number,
+          //   body: closeMessage
+          // });
+          await this.client.request(
+            'POST /repos/{owner}/{repo}/issues/{issue_number}/comments',
+            {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: closeMessage
+            }
+          );
         }
       } catch (error) {
         issueLogger.error(`Error when creating a comment: ${error.message}`);
@@ -961,12 +1107,21 @@ export class IssuesProcessor {
         this.statistics?.incrementAddedItemsLabel(issue);
 
         if (!this.options.debugOnly) {
-          await this.client.rest.issues.addLabels({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: issue.number,
-            labels: [closeLabel]
-          });
+          // await this.client.rest.issues.addLabels({
+          //   owner: context.repo.owner,
+          //   repo: context.repo.repo,
+          //   issue_number: issue.number,
+          //   labels: [closeLabel]
+          // });
+          await this.client.request(
+            'POST /repos/{owner}/{repo}/issues/{issue_number}/labels',
+            {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              labels: [closeLabel]
+            }
+          );
         }
       } catch (error) {
         issueLogger.error(`Error when adding a label: ${error.message}`);
@@ -978,13 +1133,32 @@ export class IssuesProcessor {
       this.statistics?.incrementClosedItemsCount(issue);
 
       if (!this.options.debugOnly) {
-        await this.client.rest.issues.update({
-          owner: context.repo.owner,
-          repo: context.repo.repo,
-          issue_number: issue.number,
-          state: 'closed',
-          state_reason: this.options.closeIssueReason || undefined
-        });
+        // await this.client.rest.issues.update({
+        //   owner: context.repo.owner,
+        //   repo: context.repo.repo,
+        //   issue_number: issue.number,
+        //   state: 'closed',
+        //   state_reason: this.options.closeIssueReason || undefined
+        // });
+        if (!this.options.debugOnly) {
+          await this.client.request(
+            'PATCH /repos/{owner}/{repo}/issues/{issue_number}',
+            {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              state: 'closed',
+              state_reason: ['completed', 'not_planned', 'reopened'].includes(
+                this.options.closeIssueReason as string
+              )
+                ? (this.options.closeIssueReason as
+                    | 'completed'
+                    | 'not_planned'
+                    | 'reopened')
+                : undefined
+            }
+          );
+        }
       }
     } catch (error) {
       issueLogger.error(`Error when updating this $$type: ${error.message}`);
@@ -1027,11 +1201,21 @@ export class IssuesProcessor {
         this.statistics?.incrementDeletedBranchesCount();
 
         if (!this.options.debugOnly) {
-          await this.client.rest.git.deleteRef({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            ref: `heads/${branch}`
-          });
+          // await this.client.rest.git.deleteRef({
+          //   owner: context.repo.owner,
+          //   repo: context.repo.repo,
+          //   ref: `heads/${branch}`
+          // });
+          if (!this.options.debugOnly) {
+            await this.client.request(
+              'DELETE /repos/{owner}/{repo}/git/refs/{ref}',
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `heads/${branch}`
+              }
+            );
+          }
         }
       } catch (error) {
         issueLogger.error(
@@ -1071,12 +1255,23 @@ export class IssuesProcessor {
       this.statistics?.incrementDeletedItemsLabelsCount(issue);
 
       if (!this.options.debugOnly) {
-        await this.client.rest.issues.removeLabel({
-          owner: context.repo.owner,
-          repo: context.repo.repo,
-          issue_number: issue.number,
-          name: label
-        });
+        // await this.client.rest.issues.removeLabel({
+        //   owner: context.repo.owner,
+        //   repo: context.repo.repo,
+        //   issue_number: issue.number,
+        //   name: label
+        // });
+        if (!this.options.debugOnly) {
+          await this.client.request(
+            'DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}',
+            {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              name: label
+            }
+          );
+        }
       }
 
       issueLogger.info(
@@ -1209,12 +1404,21 @@ export class IssuesProcessor {
       this._consumeIssueOperation(issue);
       this.statistics?.incrementAddedItemsLabel(issue);
       if (!this.options.debugOnly) {
-        await this.client.rest.issues.addLabels({
-          owner: context.repo.owner,
-          repo: context.repo.repo,
-          issue_number: issue.number,
-          labels: labelsToAdd
-        });
+        // await this.client.rest.issues.addLabels({
+        //   owner: context.repo.owner,
+        //   repo: context.repo.repo,
+        //   issue_number: issue.number,
+        //   labels: labelsToAdd
+        // });
+        await this.client.request(
+          'POST /repos/{owner}/{repo}/issues/{issue_number}/labels',
+          {
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: issue.number,
+            labels: labelsToAdd
+          }
+        );
       }
     } catch (error) {
       this._logger.error(
