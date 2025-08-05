@@ -36,12 +36,27 @@ import nock from 'nock';
  */
 
 // Function to set up the nock mock
+// Function to set up the nock mock
 export function setupRateLimitMock(): void {
   nock('https://api.github.com')
-    .get(uri => uri.includes('/rate_limit'))
-    .reply(429, {message: 'Rate limit exceeded'}, {'Retry-After': '2'});
-  // .get(uri => uri.includes('/rate_limit'))
-  // .reply(200, {rate: {limit: 3000, remaining: 2999, reset: 1234567890}});
+    // First response: 429 Rate Limit Exceeded
+    .get('/rate_limit')
+    .reply(429, {message: 'Rate limit exceeded'}, {'Retry-After': '2'})
+    // Second response: Successful rate limit data
+    .get('/rate_limit')
+    .reply(200, {rate: {limit: 3000, remaining: 2999, reset: 1234567890}});
+
+  nock('https://api.github.com')
+    // Mock the issues list request
+    .get('/repos/chiranjib-swain/stale-demo/issues')
+    .query({
+      state: 'open',
+      per_page: '100',
+      direction: 'desc',
+      sort: 'created',
+      page: '1'
+    })
+    .reply(200, []); // Return an empty list of issues for testing
 }
 
 export class IssuesProcessor {
