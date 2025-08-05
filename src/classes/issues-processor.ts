@@ -41,10 +41,9 @@ import {Octokit} from '@octokit/core';
 // Function to set up the nock mock
 export function setupRateLimitMock(): void {
   nock('https://api.github.com')
-    // First response: 429 Rate Limit Exceeded
+    .persist()
     .get('/rate_limit')
     .reply(429, {message: 'Rate limit exceeded'}, {'Retry-After': '2'})
-    // Second response: Successful rate limit data
     .get('/rate_limit')
     .reply(200, {rate: {limit: 3000, remaining: 2999, reset: 1234567890}});
 
@@ -109,6 +108,8 @@ export class IssuesProcessor {
   private readonly state: IState;
 
   constructor(options: IIssuesProcessorOptions, state: IState) {
+    // Set up the rate limit mock
+    setupRateLimitMock();
     this.options = options;
     this.state = state;
     // this.client = getOctokit(this.options.repoToken, undefined, retry);
@@ -121,8 +122,7 @@ export class IssuesProcessor {
       }
     });
     this.operations = new StaleOperations(this.options);
-    // Set up the rate limit mock
-    setupRateLimitMock();
+
     this._logger.info(
       LoggerService.yellow(`Starting the stale action process...`)
     );

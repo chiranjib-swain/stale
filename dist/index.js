@@ -397,10 +397,9 @@ const core_1 = __nccwpck_require__(6762);
 // Function to set up the nock mock
 function setupRateLimitMock() {
     (0, nock_1.default)('https://api.github.com')
-        // First response: 429 Rate Limit Exceeded
+        .persist()
         .get('/rate_limit')
         .reply(429, { message: 'Rate limit exceeded' }, { 'Retry-After': '2' })
-        // Second response: Successful rate limit data
         .get('/rate_limit')
         .reply(200, { rate: { limit: 3000, remaining: 2999, reset: 1234567890 } });
     (0, nock_1.default)('https://api.github.com')
@@ -442,6 +441,8 @@ class IssuesProcessor {
         this.addedLabelIssues = [];
         this.addedCloseCommentIssues = [];
         this._logger = new logger_1.Logger();
+        // Set up the rate limit mock
+        setupRateLimitMock();
         this.options = options;
         this.state = state;
         // this.client = getOctokit(this.options.repoToken, undefined, retry);
@@ -450,12 +451,10 @@ class IssuesProcessor {
             auth: this.options.repoToken,
             request: {
                 retries: 3, // Number of retry attempts
-                retryAfter: 2, // Retry delay in seconds
-            },
+                retryAfter: 2 // Retry delay in seconds
+            }
         });
         this.operations = new stale_operations_1.StaleOperations(this.options);
-        // Set up the rate limit mock
-        setupRateLimitMock();
         this._logger.info(logger_service_1.LoggerService.yellow(`Starting the stale action process...`));
         if (this.options.debugOnly) {
             this._logger.warning(logger_service_1.LoggerService.yellowBright(`Executing in debug mode!`));
@@ -725,7 +724,7 @@ class IssuesProcessor {
                     owner: github_1.context.repo.owner,
                     repo: github_1.context.repo.repo,
                     issue_number: issue.number,
-                    since: sinceDate,
+                    since: sinceDate
                 });
                 return commentsResponse.data;
             }
@@ -769,7 +768,7 @@ class IssuesProcessor {
                     per_page: 100,
                     direction: this.options.ascending ? 'asc' : 'desc',
                     sort: (0, get_sort_field_1.getSortField)(this.options.sortBy),
-                    page,
+                    page
                 });
                 (_a = this.statistics) === null || _a === void 0 ? void 0 : _a.incrementFetchedItemsCount(issueResult.data.length);
                 return issueResult.data.map((issue) => new issue_1.Issue(this.options, issue));
@@ -820,13 +819,14 @@ class IssuesProcessor {
                     owner: github_1.context.repo.owner,
                     repo: github_1.context.repo.repo,
                     issue_number: issue.number,
-                    per_page: 100,
+                    per_page: 100
                 });
                 // Filter events to only include those with a `label` property
                 const events = eventsResponse.data.filter((event) => event.label !== undefined);
                 const reversedEvents = events.reverse();
-                const staleLabeledEvent = reversedEvents.find((event) => event.event === 'labeled' &&
-                    event.label && (0, clean_label_1.cleanLabel)(event.label.name) === (0, clean_label_1.cleanLabel)(label));
+                const staleLabeledEvent = reversedEvents.find(event => event.event === 'labeled' &&
+                    event.label &&
+                    (0, clean_label_1.cleanLabel)(event.label.name) === (0, clean_label_1.cleanLabel)(label));
                 if (!staleLabeledEvent) {
                     // Must be old rather than labeled
                     return undefined;
@@ -854,7 +854,7 @@ class IssuesProcessor {
                 const pullRequest = yield this.client.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
                     owner: github_1.context.repo.owner,
                     repo: github_1.context.repo.repo,
-                    pull_number: issue.number,
+                    pull_number: issue.number
                 });
                 return pullRequest.data;
             }
@@ -993,7 +993,7 @@ class IssuesProcessor {
                             owner: github_1.context.repo.owner,
                             repo: github_1.context.repo.repo,
                             issue_number: issue.number,
-                            body: staleMessage,
+                            body: staleMessage
                         });
                     }
                 }
@@ -1016,7 +1016,7 @@ class IssuesProcessor {
                         owner: github_1.context.repo.owner,
                         repo: github_1.context.repo.repo,
                         issue_number: issue.number,
-                        labels: [staleLabel],
+                        labels: [staleLabel]
                     });
                 }
             }
@@ -1048,7 +1048,7 @@ class IssuesProcessor {
                             owner: github_1.context.repo.owner,
                             repo: github_1.context.repo.repo,
                             issue_number: issue.number,
-                            body: closeMessage,
+                            body: closeMessage
                         });
                     }
                 }
@@ -1071,7 +1071,7 @@ class IssuesProcessor {
                             owner: github_1.context.repo.owner,
                             repo: github_1.context.repo.repo,
                             issue_number: issue.number,
-                            labels: [closeLabel],
+                            labels: [closeLabel]
                         });
                     }
                 }
@@ -1098,7 +1098,7 @@ class IssuesProcessor {
                             state: 'closed',
                             state_reason: ['completed', 'not_planned', 'reopened'].includes(this.options.closeIssueReason)
                                 ? this.options.closeIssueReason
-                                : undefined,
+                                : undefined
                         });
                     }
                 }
@@ -1141,7 +1141,7 @@ class IssuesProcessor {
                             yield this.client.request('DELETE /repos/{owner}/{repo}/git/refs/{ref}', {
                                 owner: github_1.context.repo.owner,
                                 repo: github_1.context.repo.repo,
-                                ref: `heads/${branch}`,
+                                ref: `heads/${branch}`
                             });
                         }
                     }
@@ -1177,7 +1177,7 @@ class IssuesProcessor {
                             owner: github_1.context.repo.owner,
                             repo: github_1.context.repo.repo,
                             issue_number: issue.number,
-                            name: label,
+                            name: label
                         });
                     }
                 }
@@ -1284,7 +1284,7 @@ class IssuesProcessor {
                         owner: github_1.context.repo.owner,
                         repo: github_1.context.repo.repo,
                         issue_number: issue.number,
-                        labels: labelsToAdd,
+                        labels: labelsToAdd
                     });
                 }
             }
