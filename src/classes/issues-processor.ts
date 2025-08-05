@@ -30,10 +30,16 @@ import {IState} from '../interfaces/state/state';
 import {IRateLimit} from '../interfaces/rate-limit';
 import {RateLimit} from './rate-limit';
 import {getSortField} from '../functions/get-sort-field';
-
+import nock from 'nock';
 /***
  * Handle processing of issues for staleness/closure.
  */
+// 👇 Place this BEFORE the getRateLimit call
+nock('https://api.github.com')
+  .get(uri => uri.includes('/rate_limit'))
+  .reply(429, {message: 'Rate limit exceeded'}, {'Retry-After': '2'})
+  .get(uri => uri.includes('/rate_limit'))
+  .reply(200, {rate: {limit: 5000, remaining: 4999, reset: 1234567890}});
 
 export class IssuesProcessor {
   private static _updatedSince(timestamp: string, num_days: number): boolean {
@@ -643,11 +649,31 @@ export class IssuesProcessor {
 
   async getRateLimit(): Promise<IRateLimit | undefined> {
     const logger: Logger = new Logger();
+
     try {
+      logger.info('🔄 Attempting to fetch rate limit info...');
       const rateLimitResult = await this.client.rest.rateLimit.get();
+      logger.info('✅ Successfully retrieved rate limit info.');
       return new RateLimit(rateLimitResult.data.rate);
-    } catch (error) {
-      logger.error(`Error when getting rateLimit: ${error.message}`);
+    } catch (error: any) {
+      logger.error(
+        `❌ Error when getting rateLimit: ${error.status || error.code} - ${
+          error.message
+        }`
+      );
+
+      // Optional: Check if this was a retry-triggering error
+      if (error.status === 429) {
+        logger.warning(
+          '⚠️ Rate limit exceeded (429). Plugin-retry should handle this with backoff.'
+        );
+      }
+
+      if (error.response?.headers?.['retry-after']) {
+        logger.info(
+          `⏱ Retry-After header: ${error.response.headers['retry-after']} seconds`
+        );
+      }
     }
   }
 

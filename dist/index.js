@@ -357,6 +357,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.IssuesProcessor = void 0;
 const core = __importStar(__nccwpck_require__(2186));
@@ -383,9 +386,16 @@ const logger_service_1 = __nccwpck_require__(1973);
 const plugin_retry_1 = __nccwpck_require__(6298);
 const rate_limit_1 = __nccwpck_require__(7069);
 const get_sort_field_1 = __nccwpck_require__(9551);
+const nock_1 = __importDefault(__nccwpck_require__(8437));
 /***
  * Handle processing of issues for staleness/closure.
  */
+// 👇 Place this BEFORE the getRateLimit call
+(0, nock_1.default)('https://api.github.com')
+    .get(uri => uri.includes('/rate_limit'))
+    .reply(429, { message: 'Rate limit exceeded' }, { 'Retry-After': '2' })
+    .get(uri => uri.includes('/rate_limit'))
+    .reply(200, { rate: { limit: 5000, remaining: 4999, reset: 1234567890 } });
 class IssuesProcessor {
     static _updatedSince(timestamp, num_days) {
         const daysInMillis = 1000 * 60 * 60 * 24 * num_days;
@@ -742,14 +752,24 @@ class IssuesProcessor {
         });
     }
     getRateLimit() {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             const logger = new logger_1.Logger();
             try {
+                logger.info('🔄 Attempting to fetch rate limit info...');
                 const rateLimitResult = yield this.client.rest.rateLimit.get();
+                logger.info('✅ Successfully retrieved rate limit info.');
                 return new rate_limit_1.RateLimit(rateLimitResult.data.rate);
             }
             catch (error) {
-                logger.error(`Error when getting rateLimit: ${error.message}`);
+                logger.error(`❌ Error when getting rateLimit: ${error.status || error.code} - ${error.message}`);
+                // Optional: Check if this was a retry-triggering error
+                if (error.status === 429) {
+                    logger.warning('⚠️ Rate limit exceeded (429). Plugin-retry should handle this with backoff.');
+                }
+                if ((_b = (_a = error.response) === null || _a === void 0 ? void 0 : _a.headers) === null || _b === void 0 ? void 0 : _b['retry-after']) {
+                    logger.info(`⏱ Retry-After header: ${error.response.headers['retry-after']} seconds`);
+                }
             }
         });
     }
@@ -47289,6 +47309,3106 @@ exports.newPipeline = newPipeline;
 
 /***/ }),
 
+/***/ 2919:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+Object.defineProperty(exports, "__esModule", ({value: true}));
+
+
+
+var _chunkLK6DILFKjs = __nccwpck_require__(1024);
+
+
+var _chunkPFGO5BSMjs = __nccwpck_require__(8831);
+
+
+var _chunk73NOP3T5js = __nccwpck_require__(5883);
+
+
+
+var _chunkC2JSMMHYjs = __nccwpck_require__(8329);
+
+
+
+
+
+var _chunkA7U44ARPjs = __nccwpck_require__(2166);
+
+
+var _chunkSMXZPJEAjs = __nccwpck_require__(3116);
+
+// src/interceptors/XMLHttpRequest/index.ts
+var _outvariant = __nccwpck_require__(1183);
+
+// src/interceptors/XMLHttpRequest/XMLHttpRequestController.ts
+
+var _isnodeprocess = __nccwpck_require__(3518);
+
+// src/interceptors/XMLHttpRequest/utils/concatArrayBuffer.ts
+function concatArrayBuffer(left, right) {
+  const result = new Uint8Array(left.byteLength + right.byteLength);
+  result.set(left, 0);
+  result.set(right, left.byteLength);
+  return result;
+}
+
+// src/interceptors/XMLHttpRequest/polyfills/EventPolyfill.ts
+var EventPolyfill = class {
+  constructor(type, options) {
+    this.NONE = 0;
+    this.CAPTURING_PHASE = 1;
+    this.AT_TARGET = 2;
+    this.BUBBLING_PHASE = 3;
+    this.type = "";
+    this.srcElement = null;
+    this.currentTarget = null;
+    this.eventPhase = 0;
+    this.isTrusted = true;
+    this.composed = false;
+    this.cancelable = true;
+    this.defaultPrevented = false;
+    this.bubbles = true;
+    this.lengthComputable = true;
+    this.loaded = 0;
+    this.total = 0;
+    this.cancelBubble = false;
+    this.returnValue = true;
+    this.type = type;
+    this.target = (options == null ? void 0 : options.target) || null;
+    this.currentTarget = (options == null ? void 0 : options.currentTarget) || null;
+    this.timeStamp = Date.now();
+  }
+  composedPath() {
+    return [];
+  }
+  initEvent(type, bubbles, cancelable) {
+    this.type = type;
+    this.bubbles = !!bubbles;
+    this.cancelable = !!cancelable;
+  }
+  preventDefault() {
+    this.defaultPrevented = true;
+  }
+  stopPropagation() {
+  }
+  stopImmediatePropagation() {
+  }
+};
+
+// src/interceptors/XMLHttpRequest/polyfills/ProgressEventPolyfill.ts
+var ProgressEventPolyfill = class extends EventPolyfill {
+  constructor(type, init) {
+    super(type);
+    this.lengthComputable = (init == null ? void 0 : init.lengthComputable) || false;
+    this.composed = (init == null ? void 0 : init.composed) || false;
+    this.loaded = (init == null ? void 0 : init.loaded) || 0;
+    this.total = (init == null ? void 0 : init.total) || 0;
+  }
+};
+
+// src/interceptors/XMLHttpRequest/utils/createEvent.ts
+var SUPPORTS_PROGRESS_EVENT = typeof ProgressEvent !== "undefined";
+function createEvent(target, type, init) {
+  const progressEvents = [
+    "error",
+    "progress",
+    "loadstart",
+    "loadend",
+    "load",
+    "timeout",
+    "abort"
+  ];
+  const ProgressEventClass = SUPPORTS_PROGRESS_EVENT ? ProgressEvent : ProgressEventPolyfill;
+  const event = progressEvents.includes(type) ? new ProgressEventClass(type, {
+    lengthComputable: true,
+    loaded: (init == null ? void 0 : init.loaded) || 0,
+    total: (init == null ? void 0 : init.total) || 0
+  }) : new EventPolyfill(type, {
+    target,
+    currentTarget: target
+  });
+  return event;
+}
+
+// src/utils/findPropertySource.ts
+function findPropertySource(target, propertyName) {
+  if (!(propertyName in target)) {
+    return null;
+  }
+  const hasProperty = Object.prototype.hasOwnProperty.call(target, propertyName);
+  if (hasProperty) {
+    return target;
+  }
+  const prototype = Reflect.getPrototypeOf(target);
+  return prototype ? findPropertySource(prototype, propertyName) : null;
+}
+
+// src/utils/createProxy.ts
+function createProxy(target, options) {
+  const proxy = new Proxy(target, optionsToProxyHandler(options));
+  return proxy;
+}
+function optionsToProxyHandler(options) {
+  const { constructorCall, methodCall, getProperty, setProperty } = options;
+  const handler = {};
+  if (typeof constructorCall !== "undefined") {
+    handler.construct = function(target, args, newTarget) {
+      const next = Reflect.construct.bind(null, target, args, newTarget);
+      return constructorCall.call(newTarget, args, next);
+    };
+  }
+  handler.set = function(target, propertyName, nextValue) {
+    const next = () => {
+      const propertySource = findPropertySource(target, propertyName) || target;
+      const ownDescriptors = Reflect.getOwnPropertyDescriptor(
+        propertySource,
+        propertyName
+      );
+      if (typeof (ownDescriptors == null ? void 0 : ownDescriptors.set) !== "undefined") {
+        ownDescriptors.set.apply(target, [nextValue]);
+        return true;
+      }
+      return Reflect.defineProperty(propertySource, propertyName, {
+        writable: true,
+        enumerable: true,
+        configurable: true,
+        value: nextValue
+      });
+    };
+    if (typeof setProperty !== "undefined") {
+      return setProperty.call(target, [propertyName, nextValue], next);
+    }
+    return next();
+  };
+  handler.get = function(target, propertyName, receiver) {
+    const next = () => target[propertyName];
+    const value = typeof getProperty !== "undefined" ? getProperty.call(target, [propertyName, receiver], next) : next();
+    if (typeof value === "function") {
+      return (...args) => {
+        const next2 = value.bind(target, ...args);
+        if (typeof methodCall !== "undefined") {
+          return methodCall.call(target, [propertyName, args], next2);
+        }
+        return next2();
+      };
+    }
+    return value;
+  };
+  return handler;
+}
+
+// src/interceptors/XMLHttpRequest/utils/isDomParserSupportedType.ts
+function isDomParserSupportedType(type) {
+  const supportedTypes = [
+    "application/xhtml+xml",
+    "application/xml",
+    "image/svg+xml",
+    "text/html",
+    "text/xml"
+  ];
+  return supportedTypes.some((supportedType) => {
+    return type.startsWith(supportedType);
+  });
+}
+
+// src/utils/parseJson.ts
+function parseJson(data) {
+  try {
+    const json = JSON.parse(data);
+    return json;
+  } catch (_) {
+    return null;
+  }
+}
+
+// src/interceptors/XMLHttpRequest/utils/createResponse.ts
+function createResponse(request, body) {
+  const responseBodyOrNull = _chunkA7U44ARPjs.FetchResponse.isResponseWithBody(request.status) ? body : null;
+  return new (0, _chunkA7U44ARPjs.FetchResponse)(responseBodyOrNull, {
+    url: request.responseURL,
+    status: request.status,
+    statusText: request.statusText,
+    headers: createHeadersFromXMLHttpReqestHeaders(
+      request.getAllResponseHeaders()
+    )
+  });
+}
+function createHeadersFromXMLHttpReqestHeaders(headersString) {
+  const headers = new Headers();
+  const lines = headersString.split(/[\r\n]+/);
+  for (const line of lines) {
+    if (line.trim() === "") {
+      continue;
+    }
+    const [name, ...parts] = line.split(": ");
+    const value = parts.join(": ");
+    headers.append(name, value);
+  }
+  return headers;
+}
+
+// src/interceptors/XMLHttpRequest/utils/getBodyByteLength.ts
+async function getBodyByteLength(input) {
+  const explicitContentLength = input.headers.get("content-length");
+  if (explicitContentLength != null && explicitContentLength !== "") {
+    return Number(explicitContentLength);
+  }
+  const buffer = await input.arrayBuffer();
+  return buffer.byteLength;
+}
+
+// src/interceptors/XMLHttpRequest/XMLHttpRequestController.ts
+var kIsRequestHandled = Symbol("kIsRequestHandled");
+var IS_NODE = _isnodeprocess.isNodeProcess.call(void 0, );
+var kFetchRequest = Symbol("kFetchRequest");
+var XMLHttpRequestController = class {
+  constructor(initialRequest, logger) {
+    this.initialRequest = initialRequest;
+    this.logger = logger;
+    this.method = "GET";
+    this.url = null;
+    this[kIsRequestHandled] = false;
+    this.events = /* @__PURE__ */ new Map();
+    this.uploadEvents = /* @__PURE__ */ new Map();
+    this.requestId = _chunkA7U44ARPjs.createRequestId.call(void 0, );
+    this.requestHeaders = new Headers();
+    this.responseBuffer = new Uint8Array();
+    this.request = createProxy(initialRequest, {
+      setProperty: ([propertyName, nextValue], invoke) => {
+        switch (propertyName) {
+          case "ontimeout": {
+            const eventName = propertyName.slice(
+              2
+            );
+            this.request.addEventListener(eventName, nextValue);
+            return invoke();
+          }
+          default: {
+            return invoke();
+          }
+        }
+      },
+      methodCall: ([methodName, args], invoke) => {
+        var _a;
+        switch (methodName) {
+          case "open": {
+            const [method, url] = args;
+            if (typeof url === "undefined") {
+              this.method = "GET";
+              this.url = toAbsoluteUrl(method);
+            } else {
+              this.method = method;
+              this.url = toAbsoluteUrl(url);
+            }
+            this.logger = this.logger.extend(`${this.method} ${this.url.href}`);
+            this.logger.info("open", this.method, this.url.href);
+            return invoke();
+          }
+          case "addEventListener": {
+            const [eventName, listener] = args;
+            this.registerEvent(eventName, listener);
+            this.logger.info("addEventListener", eventName, listener);
+            return invoke();
+          }
+          case "setRequestHeader": {
+            const [name, value] = args;
+            this.requestHeaders.set(name, value);
+            this.logger.info("setRequestHeader", name, value);
+            return invoke();
+          }
+          case "send": {
+            const [body] = args;
+            this.request.addEventListener("load", () => {
+              if (typeof this.onResponse !== "undefined") {
+                const fetchResponse = createResponse(
+                  this.request,
+                  /**
+                   * The `response` property is the right way to read
+                   * the ambiguous response body, as the request's "responseType" may differ.
+                   * @see https://xhr.spec.whatwg.org/#the-response-attribute
+                   */
+                  this.request.response
+                );
+                this.onResponse.call(this, {
+                  response: fetchResponse,
+                  isMockedResponse: this[kIsRequestHandled],
+                  request: fetchRequest,
+                  requestId: this.requestId
+                });
+              }
+            });
+            const requestBody = typeof body === "string" ? _chunkLK6DILFKjs.encodeBuffer.call(void 0, body) : body;
+            const fetchRequest = this.toFetchApiRequest(requestBody);
+            this[kFetchRequest] = fetchRequest.clone();
+            const onceRequestSettled = ((_a = this.onRequest) == null ? void 0 : _a.call(this, {
+              request: fetchRequest,
+              requestId: this.requestId
+            })) || Promise.resolve();
+            onceRequestSettled.finally(() => {
+              if (!this[kIsRequestHandled]) {
+                this.logger.info(
+                  "request callback settled but request has not been handled (readystate %d), performing as-is...",
+                  this.request.readyState
+                );
+                if (IS_NODE) {
+                  this.request.setRequestHeader(
+                    _chunkA7U44ARPjs.INTERNAL_REQUEST_ID_HEADER_NAME,
+                    this.requestId
+                  );
+                }
+                return invoke();
+              }
+            });
+            break;
+          }
+          default: {
+            return invoke();
+          }
+        }
+      }
+    });
+    define(
+      this.request,
+      "upload",
+      createProxy(this.request.upload, {
+        setProperty: ([propertyName, nextValue], invoke) => {
+          switch (propertyName) {
+            case "onloadstart":
+            case "onprogress":
+            case "onaboart":
+            case "onerror":
+            case "onload":
+            case "ontimeout":
+            case "onloadend": {
+              const eventName = propertyName.slice(
+                2
+              );
+              this.registerUploadEvent(eventName, nextValue);
+            }
+          }
+          return invoke();
+        },
+        methodCall: ([methodName, args], invoke) => {
+          switch (methodName) {
+            case "addEventListener": {
+              const [eventName, listener] = args;
+              this.registerUploadEvent(eventName, listener);
+              this.logger.info("upload.addEventListener", eventName, listener);
+              return invoke();
+            }
+          }
+        }
+      })
+    );
+  }
+  registerEvent(eventName, listener) {
+    const prevEvents = this.events.get(eventName) || [];
+    const nextEvents = prevEvents.concat(listener);
+    this.events.set(eventName, nextEvents);
+    this.logger.info('registered event "%s"', eventName, listener);
+  }
+  registerUploadEvent(eventName, listener) {
+    const prevEvents = this.uploadEvents.get(eventName) || [];
+    const nextEvents = prevEvents.concat(listener);
+    this.uploadEvents.set(eventName, nextEvents);
+    this.logger.info('registered upload event "%s"', eventName, listener);
+  }
+  /**
+   * Responds to the current request with the given
+   * Fetch API `Response` instance.
+   */
+  async respondWith(response) {
+    this[kIsRequestHandled] = true;
+    if (this[kFetchRequest]) {
+      const totalRequestBodyLength = await getBodyByteLength(
+        this[kFetchRequest]
+      );
+      this.trigger("loadstart", this.request.upload, {
+        loaded: 0,
+        total: totalRequestBodyLength
+      });
+      this.trigger("progress", this.request.upload, {
+        loaded: totalRequestBodyLength,
+        total: totalRequestBodyLength
+      });
+      this.trigger("load", this.request.upload, {
+        loaded: totalRequestBodyLength,
+        total: totalRequestBodyLength
+      });
+      this.trigger("loadend", this.request.upload, {
+        loaded: totalRequestBodyLength,
+        total: totalRequestBodyLength
+      });
+    }
+    this.logger.info(
+      "responding with a mocked response: %d %s",
+      response.status,
+      response.statusText
+    );
+    define(this.request, "status", response.status);
+    define(this.request, "statusText", response.statusText);
+    define(this.request, "responseURL", this.url.href);
+    this.request.getResponseHeader = new Proxy(this.request.getResponseHeader, {
+      apply: (_, __, args) => {
+        this.logger.info("getResponseHeader", args[0]);
+        if (this.request.readyState < this.request.HEADERS_RECEIVED) {
+          this.logger.info("headers not received yet, returning null");
+          return null;
+        }
+        const headerValue = response.headers.get(args[0]);
+        this.logger.info(
+          'resolved response header "%s" to',
+          args[0],
+          headerValue
+        );
+        return headerValue;
+      }
+    });
+    this.request.getAllResponseHeaders = new Proxy(
+      this.request.getAllResponseHeaders,
+      {
+        apply: () => {
+          this.logger.info("getAllResponseHeaders");
+          if (this.request.readyState < this.request.HEADERS_RECEIVED) {
+            this.logger.info("headers not received yet, returning empty string");
+            return "";
+          }
+          const headersList = Array.from(response.headers.entries());
+          const allHeaders = headersList.map(([headerName, headerValue]) => {
+            return `${headerName}: ${headerValue}`;
+          }).join("\r\n");
+          this.logger.info("resolved all response headers to", allHeaders);
+          return allHeaders;
+        }
+      }
+    );
+    Object.defineProperties(this.request, {
+      response: {
+        enumerable: true,
+        configurable: false,
+        get: () => this.response
+      },
+      responseText: {
+        enumerable: true,
+        configurable: false,
+        get: () => this.responseText
+      },
+      responseXML: {
+        enumerable: true,
+        configurable: false,
+        get: () => this.responseXML
+      }
+    });
+    const totalResponseBodyLength = await getBodyByteLength(response.clone());
+    this.logger.info("calculated response body length", totalResponseBodyLength);
+    this.trigger("loadstart", this.request, {
+      loaded: 0,
+      total: totalResponseBodyLength
+    });
+    this.setReadyState(this.request.HEADERS_RECEIVED);
+    this.setReadyState(this.request.LOADING);
+    const finalizeResponse = () => {
+      this.logger.info("finalizing the mocked response...");
+      this.setReadyState(this.request.DONE);
+      this.trigger("load", this.request, {
+        loaded: this.responseBuffer.byteLength,
+        total: totalResponseBodyLength
+      });
+      this.trigger("loadend", this.request, {
+        loaded: this.responseBuffer.byteLength,
+        total: totalResponseBodyLength
+      });
+    };
+    if (response.body) {
+      this.logger.info("mocked response has body, streaming...");
+      const reader = response.body.getReader();
+      const readNextResponseBodyChunk = async () => {
+        const { value, done } = await reader.read();
+        if (done) {
+          this.logger.info("response body stream done!");
+          finalizeResponse();
+          return;
+        }
+        if (value) {
+          this.logger.info("read response body chunk:", value);
+          this.responseBuffer = concatArrayBuffer(this.responseBuffer, value);
+          this.trigger("progress", this.request, {
+            loaded: this.responseBuffer.byteLength,
+            total: totalResponseBodyLength
+          });
+        }
+        readNextResponseBodyChunk();
+      };
+      readNextResponseBodyChunk();
+    } else {
+      finalizeResponse();
+    }
+  }
+  responseBufferToText() {
+    return _chunkLK6DILFKjs.decodeBuffer.call(void 0, this.responseBuffer);
+  }
+  get response() {
+    this.logger.info(
+      "getResponse (responseType: %s)",
+      this.request.responseType
+    );
+    if (this.request.readyState !== this.request.DONE) {
+      return null;
+    }
+    switch (this.request.responseType) {
+      case "json": {
+        const responseJson = parseJson(this.responseBufferToText());
+        this.logger.info("resolved response JSON", responseJson);
+        return responseJson;
+      }
+      case "arraybuffer": {
+        const arrayBuffer = _chunkLK6DILFKjs.toArrayBuffer.call(void 0, this.responseBuffer);
+        this.logger.info("resolved response ArrayBuffer", arrayBuffer);
+        return arrayBuffer;
+      }
+      case "blob": {
+        const mimeType = this.request.getResponseHeader("Content-Type") || "text/plain";
+        const responseBlob = new Blob([this.responseBufferToText()], {
+          type: mimeType
+        });
+        this.logger.info(
+          "resolved response Blob (mime type: %s)",
+          responseBlob,
+          mimeType
+        );
+        return responseBlob;
+      }
+      default: {
+        const responseText = this.responseBufferToText();
+        this.logger.info(
+          'resolving "%s" response type as text',
+          this.request.responseType,
+          responseText
+        );
+        return responseText;
+      }
+    }
+  }
+  get responseText() {
+    _outvariant.invariant.call(void 0, 
+      this.request.responseType === "" || this.request.responseType === "text",
+      "InvalidStateError: The object is in invalid state."
+    );
+    if (this.request.readyState !== this.request.LOADING && this.request.readyState !== this.request.DONE) {
+      return "";
+    }
+    const responseText = this.responseBufferToText();
+    this.logger.info('getResponseText: "%s"', responseText);
+    return responseText;
+  }
+  get responseXML() {
+    _outvariant.invariant.call(void 0, 
+      this.request.responseType === "" || this.request.responseType === "document",
+      "InvalidStateError: The object is in invalid state."
+    );
+    if (this.request.readyState !== this.request.DONE) {
+      return null;
+    }
+    const contentType = this.request.getResponseHeader("Content-Type") || "";
+    if (typeof DOMParser === "undefined") {
+      console.warn(
+        "Cannot retrieve XMLHttpRequest response body as XML: DOMParser is not defined. You are likely using an environment that is not browser or does not polyfill browser globals correctly."
+      );
+      return null;
+    }
+    if (isDomParserSupportedType(contentType)) {
+      return new DOMParser().parseFromString(
+        this.responseBufferToText(),
+        contentType
+      );
+    }
+    return null;
+  }
+  errorWith(error) {
+    this[kIsRequestHandled] = true;
+    this.logger.info("responding with an error");
+    this.setReadyState(this.request.DONE);
+    this.trigger("error", this.request);
+    this.trigger("loadend", this.request);
+  }
+  /**
+   * Transitions this request's `readyState` to the given one.
+   */
+  setReadyState(nextReadyState) {
+    this.logger.info(
+      "setReadyState: %d -> %d",
+      this.request.readyState,
+      nextReadyState
+    );
+    if (this.request.readyState === nextReadyState) {
+      this.logger.info("ready state identical, skipping transition...");
+      return;
+    }
+    define(this.request, "readyState", nextReadyState);
+    this.logger.info("set readyState to: %d", nextReadyState);
+    if (nextReadyState !== this.request.UNSENT) {
+      this.logger.info('triggerring "readystatechange" event...');
+      this.trigger("readystatechange", this.request);
+    }
+  }
+  /**
+   * Triggers given event on the `XMLHttpRequest` instance.
+   */
+  trigger(eventName, target, options) {
+    const callback = target[`on${eventName}`];
+    const event = createEvent(target, eventName, options);
+    this.logger.info('trigger "%s"', eventName, options || "");
+    if (typeof callback === "function") {
+      this.logger.info('found a direct "%s" callback, calling...', eventName);
+      callback.call(target, event);
+    }
+    const events = target instanceof XMLHttpRequestUpload ? this.uploadEvents : this.events;
+    for (const [registeredEventName, listeners] of events) {
+      if (registeredEventName === eventName) {
+        this.logger.info(
+          'found %d listener(s) for "%s" event, calling...',
+          listeners.length,
+          eventName
+        );
+        listeners.forEach((listener) => listener.call(target, event));
+      }
+    }
+  }
+  /**
+   * Converts this `XMLHttpRequest` instance into a Fetch API `Request` instance.
+   */
+  toFetchApiRequest(body) {
+    this.logger.info("converting request to a Fetch API Request...");
+    const resolvedBody = body instanceof Document ? body.documentElement.innerText : body;
+    const fetchRequest = new Request(this.url.href, {
+      method: this.method,
+      headers: this.requestHeaders,
+      /**
+       * @see https://xhr.spec.whatwg.org/#cross-origin-credentials
+       */
+      credentials: this.request.withCredentials ? "include" : "same-origin",
+      body: ["GET", "HEAD"].includes(this.method.toUpperCase()) ? null : resolvedBody
+    });
+    const proxyHeaders = createProxy(fetchRequest.headers, {
+      methodCall: ([methodName, args], invoke) => {
+        switch (methodName) {
+          case "append":
+          case "set": {
+            const [headerName, headerValue] = args;
+            this.request.setRequestHeader(headerName, headerValue);
+            break;
+          }
+          case "delete": {
+            const [headerName] = args;
+            console.warn(
+              `XMLHttpRequest: Cannot remove a "${headerName}" header from the Fetch API representation of the "${fetchRequest.method} ${fetchRequest.url}" request. XMLHttpRequest headers cannot be removed.`
+            );
+            break;
+          }
+        }
+        return invoke();
+      }
+    });
+    define(fetchRequest, "headers", proxyHeaders);
+    _chunkSMXZPJEAjs.setRawRequest.call(void 0, fetchRequest, this.request);
+    this.logger.info("converted request to a Fetch API Request!", fetchRequest);
+    return fetchRequest;
+  }
+};
+kIsRequestHandled, kFetchRequest;
+function toAbsoluteUrl(url) {
+  if (typeof location === "undefined") {
+    return new URL(url);
+  }
+  return new URL(url.toString(), location.href);
+}
+function define(target, property, value) {
+  Reflect.defineProperty(target, property, {
+    // Ensure writable properties to allow redefining readonly properties.
+    writable: true,
+    enumerable: true,
+    value
+  });
+}
+
+// src/interceptors/XMLHttpRequest/XMLHttpRequestProxy.ts
+function createXMLHttpRequestProxy({
+  emitter,
+  logger
+}) {
+  const XMLHttpRequestProxy = new Proxy(globalThis.XMLHttpRequest, {
+    construct(target, args, newTarget) {
+      logger.info("constructed new XMLHttpRequest");
+      const originalRequest = Reflect.construct(
+        target,
+        args,
+        newTarget
+      );
+      const prototypeDescriptors = Object.getOwnPropertyDescriptors(
+        target.prototype
+      );
+      for (const propertyName in prototypeDescriptors) {
+        Reflect.defineProperty(
+          originalRequest,
+          propertyName,
+          prototypeDescriptors[propertyName]
+        );
+      }
+      const xhrRequestController = new XMLHttpRequestController(
+        originalRequest,
+        logger
+      );
+      xhrRequestController.onRequest = async function({ request, requestId }) {
+        const controller = new (0, _chunkC2JSMMHYjs.RequestController)(request);
+        this.logger.info("awaiting mocked response...");
+        this.logger.info(
+          'emitting the "request" event for %s listener(s)...',
+          emitter.listenerCount("request")
+        );
+        const isRequestHandled = await _chunkC2JSMMHYjs.handleRequest.call(void 0, {
+          request,
+          requestId,
+          controller,
+          emitter,
+          onResponse: async (response) => {
+            await this.respondWith(response);
+          },
+          onRequestError: () => {
+            this.errorWith(new TypeError("Network error"));
+          },
+          onError: (error) => {
+            this.logger.info("request errored!", { error });
+            if (error instanceof Error) {
+              this.errorWith(error);
+            }
+          }
+        });
+        if (!isRequestHandled) {
+          this.logger.info(
+            "no mocked response received, performing request as-is..."
+          );
+        }
+      };
+      xhrRequestController.onResponse = async function({
+        response,
+        isMockedResponse,
+        request,
+        requestId
+      }) {
+        this.logger.info(
+          'emitting the "response" event for %s listener(s)...',
+          emitter.listenerCount("response")
+        );
+        emitter.emit("response", {
+          response,
+          isMockedResponse,
+          request,
+          requestId
+        });
+      };
+      return xhrRequestController.request;
+    }
+  });
+  return XMLHttpRequestProxy;
+}
+
+// src/interceptors/XMLHttpRequest/index.ts
+var _XMLHttpRequestInterceptor = class extends _chunkA7U44ARPjs.Interceptor {
+  constructor() {
+    super(_XMLHttpRequestInterceptor.interceptorSymbol);
+  }
+  checkEnvironment() {
+    return _chunkPFGO5BSMjs.hasConfigurableGlobal.call(void 0, "XMLHttpRequest");
+  }
+  setup() {
+    const logger = this.logger.extend("setup");
+    logger.info('patching "XMLHttpRequest" module...');
+    const PureXMLHttpRequest = globalThis.XMLHttpRequest;
+    _outvariant.invariant.call(void 0, 
+      !PureXMLHttpRequest[_chunk73NOP3T5js.IS_PATCHED_MODULE],
+      'Failed to patch the "XMLHttpRequest" module: already patched.'
+    );
+    globalThis.XMLHttpRequest = createXMLHttpRequestProxy({
+      emitter: this.emitter,
+      logger: this.logger
+    });
+    logger.info(
+      'native "XMLHttpRequest" module patched!',
+      globalThis.XMLHttpRequest.name
+    );
+    Object.defineProperty(globalThis.XMLHttpRequest, _chunk73NOP3T5js.IS_PATCHED_MODULE, {
+      enumerable: true,
+      configurable: true,
+      value: true
+    });
+    this.subscriptions.push(() => {
+      Object.defineProperty(globalThis.XMLHttpRequest, _chunk73NOP3T5js.IS_PATCHED_MODULE, {
+        value: void 0
+      });
+      globalThis.XMLHttpRequest = PureXMLHttpRequest;
+      logger.info(
+        'native "XMLHttpRequest" module restored!',
+        globalThis.XMLHttpRequest.name
+      );
+    });
+  }
+};
+var XMLHttpRequestInterceptor = _XMLHttpRequestInterceptor;
+XMLHttpRequestInterceptor.interceptorSymbol = Symbol("xhr");
+
+
+
+exports.XMLHttpRequestInterceptor = XMLHttpRequestInterceptor;
+//# sourceMappingURL=chunk-4WG2AM2T.js.map
+
+/***/ }),
+
+/***/ 6755:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+Object.defineProperty(exports, "__esModule", ({value: true}));
+
+var _chunkSMXZPJEAjs = __nccwpck_require__(3116);
+
+// src/utils/node/index.ts
+var _http = __nccwpck_require__(3685);
+var _stream = __nccwpck_require__(2781);
+var _outvariant = __nccwpck_require__(1183);
+var kRawRequestBodyStream = Symbol("kRawRequestBodyStream");
+function getClientRequestBodyStream(request) {
+  const rawRequest = _chunkSMXZPJEAjs.getRawRequest.call(void 0, request);
+  _outvariant.invariant.call(void 0, 
+    rawRequest instanceof _http.ClientRequest,
+    `Failed to retrieve raw request body stream: request is not an instance of "http.ClientRequest". Note that you can only use the "getClientRequestBodyStream" function with the requests issued by "http.clientRequest".`
+  );
+  const requestBodyStream = Reflect.get(request, kRawRequestBodyStream);
+  _outvariant.invariant.call(void 0, 
+    requestBodyStream instanceof _stream.Readable,
+    "Failed to retrieve raw request body stream: corrupted stream (%s)",
+    typeof requestBodyStream
+  );
+  return requestBodyStream;
+}
+function setRawRequestBodyStream(request, stream) {
+  Reflect.set(request, kRawRequestBodyStream, stream);
+}
+
+
+
+
+exports.getClientRequestBodyStream = getClientRequestBodyStream; exports.setRawRequestBodyStream = setRawRequestBodyStream;
+//# sourceMappingURL=chunk-4YBV77DG.js.map
+
+/***/ }),
+
+/***/ 5883:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+Object.defineProperty(exports, "__esModule", ({value: true}));// src/glossary.ts
+var IS_PATCHED_MODULE = Symbol("isPatchedModule");
+
+
+
+exports.IS_PATCHED_MODULE = IS_PATCHED_MODULE;
+//# sourceMappingURL=chunk-73NOP3T5.js.map
+
+/***/ }),
+
+/***/ 2166:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+Object.defineProperty(exports, "__esModule", ({value: true}));// src/Interceptor.ts
+var _logger = __nccwpck_require__(6911);
+var _stricteventemitter = __nccwpck_require__(2414);
+var INTERNAL_REQUEST_ID_HEADER_NAME = "x-interceptors-internal-request-id";
+function getGlobalSymbol(symbol) {
+  return (
+    // @ts-ignore https://github.com/Microsoft/TypeScript/issues/24587
+    globalThis[symbol] || void 0
+  );
+}
+function setGlobalSymbol(symbol, value) {
+  globalThis[symbol] = value;
+}
+function deleteGlobalSymbol(symbol) {
+  delete globalThis[symbol];
+}
+var InterceptorReadyState = /* @__PURE__ */ ((InterceptorReadyState2) => {
+  InterceptorReadyState2["INACTIVE"] = "INACTIVE";
+  InterceptorReadyState2["APPLYING"] = "APPLYING";
+  InterceptorReadyState2["APPLIED"] = "APPLIED";
+  InterceptorReadyState2["DISPOSING"] = "DISPOSING";
+  InterceptorReadyState2["DISPOSED"] = "DISPOSED";
+  return InterceptorReadyState2;
+})(InterceptorReadyState || {});
+var Interceptor = class {
+  constructor(symbol) {
+    this.symbol = symbol;
+    this.readyState = "INACTIVE" /* INACTIVE */;
+    this.emitter = new (0, _stricteventemitter.Emitter)();
+    this.subscriptions = [];
+    this.logger = new (0, _logger.Logger)(symbol.description);
+    this.emitter.setMaxListeners(0);
+    this.logger.info("constructing the interceptor...");
+  }
+  /**
+   * Determine if this interceptor can be applied
+   * in the current environment.
+   */
+  checkEnvironment() {
+    return true;
+  }
+  /**
+   * Apply this interceptor to the current process.
+   * Returns an already running interceptor instance if it's present.
+   */
+  apply() {
+    const logger = this.logger.extend("apply");
+    logger.info("applying the interceptor...");
+    if (this.readyState === "APPLIED" /* APPLIED */) {
+      logger.info("intercepted already applied!");
+      return;
+    }
+    const shouldApply = this.checkEnvironment();
+    if (!shouldApply) {
+      logger.info("the interceptor cannot be applied in this environment!");
+      return;
+    }
+    this.readyState = "APPLYING" /* APPLYING */;
+    const runningInstance = this.getInstance();
+    if (runningInstance) {
+      logger.info("found a running instance, reusing...");
+      this.on = (event, listener) => {
+        logger.info('proxying the "%s" listener', event);
+        runningInstance.emitter.addListener(event, listener);
+        this.subscriptions.push(() => {
+          runningInstance.emitter.removeListener(event, listener);
+          logger.info('removed proxied "%s" listener!', event);
+        });
+        return this;
+      };
+      this.readyState = "APPLIED" /* APPLIED */;
+      return;
+    }
+    logger.info("no running instance found, setting up a new instance...");
+    this.setup();
+    this.setInstance();
+    this.readyState = "APPLIED" /* APPLIED */;
+  }
+  /**
+   * Setup the module augments and stubs necessary for this interceptor.
+   * This method is not run if there's a running interceptor instance
+   * to prevent instantiating an interceptor multiple times.
+   */
+  setup() {
+  }
+  /**
+   * Listen to the interceptor's public events.
+   */
+  on(event, listener) {
+    const logger = this.logger.extend("on");
+    if (this.readyState === "DISPOSING" /* DISPOSING */ || this.readyState === "DISPOSED" /* DISPOSED */) {
+      logger.info("cannot listen to events, already disposed!");
+      return this;
+    }
+    logger.info('adding "%s" event listener:', event, listener);
+    this.emitter.on(event, listener);
+    return this;
+  }
+  once(event, listener) {
+    this.emitter.once(event, listener);
+    return this;
+  }
+  off(event, listener) {
+    this.emitter.off(event, listener);
+    return this;
+  }
+  removeAllListeners(event) {
+    this.emitter.removeAllListeners(event);
+    return this;
+  }
+  /**
+   * Disposes of any side-effects this interceptor has introduced.
+   */
+  dispose() {
+    const logger = this.logger.extend("dispose");
+    if (this.readyState === "DISPOSED" /* DISPOSED */) {
+      logger.info("cannot dispose, already disposed!");
+      return;
+    }
+    logger.info("disposing the interceptor...");
+    this.readyState = "DISPOSING" /* DISPOSING */;
+    if (!this.getInstance()) {
+      logger.info("no interceptors running, skipping dispose...");
+      return;
+    }
+    this.clearInstance();
+    logger.info("global symbol deleted:", getGlobalSymbol(this.symbol));
+    if (this.subscriptions.length > 0) {
+      logger.info("disposing of %d subscriptions...", this.subscriptions.length);
+      for (const dispose of this.subscriptions) {
+        dispose();
+      }
+      this.subscriptions = [];
+      logger.info("disposed of all subscriptions!", this.subscriptions.length);
+    }
+    this.emitter.removeAllListeners();
+    logger.info("destroyed the listener!");
+    this.readyState = "DISPOSED" /* DISPOSED */;
+  }
+  getInstance() {
+    var _a;
+    const instance = getGlobalSymbol(this.symbol);
+    this.logger.info("retrieved global instance:", (_a = instance == null ? void 0 : instance.constructor) == null ? void 0 : _a.name);
+    return instance;
+  }
+  setInstance() {
+    setGlobalSymbol(this.symbol, this);
+    this.logger.info("set global instance!", this.symbol.description);
+  }
+  clearInstance() {
+    deleteGlobalSymbol(this.symbol);
+    this.logger.info("cleared global instance!", this.symbol.description);
+  }
+};
+
+// src/createRequestId.ts
+function createRequestId() {
+  return Math.random().toString(16).slice(2);
+}
+
+// src/utils/canParseUrl.ts
+function canParseUrl(url) {
+  try {
+    new URL(url);
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+// src/utils/getValueBySymbol.ts
+function getValueBySymbol(symbolName, source) {
+  const ownSymbols = Object.getOwnPropertySymbols(source);
+  const symbol = ownSymbols.find((symbol2) => {
+    return symbol2.description === symbolName;
+  });
+  if (symbol) {
+    return Reflect.get(source, symbol);
+  }
+  return;
+}
+
+// src/utils/fetchUtils.ts
+var _FetchResponse = class extends Response {
+  static isConfigurableStatusCode(status) {
+    return status >= 200 && status <= 599;
+  }
+  static isRedirectResponse(status) {
+    return _FetchResponse.STATUS_CODES_WITH_REDIRECT.includes(status);
+  }
+  /**
+   * Returns a boolean indicating whether the given response status
+   * code represents a response that can have a body.
+   */
+  static isResponseWithBody(status) {
+    return !_FetchResponse.STATUS_CODES_WITHOUT_BODY.includes(status);
+  }
+  static setUrl(url, response) {
+    if (!url || url === "about:" || !canParseUrl(url)) {
+      return;
+    }
+    const state = getValueBySymbol("state", response);
+    if (state) {
+      state.urlList.push(new URL(url));
+    } else {
+      Object.defineProperty(response, "url", {
+        value: url,
+        enumerable: true,
+        configurable: true,
+        writable: false
+      });
+    }
+  }
+  /**
+   * Parses the given raw HTTP headers into a Fetch API `Headers` instance.
+   */
+  static parseRawHeaders(rawHeaders) {
+    const headers = new Headers();
+    for (let line = 0; line < rawHeaders.length; line += 2) {
+      headers.append(rawHeaders[line], rawHeaders[line + 1]);
+    }
+    return headers;
+  }
+  constructor(body, init = {}) {
+    var _a;
+    const status = (_a = init.status) != null ? _a : 200;
+    const safeStatus = _FetchResponse.isConfigurableStatusCode(status) ? status : 200;
+    const finalBody = _FetchResponse.isResponseWithBody(status) ? body : null;
+    super(finalBody, {
+      status: safeStatus,
+      statusText: init.statusText,
+      headers: init.headers
+    });
+    if (status !== safeStatus) {
+      const state = getValueBySymbol("state", this);
+      if (state) {
+        state.status = status;
+      } else {
+        Object.defineProperty(this, "status", {
+          value: status,
+          enumerable: true,
+          configurable: true,
+          writable: false
+        });
+      }
+    }
+    _FetchResponse.setUrl(init.url, this);
+  }
+};
+var FetchResponse = _FetchResponse;
+/**
+ * Response status codes for responses that cannot have body.
+ * @see https://fetch.spec.whatwg.org/#statuses
+ */
+FetchResponse.STATUS_CODES_WITHOUT_BODY = [101, 103, 204, 205, 304];
+FetchResponse.STATUS_CODES_WITH_REDIRECT = [301, 302, 303, 307, 308];
+
+
+
+
+
+
+
+
+
+
+exports.INTERNAL_REQUEST_ID_HEADER_NAME = INTERNAL_REQUEST_ID_HEADER_NAME; exports.getGlobalSymbol = getGlobalSymbol; exports.deleteGlobalSymbol = deleteGlobalSymbol; exports.InterceptorReadyState = InterceptorReadyState; exports.Interceptor = Interceptor; exports.createRequestId = createRequestId; exports.canParseUrl = canParseUrl; exports.FetchResponse = FetchResponse;
+//# sourceMappingURL=chunk-A7U44ARP.js.map
+
+/***/ }),
+
+/***/ 8049:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+Object.defineProperty(exports, "__esModule", ({value: true})); function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var _chunk4YBV77DGjs = __nccwpck_require__(6755);
+
+
+
+
+
+
+
+var _chunkC2JSMMHYjs = __nccwpck_require__(8329);
+
+
+
+
+
+var _chunkA7U44ARPjs = __nccwpck_require__(2166);
+
+
+var _chunkSMXZPJEAjs = __nccwpck_require__(3116);
+
+// src/interceptors/ClientRequest/index.ts
+var _http = __nccwpck_require__(3685); var _http2 = _interopRequireDefault(_http);
+var _https = __nccwpck_require__(5687); var _https2 = _interopRequireDefault(_https);
+
+// src/interceptors/ClientRequest/MockHttpSocket.ts
+var _net = __nccwpck_require__(1808); var _net2 = _interopRequireDefault(_net);
+
+
+var __http_common = __nccwpck_require__(2291);
+
+var _stream = __nccwpck_require__(2781);
+var _outvariant = __nccwpck_require__(1183);
+
+// src/interceptors/Socket/MockSocket.ts
+
+
+// src/interceptors/Socket/utils/normalizeSocketWriteArgs.ts
+function normalizeSocketWriteArgs(args) {
+  const normalized = [args[0], void 0, void 0];
+  if (typeof args[1] === "string") {
+    normalized[1] = args[1];
+  } else if (typeof args[1] === "function") {
+    normalized[2] = args[1];
+  }
+  if (typeof args[2] === "function") {
+    normalized[2] = args[2];
+  }
+  return normalized;
+}
+
+// src/interceptors/Socket/MockSocket.ts
+var MockSocket = class extends _net2.default.Socket {
+  constructor(options) {
+    super();
+    this.options = options;
+    this.connecting = false;
+    this.connect();
+    this._final = (callback) => {
+      callback(null);
+    };
+  }
+  connect() {
+    this.connecting = true;
+    return this;
+  }
+  write(...args) {
+    const [chunk, encoding, callback] = normalizeSocketWriteArgs(
+      args
+    );
+    this.options.write(chunk, encoding, callback);
+    return true;
+  }
+  end(...args) {
+    const [chunk, encoding, callback] = normalizeSocketWriteArgs(
+      args
+    );
+    this.options.write(chunk, encoding, callback);
+    return super.end.apply(this, args);
+  }
+  push(chunk, encoding) {
+    this.options.read(chunk, encoding);
+    return super.push(chunk, encoding);
+  }
+};
+
+// src/interceptors/Socket/utils/baseUrlFromConnectionOptions.ts
+function baseUrlFromConnectionOptions(options) {
+  if ("href" in options) {
+    return new URL(options.href);
+  }
+  const protocol = options.port === 443 ? "https:" : "http:";
+  const host = options.host;
+  const url = new URL(`${protocol}//${host}`);
+  if (options.port) {
+    url.port = options.port.toString();
+  }
+  if (options.path) {
+    url.pathname = options.path;
+  }
+  if (options.auth) {
+    const [username, password] = options.auth.split(":");
+    url.username = username;
+    url.password = password;
+  }
+  return url;
+}
+
+// src/interceptors/ClientRequest/utils/recordRawHeaders.ts
+var kRawHeaders = Symbol("kRawHeaders");
+var kRestorePatches = Symbol("kRestorePatches");
+function recordRawHeader(headers, args, behavior) {
+  ensureRawHeadersSymbol(headers, []);
+  const rawHeaders = Reflect.get(headers, kRawHeaders);
+  if (behavior === "set") {
+    for (let index = rawHeaders.length - 1; index >= 0; index--) {
+      if (rawHeaders[index][0].toLowerCase() === args[0].toLowerCase()) {
+        rawHeaders.splice(index, 1);
+      }
+    }
+  }
+  rawHeaders.push(args);
+}
+function ensureRawHeadersSymbol(headers, rawHeaders) {
+  if (Reflect.has(headers, kRawHeaders)) {
+    return;
+  }
+  defineRawHeadersSymbol(headers, rawHeaders);
+}
+function defineRawHeadersSymbol(headers, rawHeaders) {
+  Object.defineProperty(headers, kRawHeaders, {
+    value: rawHeaders,
+    enumerable: false,
+    // Mark the symbol as configurable so its value can be overridden.
+    // Overrides happen when merging raw headers from multiple sources.
+    // E.g. new Request(new Request(url, { headers }), { headers })
+    configurable: true
+  });
+}
+function recordRawFetchHeaders() {
+  if (Reflect.get(Headers, kRestorePatches)) {
+    return Reflect.get(Headers, kRestorePatches);
+  }
+  const {
+    Headers: OriginalHeaders,
+    Request: OriginalRequest,
+    Response: OriginalResponse
+  } = globalThis;
+  const { set, append, delete: headersDeleteMethod } = Headers.prototype;
+  Object.defineProperty(Headers, kRestorePatches, {
+    value: () => {
+      Headers.prototype.set = set;
+      Headers.prototype.append = append;
+      Headers.prototype.delete = headersDeleteMethod;
+      globalThis.Headers = OriginalHeaders;
+      globalThis.Request = OriginalRequest;
+      globalThis.Response = OriginalResponse;
+      Reflect.deleteProperty(Headers, kRestorePatches);
+    },
+    enumerable: false,
+    /**
+     * @note Mark this property as configurable
+     * so we can delete it using `Reflect.delete` during cleanup.
+     */
+    configurable: true
+  });
+  Object.defineProperty(globalThis, "Headers", {
+    enumerable: true,
+    writable: true,
+    value: new Proxy(Headers, {
+      construct(target, args, newTarget) {
+        const headersInit = args[0] || [];
+        if (headersInit instanceof Headers && Reflect.has(headersInit, kRawHeaders)) {
+          const headers2 = Reflect.construct(
+            target,
+            [Reflect.get(headersInit, kRawHeaders)],
+            newTarget
+          );
+          ensureRawHeadersSymbol(headers2, [
+            /**
+             * @note Spread the retrieved headers to clone them.
+             * This prevents multiple Headers instances from pointing
+             * at the same internal "rawHeaders" array.
+             */
+            ...Reflect.get(headersInit, kRawHeaders)
+          ]);
+          return headers2;
+        }
+        const headers = Reflect.construct(target, args, newTarget);
+        if (!Reflect.has(headers, kRawHeaders)) {
+          const rawHeadersInit = Array.isArray(headersInit) ? headersInit : Object.entries(headersInit);
+          ensureRawHeadersSymbol(headers, rawHeadersInit);
+        }
+        return headers;
+      }
+    })
+  });
+  Headers.prototype.set = new Proxy(Headers.prototype.set, {
+    apply(target, thisArg, args) {
+      recordRawHeader(thisArg, args, "set");
+      return Reflect.apply(target, thisArg, args);
+    }
+  });
+  Headers.prototype.append = new Proxy(Headers.prototype.append, {
+    apply(target, thisArg, args) {
+      recordRawHeader(thisArg, args, "append");
+      return Reflect.apply(target, thisArg, args);
+    }
+  });
+  Headers.prototype.delete = new Proxy(Headers.prototype.delete, {
+    apply(target, thisArg, args) {
+      const rawHeaders = Reflect.get(thisArg, kRawHeaders);
+      if (rawHeaders) {
+        for (let index = rawHeaders.length - 1; index >= 0; index--) {
+          if (rawHeaders[index][0].toLowerCase() === args[0].toLowerCase()) {
+            rawHeaders.splice(index, 1);
+          }
+        }
+      }
+      return Reflect.apply(target, thisArg, args);
+    }
+  });
+  Object.defineProperty(globalThis, "Request", {
+    enumerable: true,
+    writable: true,
+    value: new Proxy(Request, {
+      construct(target, args, newTarget) {
+        const request = Reflect.construct(target, args, newTarget);
+        const inferredRawHeaders = [];
+        if (typeof args[0] === "object" && args[0].headers != null) {
+          inferredRawHeaders.push(...inferRawHeaders(args[0].headers));
+        }
+        if (typeof args[1] === "object" && args[1].headers != null) {
+          inferredRawHeaders.push(...inferRawHeaders(args[1].headers));
+        }
+        if (inferredRawHeaders.length > 0) {
+          ensureRawHeadersSymbol(request.headers, inferredRawHeaders);
+        }
+        return request;
+      }
+    })
+  });
+  Object.defineProperty(globalThis, "Response", {
+    enumerable: true,
+    writable: true,
+    value: new Proxy(Response, {
+      construct(target, args, newTarget) {
+        const response = Reflect.construct(target, args, newTarget);
+        if (typeof args[1] === "object" && args[1].headers != null) {
+          ensureRawHeadersSymbol(
+            response.headers,
+            inferRawHeaders(args[1].headers)
+          );
+        }
+        return response;
+      }
+    })
+  });
+}
+function restoreHeadersPrototype() {
+  if (!Reflect.get(Headers, kRestorePatches)) {
+    return;
+  }
+  Reflect.get(Headers, kRestorePatches)();
+}
+function getRawFetchHeaders(headers) {
+  if (!Reflect.has(headers, kRawHeaders)) {
+    return Array.from(headers.entries());
+  }
+  const rawHeaders = Reflect.get(headers, kRawHeaders);
+  return rawHeaders.length > 0 ? rawHeaders : Array.from(headers.entries());
+}
+function inferRawHeaders(headers) {
+  if (headers instanceof Headers) {
+    return Reflect.get(headers, kRawHeaders) || [];
+  }
+  return Reflect.get(new Headers(headers), kRawHeaders);
+}
+
+// src/interceptors/ClientRequest/MockHttpSocket.ts
+var kRequestId = Symbol("kRequestId");
+var MockHttpSocket = class extends MockSocket {
+  constructor(options) {
+    super({
+      write: (chunk, encoding, callback) => {
+        var _a;
+        if (this.socketState !== "passthrough") {
+          this.writeBuffer.push([chunk, encoding, callback]);
+        }
+        if (chunk) {
+          if (this.socketState === "passthrough") {
+            (_a = this.originalSocket) == null ? void 0 : _a.write(chunk, encoding, callback);
+          }
+          this.requestParser.execute(
+            Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, encoding)
+          );
+        }
+      },
+      read: (chunk) => {
+        if (chunk !== null) {
+          this.responseParser.execute(
+            Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+          );
+        }
+      }
+    });
+    this.requestRawHeadersBuffer = [];
+    this.responseRawHeadersBuffer = [];
+    this.writeBuffer = [];
+    this.socketState = "unknown";
+    /**
+     * This callback might be called when the request is "slow":
+     * - Request headers were fragmented across multiple TCP packages;
+     * - Request headers were too large to be processed in a single run
+     * (e.g. more than 30 request headers).
+     * @note This is called before request start.
+     */
+    this.onRequestHeaders = (rawHeaders) => {
+      this.requestRawHeadersBuffer.push(...rawHeaders);
+    };
+    this.onRequestStart = (versionMajor, versionMinor, rawHeaders, _, path, __, ___, ____, shouldKeepAlive) => {
+      var _a;
+      this.shouldKeepAlive = shouldKeepAlive;
+      const url = new URL(path || "", this.baseUrl);
+      const method = ((_a = this.connectionOptions.method) == null ? void 0 : _a.toUpperCase()) || "GET";
+      const headers = _chunkA7U44ARPjs.FetchResponse.parseRawHeaders([
+        ...this.requestRawHeadersBuffer,
+        ...rawHeaders || []
+      ]);
+      this.requestRawHeadersBuffer.length = 0;
+      const canHaveBody = method !== "GET" && method !== "HEAD";
+      if (url.username || url.password) {
+        if (!headers.has("authorization")) {
+          headers.set("authorization", `Basic ${url.username}:${url.password}`);
+        }
+        url.username = "";
+        url.password = "";
+      }
+      this.requestStream = new (0, _stream.Readable)({
+        /**
+         * @note Provide the `read()` method so a `Readable` could be
+         * used as the actual request body (the stream calls "read()").
+         * We control the queue in the onRequestBody/End functions.
+         */
+        read: () => {
+          this.flushWriteBuffer();
+        }
+      });
+      const requestId = _chunkA7U44ARPjs.createRequestId.call(void 0, );
+      this.request = new Request(url, {
+        method,
+        headers,
+        credentials: "same-origin",
+        // @ts-expect-error Undocumented Fetch property.
+        duplex: canHaveBody ? "half" : void 0,
+        body: canHaveBody ? _stream.Readable.toWeb(this.requestStream) : null
+      });
+      Reflect.set(this.request, kRequestId, requestId);
+      _chunkSMXZPJEAjs.setRawRequest.call(void 0, this.request, Reflect.get(this, "_httpMessage"));
+      _chunk4YBV77DGjs.setRawRequestBodyStream.call(void 0, this.request, this.requestStream);
+      if (this.request.headers.has(_chunkA7U44ARPjs.INTERNAL_REQUEST_ID_HEADER_NAME)) {
+        this.passthrough();
+        return;
+      }
+      this.onRequest({
+        requestId,
+        request: this.request,
+        socket: this
+      });
+    };
+    /**
+     * This callback might be called when the response is "slow":
+     * - Response headers were fragmented across multiple TCP packages;
+     * - Response headers were too large to be processed in a single run
+     * (e.g. more than 30 response headers).
+     * @note This is called before response start.
+     */
+    this.onResponseHeaders = (rawHeaders) => {
+      this.responseRawHeadersBuffer.push(...rawHeaders);
+    };
+    this.onResponseStart = (versionMajor, versionMinor, rawHeaders, method, url, status, statusText) => {
+      const headers = _chunkA7U44ARPjs.FetchResponse.parseRawHeaders([
+        ...this.responseRawHeadersBuffer,
+        ...rawHeaders || []
+      ]);
+      this.responseRawHeadersBuffer.length = 0;
+      const response = new (0, _chunkA7U44ARPjs.FetchResponse)(
+        /**
+         * @note The Fetch API response instance exposed to the consumer
+         * is created over the response stream of the HTTP parser. It is NOT
+         * related to the Socket instance. This way, you can read response body
+         * in response listener while the Socket instance delays the emission
+         * of "end" and other events until those response listeners are finished.
+         */
+        _chunkA7U44ARPjs.FetchResponse.isResponseWithBody(status) ? _stream.Readable.toWeb(
+          this.responseStream = new (0, _stream.Readable)({ read() {
+          } })
+        ) : null,
+        {
+          url,
+          status,
+          statusText,
+          headers
+        }
+      );
+      _outvariant.invariant.call(void 0, 
+        this.request,
+        "Failed to handle a response: request does not exist"
+      );
+      _chunkA7U44ARPjs.FetchResponse.setUrl(this.request.url, response);
+      if (this.request.headers.has(_chunkA7U44ARPjs.INTERNAL_REQUEST_ID_HEADER_NAME)) {
+        return;
+      }
+      this.responseListenersPromise = this.onResponse({
+        response,
+        isMockedResponse: this.socketState === "mock",
+        requestId: Reflect.get(this.request, kRequestId),
+        request: this.request,
+        socket: this
+      });
+    };
+    this.connectionOptions = options.connectionOptions;
+    this.createConnection = options.createConnection;
+    this.onRequest = options.onRequest;
+    this.onResponse = options.onResponse;
+    this.baseUrl = baseUrlFromConnectionOptions(this.connectionOptions);
+    this.requestParser = new (0, __http_common.HTTPParser)();
+    this.requestParser.initialize(__http_common.HTTPParser.REQUEST, {});
+    this.requestParser[__http_common.HTTPParser.kOnHeaders] = this.onRequestHeaders.bind(this);
+    this.requestParser[__http_common.HTTPParser.kOnHeadersComplete] = this.onRequestStart.bind(this);
+    this.requestParser[__http_common.HTTPParser.kOnBody] = this.onRequestBody.bind(this);
+    this.requestParser[__http_common.HTTPParser.kOnMessageComplete] = this.onRequestEnd.bind(this);
+    this.responseParser = new (0, __http_common.HTTPParser)();
+    this.responseParser.initialize(__http_common.HTTPParser.RESPONSE, {});
+    this.responseParser[__http_common.HTTPParser.kOnHeaders] = this.onResponseHeaders.bind(this);
+    this.responseParser[__http_common.HTTPParser.kOnHeadersComplete] = this.onResponseStart.bind(this);
+    this.responseParser[__http_common.HTTPParser.kOnBody] = this.onResponseBody.bind(this);
+    this.responseParser[__http_common.HTTPParser.kOnMessageComplete] = this.onResponseEnd.bind(this);
+    this.once("finish", () => this.requestParser.free());
+    if (this.baseUrl.protocol === "https:") {
+      Reflect.set(this, "encrypted", true);
+      Reflect.set(this, "authorized", false);
+      Reflect.set(this, "getProtocol", () => "TLSv1.3");
+      Reflect.set(this, "getSession", () => void 0);
+      Reflect.set(this, "isSessionReused", () => false);
+    }
+  }
+  emit(event, ...args) {
+    const emitEvent = super.emit.bind(this, event, ...args);
+    if (this.responseListenersPromise) {
+      this.responseListenersPromise.finally(emitEvent);
+      return this.listenerCount(event) > 0;
+    }
+    return emitEvent();
+  }
+  destroy(error) {
+    this.responseParser.free();
+    if (error) {
+      this.emit("error", error);
+    }
+    return super.destroy(error);
+  }
+  /**
+   * Establish this Socket connection as-is and pipe
+   * its data/events through this Socket.
+   */
+  passthrough() {
+    this.socketState = "passthrough";
+    if (this.destroyed) {
+      return;
+    }
+    const socket = this.createConnection();
+    this.originalSocket = socket;
+    if ("_handle" in socket) {
+      Object.defineProperty(this, "_handle", {
+        value: socket._handle,
+        enumerable: true,
+        writable: true
+      });
+    }
+    this.once("error", (error) => {
+      socket.destroy(error);
+    });
+    this.address = socket.address.bind(socket);
+    let writeArgs;
+    let headersWritten = false;
+    while (writeArgs = this.writeBuffer.shift()) {
+      if (writeArgs !== void 0) {
+        if (!headersWritten) {
+          const [chunk, encoding, callback] = writeArgs;
+          const chunkString = chunk.toString();
+          const chunkBeforeRequestHeaders = chunkString.slice(
+            0,
+            chunkString.indexOf("\r\n") + 2
+          );
+          const chunkAfterRequestHeaders = chunkString.slice(
+            chunk.indexOf("\r\n\r\n")
+          );
+          const rawRequestHeaders = getRawFetchHeaders(this.request.headers);
+          const requestHeadersString = rawRequestHeaders.filter(([name]) => {
+            return name.toLowerCase() !== _chunkA7U44ARPjs.INTERNAL_REQUEST_ID_HEADER_NAME;
+          }).map(([name, value]) => `${name}: ${value}`).join("\r\n");
+          const headersChunk = `${chunkBeforeRequestHeaders}${requestHeadersString}${chunkAfterRequestHeaders}`;
+          socket.write(headersChunk, encoding, callback);
+          headersWritten = true;
+          continue;
+        }
+        socket.write(...writeArgs);
+      }
+    }
+    if (Reflect.get(socket, "encrypted")) {
+      const tlsProperties = [
+        "encrypted",
+        "authorized",
+        "getProtocol",
+        "getSession",
+        "isSessionReused"
+      ];
+      tlsProperties.forEach((propertyName) => {
+        Object.defineProperty(this, propertyName, {
+          enumerable: true,
+          get: () => {
+            const value = Reflect.get(socket, propertyName);
+            return typeof value === "function" ? value.bind(socket) : value;
+          }
+        });
+      });
+    }
+    socket.on("lookup", (...args) => this.emit("lookup", ...args)).on("connect", () => {
+      this.connecting = socket.connecting;
+      this.emit("connect");
+    }).on("secureConnect", () => this.emit("secureConnect")).on("secure", () => this.emit("secure")).on("session", (session) => this.emit("session", session)).on("ready", () => this.emit("ready")).on("drain", () => this.emit("drain")).on("data", (chunk) => {
+      this.push(chunk);
+    }).on("error", (error) => {
+      Reflect.set(this, "_hadError", Reflect.get(socket, "_hadError"));
+      this.emit("error", error);
+    }).on("resume", () => this.emit("resume")).on("timeout", () => this.emit("timeout")).on("prefinish", () => this.emit("prefinish")).on("finish", () => this.emit("finish")).on("close", (hadError) => this.emit("close", hadError)).on("end", () => this.emit("end"));
+  }
+  /**
+   * Convert the given Fetch API `Response` instance to an
+   * HTTP message and push it to the socket.
+   */
+  async respondWith(response) {
+    var _a;
+    if (this.destroyed) {
+      return;
+    }
+    if (_chunkC2JSMMHYjs.isPropertyAccessible.call(void 0, response, "type") && response.type === "error") {
+      this.errorWith(new TypeError("Network error"));
+      return;
+    }
+    this.mockConnect();
+    this.socketState = "mock";
+    this.flushWriteBuffer();
+    const serverResponse = new (0, _http.ServerResponse)(new (0, _http.IncomingMessage)(this));
+    serverResponse.assignSocket(
+      new MockSocket({
+        write: (chunk, encoding, callback) => {
+          this.push(chunk, encoding);
+          callback == null ? void 0 : callback();
+        },
+        read() {
+        }
+      })
+    );
+    serverResponse.removeHeader("connection");
+    serverResponse.removeHeader("date");
+    const rawResponseHeaders = getRawFetchHeaders(response.headers);
+    serverResponse.writeHead(
+      response.status,
+      response.statusText || _http.STATUS_CODES[response.status],
+      rawResponseHeaders
+    );
+    this.once("error", () => {
+      serverResponse.destroy();
+    });
+    if (response.body) {
+      try {
+        const reader = response.body.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            serverResponse.end();
+            break;
+          }
+          serverResponse.write(value);
+        }
+      } catch (error) {
+        this.respondWith(_chunkC2JSMMHYjs.createServerErrorResponse.call(void 0, error));
+        return;
+      }
+    } else {
+      serverResponse.end();
+    }
+    if (!this.shouldKeepAlive) {
+      this.emit("readable");
+      (_a = this.responseStream) == null ? void 0 : _a.push(null);
+      this.push(null);
+    }
+  }
+  /**
+   * Close this socket connection with the given error.
+   */
+  errorWith(error) {
+    this.destroy(error);
+  }
+  mockConnect() {
+    this.connecting = false;
+    const isIPv6 = _net2.default.isIPv6(this.connectionOptions.hostname) || this.connectionOptions.family === 6;
+    const addressInfo = {
+      address: isIPv6 ? "::1" : "127.0.0.1",
+      family: isIPv6 ? "IPv6" : "IPv4",
+      port: this.connectionOptions.port
+    };
+    this.address = () => addressInfo;
+    this.emit(
+      "lookup",
+      null,
+      addressInfo.address,
+      addressInfo.family === "IPv6" ? 6 : 4,
+      this.connectionOptions.host
+    );
+    this.emit("connect");
+    this.emit("ready");
+    if (this.baseUrl.protocol === "https:") {
+      this.emit("secure");
+      this.emit("secureConnect");
+      this.emit(
+        "session",
+        this.connectionOptions.session || Buffer.from("mock-session-renegotiate")
+      );
+      this.emit("session", Buffer.from("mock-session-resume"));
+    }
+  }
+  flushWriteBuffer() {
+    for (const writeCall of this.writeBuffer) {
+      if (typeof writeCall[2] === "function") {
+        writeCall[2]();
+        writeCall[2] = void 0;
+      }
+    }
+  }
+  onRequestBody(chunk) {
+    _outvariant.invariant.call(void 0, 
+      this.requestStream,
+      "Failed to write to a request stream: stream does not exist"
+    );
+    this.requestStream.push(chunk);
+  }
+  onRequestEnd() {
+    if (this.requestStream) {
+      this.requestStream.push(null);
+    }
+  }
+  onResponseBody(chunk) {
+    _outvariant.invariant.call(void 0, 
+      this.responseStream,
+      "Failed to write to a response stream: stream does not exist"
+    );
+    this.responseStream.push(chunk);
+  }
+  onResponseEnd() {
+    if (this.responseStream) {
+      this.responseStream.push(null);
+    }
+  }
+};
+
+// src/interceptors/ClientRequest/agents.ts
+
+
+var MockAgent = class extends _http2.default.Agent {
+  constructor(options) {
+    super();
+    this.customAgent = options.customAgent;
+    this.onRequest = options.onRequest;
+    this.onResponse = options.onResponse;
+  }
+  createConnection(options, callback) {
+    const createConnection = this.customAgent instanceof _http2.default.Agent ? this.customAgent.createConnection : super.createConnection;
+    const createConnectionOptions = this.customAgent instanceof _http2.default.Agent ? {
+      ...options,
+      ...this.customAgent.options
+    } : options;
+    const socket = new MockHttpSocket({
+      connectionOptions: options,
+      createConnection: createConnection.bind(
+        this.customAgent || this,
+        createConnectionOptions,
+        callback
+      ),
+      onRequest: this.onRequest.bind(this),
+      onResponse: this.onResponse.bind(this)
+    });
+    return socket;
+  }
+};
+var MockHttpsAgent = class extends _https2.default.Agent {
+  constructor(options) {
+    super();
+    this.customAgent = options.customAgent;
+    this.onRequest = options.onRequest;
+    this.onResponse = options.onResponse;
+  }
+  createConnection(options, callback) {
+    const createConnection = this.customAgent instanceof _http2.default.Agent ? this.customAgent.createConnection : super.createConnection;
+    const createConnectionOptions = this.customAgent instanceof _http2.default.Agent ? {
+      ...options,
+      ...this.customAgent.options
+    } : options;
+    const socket = new MockHttpSocket({
+      connectionOptions: options,
+      createConnection: createConnection.bind(
+        this.customAgent || this,
+        createConnectionOptions,
+        callback
+      ),
+      onRequest: this.onRequest.bind(this),
+      onResponse: this.onResponse.bind(this)
+    });
+    return socket;
+  }
+};
+
+// src/interceptors/ClientRequest/utils/normalizeClientRequestArgs.ts
+var _url = __nccwpck_require__(7310);
+
+
+
+
+
+
+
+
+
+
+var _logger = __nccwpck_require__(6911);
+
+// src/utils/getUrlByRequestOptions.ts
+
+
+var logger = new (0, _logger.Logger)("utils getUrlByRequestOptions");
+var DEFAULT_PATH = "/";
+var DEFAULT_PROTOCOL = "http:";
+var DEFAULT_HOSTNAME = "localhost";
+var SSL_PORT = 443;
+function getAgent(options) {
+  return options.agent instanceof _http.Agent ? options.agent : void 0;
+}
+function getProtocolByRequestOptions(options) {
+  var _a;
+  if (options.protocol) {
+    return options.protocol;
+  }
+  const agent = getAgent(options);
+  const agentProtocol = agent == null ? void 0 : agent.protocol;
+  if (agentProtocol) {
+    return agentProtocol;
+  }
+  const port = getPortByRequestOptions(options);
+  const isSecureRequest = options.cert || port === SSL_PORT;
+  return isSecureRequest ? "https:" : ((_a = options.uri) == null ? void 0 : _a.protocol) || DEFAULT_PROTOCOL;
+}
+function getPortByRequestOptions(options) {
+  if (options.port) {
+    return Number(options.port);
+  }
+  const agent = getAgent(options);
+  if (agent == null ? void 0 : agent.options.port) {
+    return Number(agent.options.port);
+  }
+  if (agent == null ? void 0 : agent.defaultPort) {
+    return Number(agent.defaultPort);
+  }
+  return void 0;
+}
+function getAuthByRequestOptions(options) {
+  if (options.auth) {
+    const [username, password] = options.auth.split(":");
+    return { username, password };
+  }
+}
+function isRawIPv6Address(host) {
+  return host.includes(":") && !host.startsWith("[") && !host.endsWith("]");
+}
+function getHostname(options) {
+  let host = options.hostname || options.host;
+  if (host) {
+    if (isRawIPv6Address(host)) {
+      host = `[${host}]`;
+    }
+    return new URL(`http://${host}`).hostname;
+  }
+  return DEFAULT_HOSTNAME;
+}
+function getUrlByRequestOptions(options) {
+  logger.info("request options", options);
+  if (options.uri) {
+    logger.info(
+      'constructing url from explicitly provided "options.uri": %s',
+      options.uri
+    );
+    return new URL(options.uri.href);
+  }
+  logger.info("figuring out url from request options...");
+  const protocol = getProtocolByRequestOptions(options);
+  logger.info("protocol", protocol);
+  const port = getPortByRequestOptions(options);
+  logger.info("port", port);
+  const hostname = getHostname(options);
+  logger.info("hostname", hostname);
+  const path = options.path || DEFAULT_PATH;
+  logger.info("path", path);
+  const credentials = getAuthByRequestOptions(options);
+  logger.info("credentials", credentials);
+  const authString = credentials ? `${credentials.username}:${credentials.password}@` : "";
+  logger.info("auth string:", authString);
+  const portString = typeof port !== "undefined" ? `:${port}` : "";
+  const url = new URL(`${protocol}//${hostname}${portString}${path}`);
+  url.username = (credentials == null ? void 0 : credentials.username) || "";
+  url.password = (credentials == null ? void 0 : credentials.password) || "";
+  logger.info("created url:", url);
+  return url;
+}
+
+// src/utils/cloneObject.ts
+
+var logger2 = new (0, _logger.Logger)("cloneObject");
+function isPlainObject(obj) {
+  var _a;
+  logger2.info("is plain object?", obj);
+  if (obj == null || !((_a = obj.constructor) == null ? void 0 : _a.name)) {
+    logger2.info("given object is undefined, not a plain object...");
+    return false;
+  }
+  logger2.info("checking the object constructor:", obj.constructor.name);
+  return obj.constructor.name === "Object";
+}
+function cloneObject(obj) {
+  logger2.info("cloning object:", obj);
+  const enumerableProperties = Object.entries(obj).reduce(
+    (acc, [key, value]) => {
+      logger2.info("analyzing key-value pair:", key, value);
+      acc[key] = isPlainObject(value) ? cloneObject(value) : value;
+      return acc;
+    },
+    {}
+  );
+  return isPlainObject(obj) ? enumerableProperties : Object.assign(Object.getPrototypeOf(obj), enumerableProperties);
+}
+
+// src/interceptors/ClientRequest/utils/normalizeClientRequestArgs.ts
+var logger3 = new (0, _logger.Logger)("http normalizeClientRequestArgs");
+function resolveRequestOptions(args, url) {
+  if (typeof args[1] === "undefined" || typeof args[1] === "function") {
+    logger3.info("request options not provided, deriving from the url", url);
+    return _url.urlToHttpOptions.call(void 0, url);
+  }
+  if (args[1]) {
+    logger3.info("has custom RequestOptions!", args[1]);
+    const requestOptionsFromUrl = _url.urlToHttpOptions.call(void 0, url);
+    logger3.info("derived RequestOptions from the URL:", requestOptionsFromUrl);
+    logger3.info("cloning RequestOptions...");
+    const clonedRequestOptions = cloneObject(args[1]);
+    logger3.info("successfully cloned RequestOptions!", clonedRequestOptions);
+    return {
+      ...requestOptionsFromUrl,
+      ...clonedRequestOptions
+    };
+  }
+  logger3.info("using an empty object as request options");
+  return {};
+}
+function overrideUrlByRequestOptions(url, options) {
+  url.host = options.host || url.host;
+  url.hostname = options.hostname || url.hostname;
+  url.port = options.port ? options.port.toString() : url.port;
+  if (options.path) {
+    const parsedOptionsPath = _url.parse.call(void 0, options.path, false);
+    url.pathname = parsedOptionsPath.pathname || "";
+    url.search = parsedOptionsPath.search || "";
+  }
+  return url;
+}
+function resolveCallback(args) {
+  return typeof args[1] === "function" ? args[1] : args[2];
+}
+function normalizeClientRequestArgs(defaultProtocol, args) {
+  let url;
+  let options;
+  let callback;
+  logger3.info("arguments", args);
+  logger3.info("using default protocol:", defaultProtocol);
+  if (args.length === 0) {
+    const url2 = new (0, _url.URL)("http://localhost");
+    const options2 = resolveRequestOptions(args, url2);
+    return [url2, options2];
+  }
+  if (typeof args[0] === "string") {
+    logger3.info("first argument is a location string:", args[0]);
+    url = new (0, _url.URL)(args[0]);
+    logger3.info("created a url:", url);
+    const requestOptionsFromUrl = _url.urlToHttpOptions.call(void 0, url);
+    logger3.info("request options from url:", requestOptionsFromUrl);
+    options = resolveRequestOptions(args, url);
+    logger3.info("resolved request options:", options);
+    callback = resolveCallback(args);
+  } else if (args[0] instanceof _url.URL) {
+    url = args[0];
+    logger3.info("first argument is a URL:", url);
+    if (typeof args[1] !== "undefined" && _chunkC2JSMMHYjs.isObject.call(void 0, args[1])) {
+      url = overrideUrlByRequestOptions(url, args[1]);
+    }
+    options = resolveRequestOptions(args, url);
+    logger3.info("derived request options:", options);
+    callback = resolveCallback(args);
+  } else if ("hash" in args[0] && !("method" in args[0])) {
+    const [legacyUrl] = args;
+    logger3.info("first argument is a legacy URL:", legacyUrl);
+    if (legacyUrl.hostname === null) {
+      logger3.info("given legacy URL is relative (no hostname)");
+      return _chunkC2JSMMHYjs.isObject.call(void 0, args[1]) ? normalizeClientRequestArgs(defaultProtocol, [
+        { path: legacyUrl.path, ...args[1] },
+        args[2]
+      ]) : normalizeClientRequestArgs(defaultProtocol, [
+        { path: legacyUrl.path },
+        args[1]
+      ]);
+    }
+    logger3.info("given legacy url is absolute");
+    const resolvedUrl = new (0, _url.URL)(legacyUrl.href);
+    return args[1] === void 0 ? normalizeClientRequestArgs(defaultProtocol, [resolvedUrl]) : typeof args[1] === "function" ? normalizeClientRequestArgs(defaultProtocol, [resolvedUrl, args[1]]) : normalizeClientRequestArgs(defaultProtocol, [
+      resolvedUrl,
+      args[1],
+      args[2]
+    ]);
+  } else if (_chunkC2JSMMHYjs.isObject.call(void 0, args[0])) {
+    options = { ...args[0] };
+    logger3.info("first argument is RequestOptions:", options);
+    options.protocol = options.protocol || defaultProtocol;
+    logger3.info("normalized request options:", options);
+    url = getUrlByRequestOptions(options);
+    logger3.info("created a URL from RequestOptions:", url.href);
+    callback = resolveCallback(args);
+  } else {
+    throw new Error(
+      `Failed to construct ClientRequest with these parameters: ${args}`
+    );
+  }
+  options.protocol = options.protocol || url.protocol;
+  options.method = options.method || "GET";
+  if (!options._defaultAgent) {
+    logger3.info(
+      'has no default agent, setting the default agent for "%s"',
+      options.protocol
+    );
+    options._defaultAgent = options.protocol === "https:" ? _https.globalAgent : _http.globalAgent;
+  }
+  logger3.info("successfully resolved url:", url.href);
+  logger3.info("successfully resolved options:", options);
+  logger3.info("successfully resolved callback:", callback);
+  if (!(url instanceof _url.URL)) {
+    url = url.toString();
+  }
+  return [url, options, callback];
+}
+
+// src/interceptors/ClientRequest/index.ts
+var _ClientRequestInterceptor = class extends _chunkA7U44ARPjs.Interceptor {
+  constructor() {
+    super(_ClientRequestInterceptor.symbol);
+    this.onRequest = async ({
+      request,
+      socket
+    }) => {
+      const requestId = Reflect.get(request, kRequestId);
+      const controller = new (0, _chunkC2JSMMHYjs.RequestController)(request);
+      const isRequestHandled = await _chunkC2JSMMHYjs.handleRequest.call(void 0, {
+        request,
+        requestId,
+        controller,
+        emitter: this.emitter,
+        onResponse: (response) => {
+          socket.respondWith(response);
+        },
+        onRequestError: (response) => {
+          socket.respondWith(response);
+        },
+        onError: (error) => {
+          if (error instanceof Error) {
+            socket.errorWith(error);
+          }
+        }
+      });
+      if (!isRequestHandled) {
+        return socket.passthrough();
+      }
+    };
+    this.onResponse = async ({
+      requestId,
+      request,
+      response,
+      isMockedResponse
+    }) => {
+      return _chunkC2JSMMHYjs.emitAsync.call(void 0, this.emitter, "response", {
+        requestId,
+        request,
+        response,
+        isMockedResponse
+      });
+    };
+  }
+  setup() {
+    const {
+      ClientRequest: OriginalClientRequest,
+      get: originalGet,
+      request: originalRequest
+    } = _http2.default;
+    const { get: originalHttpsGet, request: originalHttpsRequest } = _https2.default;
+    const onRequest = this.onRequest.bind(this);
+    const onResponse = this.onResponse.bind(this);
+    _http2.default.ClientRequest = new Proxy(_http2.default.ClientRequest, {
+      construct: (target, args) => {
+        const [url, options, callback] = normalizeClientRequestArgs(
+          "http:",
+          args
+        );
+        const Agent2 = options.protocol === "https:" ? MockHttpsAgent : MockAgent;
+        const mockAgent = new Agent2({
+          customAgent: options.agent,
+          onRequest,
+          onResponse
+        });
+        options.agent = mockAgent;
+        return Reflect.construct(target, [url, options, callback]);
+      }
+    });
+    _http2.default.request = new Proxy(_http2.default.request, {
+      apply: (target, thisArg, args) => {
+        const [url, options, callback] = normalizeClientRequestArgs(
+          "http:",
+          args
+        );
+        const mockAgent = new MockAgent({
+          customAgent: options.agent,
+          onRequest,
+          onResponse
+        });
+        options.agent = mockAgent;
+        return Reflect.apply(target, thisArg, [url, options, callback]);
+      }
+    });
+    _http2.default.get = new Proxy(_http2.default.get, {
+      apply: (target, thisArg, args) => {
+        const [url, options, callback] = normalizeClientRequestArgs(
+          "http:",
+          args
+        );
+        const mockAgent = new MockAgent({
+          customAgent: options.agent,
+          onRequest,
+          onResponse
+        });
+        options.agent = mockAgent;
+        return Reflect.apply(target, thisArg, [url, options, callback]);
+      }
+    });
+    _https2.default.request = new Proxy(_https2.default.request, {
+      apply: (target, thisArg, args) => {
+        const [url, options, callback] = normalizeClientRequestArgs(
+          "https:",
+          args
+        );
+        const mockAgent = new MockHttpsAgent({
+          customAgent: options.agent,
+          onRequest,
+          onResponse
+        });
+        options.agent = mockAgent;
+        return Reflect.apply(target, thisArg, [url, options, callback]);
+      }
+    });
+    _https2.default.get = new Proxy(_https2.default.get, {
+      apply: (target, thisArg, args) => {
+        const [url, options, callback] = normalizeClientRequestArgs(
+          "https:",
+          args
+        );
+        const mockAgent = new MockHttpsAgent({
+          customAgent: options.agent,
+          onRequest,
+          onResponse
+        });
+        options.agent = mockAgent;
+        return Reflect.apply(target, thisArg, [url, options, callback]);
+      }
+    });
+    recordRawFetchHeaders();
+    this.subscriptions.push(() => {
+      _http2.default.ClientRequest = OriginalClientRequest;
+      _http2.default.get = originalGet;
+      _http2.default.request = originalRequest;
+      _https2.default.get = originalHttpsGet;
+      _https2.default.request = originalHttpsRequest;
+      restoreHeadersPrototype();
+    });
+  }
+};
+var ClientRequestInterceptor = _ClientRequestInterceptor;
+ClientRequestInterceptor.symbol = Symbol("client-request-interceptor");
+
+
+
+exports.ClientRequestInterceptor = ClientRequestInterceptor;
+//# sourceMappingURL=chunk-ATZKM2BZ.js.map
+
+/***/ }),
+
+/***/ 8329:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+Object.defineProperty(exports, "__esModule", ({value: true}));// src/RequestController.ts
+var _outvariant = __nccwpck_require__(1183);
+var _deferredpromise = __nccwpck_require__(4681);
+
+// src/InterceptorError.ts
+var InterceptorError = class extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "InterceptorError";
+    Object.setPrototypeOf(this, InterceptorError.prototype);
+  }
+};
+
+// src/RequestController.ts
+var kRequestHandled = Symbol("kRequestHandled");
+var kResponsePromise = Symbol("kResponsePromise");
+var RequestController = class {
+  constructor(request) {
+    this.request = request;
+    this[kRequestHandled] = false;
+    this[kResponsePromise] = new (0, _deferredpromise.DeferredPromise)();
+  }
+  /**
+   * Respond to this request with the given `Response` instance.
+   * @example
+   * controller.respondWith(new Response())
+   * controller.respondWith(Response.json({ id }))
+   * controller.respondWith(Response.error())
+   */
+  respondWith(response) {
+    _outvariant.invariant.as(
+      InterceptorError,
+      !this[kRequestHandled],
+      'Failed to respond to the "%s %s" request: the "request" event has already been handled.',
+      this.request.method,
+      this.request.url
+    );
+    this[kRequestHandled] = true;
+    this[kResponsePromise].resolve(response);
+  }
+  /**
+   * Error this request with the given reason.
+   *
+   * @example
+   * controller.errorWith()
+   * controller.errorWith(new Error('Oops!'))
+   * controller.errorWith({ message: 'Oops!'})
+   */
+  errorWith(reason) {
+    _outvariant.invariant.as(
+      InterceptorError,
+      !this[kRequestHandled],
+      'Failed to error the "%s %s" request: the "request" event has already been handled.',
+      this.request.method,
+      this.request.url
+    );
+    this[kRequestHandled] = true;
+    this[kResponsePromise].resolve(reason);
+  }
+};
+kResponsePromise, kRequestHandled;
+
+// src/utils/emitAsync.ts
+async function emitAsync(emitter, eventName, ...data) {
+  const listners = emitter.listeners(eventName);
+  if (listners.length === 0) {
+    return;
+  }
+  for (const listener of listners) {
+    await listener.apply(emitter, data);
+  }
+}
+
+// src/utils/handleRequest.ts
+
+var _until = __nccwpck_require__(8309);
+
+// src/utils/isObject.ts
+function isObject(value, loose = false) {
+  return loose ? Object.prototype.toString.call(value).startsWith("[object ") : Object.prototype.toString.call(value) === "[object Object]";
+}
+
+// src/utils/isPropertyAccessible.ts
+function isPropertyAccessible(obj, key) {
+  try {
+    obj[key];
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// src/utils/responseUtils.ts
+function createServerErrorResponse(body) {
+  return new Response(
+    JSON.stringify(
+      body instanceof Error ? {
+        name: body.name,
+        message: body.message,
+        stack: body.stack
+      } : body
+    ),
+    {
+      status: 500,
+      statusText: "Unhandled Exception",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    }
+  );
+}
+function isResponseError(response) {
+  return response != null && response instanceof Response && isPropertyAccessible(response, "type") && response.type === "error";
+}
+function isResponseLike(value) {
+  return isObject(value, true) && isPropertyAccessible(value, "status") && isPropertyAccessible(value, "statusText") && isPropertyAccessible(value, "bodyUsed");
+}
+
+// src/utils/isNodeLikeError.ts
+function isNodeLikeError(error) {
+  if (error == null) {
+    return false;
+  }
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return "code" in error && "errno" in error;
+}
+
+// src/utils/handleRequest.ts
+async function handleRequest(options) {
+  const handleResponse = async (response) => {
+    if (response instanceof Error) {
+      options.onError(response);
+      return true;
+    }
+    if (isResponseError(response)) {
+      options.onRequestError(response);
+      return true;
+    }
+    if (isResponseLike(response)) {
+      await options.onResponse(response);
+      return true;
+    }
+    if (isObject(response)) {
+      options.onError(response);
+      return true;
+    }
+    return false;
+  };
+  const handleResponseError = async (error) => {
+    if (error instanceof InterceptorError) {
+      throw result.error;
+    }
+    if (isNodeLikeError(error)) {
+      options.onError(error);
+      return true;
+    }
+    if (error instanceof Response) {
+      return await handleResponse(error);
+    }
+    return false;
+  };
+  options.emitter.once("request", ({ requestId: pendingRequestId }) => {
+    if (pendingRequestId !== options.requestId) {
+      return;
+    }
+    if (options.controller[kResponsePromise].state === "pending") {
+      options.controller[kResponsePromise].resolve(void 0);
+    }
+  });
+  const requestAbortPromise = new (0, _deferredpromise.DeferredPromise)();
+  if (options.request.signal) {
+    if (options.request.signal.aborted) {
+      requestAbortPromise.reject(options.request.signal.reason);
+    } else {
+      options.request.signal.addEventListener(
+        "abort",
+        () => {
+          requestAbortPromise.reject(options.request.signal.reason);
+        },
+        { once: true }
+      );
+    }
+  }
+  const result = await _until.until.call(void 0, async () => {
+    const requestListenersPromise = emitAsync(options.emitter, "request", {
+      requestId: options.requestId,
+      request: options.request,
+      controller: options.controller
+    });
+    await Promise.race([
+      // Short-circuit the request handling promise if the request gets aborted.
+      requestAbortPromise,
+      requestListenersPromise,
+      options.controller[kResponsePromise]
+    ]);
+    return await options.controller[kResponsePromise];
+  });
+  if (requestAbortPromise.state === "rejected") {
+    options.onError(requestAbortPromise.rejectionReason);
+    return true;
+  }
+  if (result.error) {
+    if (await handleResponseError(result.error)) {
+      return true;
+    }
+    if (options.emitter.listenerCount("unhandledException") > 0) {
+      const unhandledExceptionController = new RequestController(
+        options.request
+      );
+      await emitAsync(options.emitter, "unhandledException", {
+        error: result.error,
+        request: options.request,
+        requestId: options.requestId,
+        controller: unhandledExceptionController
+      }).then(() => {
+        if (unhandledExceptionController[kResponsePromise].state === "pending") {
+          unhandledExceptionController[kResponsePromise].resolve(void 0);
+        }
+      });
+      const nextResult = await _until.until.call(void 0, 
+        () => unhandledExceptionController[kResponsePromise]
+      );
+      if (nextResult.error) {
+        return handleResponseError(nextResult.error);
+      }
+      if (nextResult.data) {
+        return handleResponse(nextResult.data);
+      }
+    }
+    options.onResponse(createServerErrorResponse(result.error));
+    return true;
+  }
+  if (result.data) {
+    return handleResponse(result.data);
+  }
+  return false;
+}
+
+
+
+
+
+
+
+
+exports.isPropertyAccessible = isPropertyAccessible; exports.isObject = isObject; exports.createServerErrorResponse = createServerErrorResponse; exports.RequestController = RequestController; exports.emitAsync = emitAsync; exports.handleRequest = handleRequest;
+//# sourceMappingURL=chunk-C2JSMMHY.js.map
+
+/***/ }),
+
+/***/ 1024:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+Object.defineProperty(exports, "__esModule", ({value: true}));// src/utils/bufferUtils.ts
+var encoder = new TextEncoder();
+function encodeBuffer(text) {
+  return encoder.encode(text);
+}
+function decodeBuffer(buffer, encoding) {
+  const decoder = new TextDecoder(encoding);
+  return decoder.decode(buffer);
+}
+function toArrayBuffer(array) {
+  return array.buffer.slice(
+    array.byteOffset,
+    array.byteOffset + array.byteLength
+  );
+}
+
+
+
+
+
+exports.encodeBuffer = encodeBuffer; exports.decodeBuffer = decodeBuffer; exports.toArrayBuffer = toArrayBuffer;
+//# sourceMappingURL=chunk-LK6DILFK.js.map
+
+/***/ }),
+
+/***/ 8831:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+Object.defineProperty(exports, "__esModule", ({value: true}));// src/utils/hasConfigurableGlobal.ts
+function hasConfigurableGlobal(propertyName) {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, propertyName);
+  if (typeof descriptor === "undefined") {
+    return false;
+  }
+  if (typeof descriptor.get === "function" && typeof descriptor.get() === "undefined") {
+    return false;
+  }
+  if (typeof descriptor.get === "undefined" && descriptor.value == null) {
+    return false;
+  }
+  if (typeof descriptor.set === "undefined" && !descriptor.configurable) {
+    console.error(
+      `[MSW] Failed to apply interceptor: the global \`${propertyName}\` property is non-configurable. This is likely an issue with your environment. If you are using a framework, please open an issue about this in their repository.`
+    );
+    return false;
+  }
+  return true;
+}
+
+
+
+exports.hasConfigurableGlobal = hasConfigurableGlobal;
+//# sourceMappingURL=chunk-PFGO5BSM.js.map
+
+/***/ }),
+
+/***/ 7924:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+Object.defineProperty(exports, "__esModule", ({value: true}));
+
+var _chunkA7U44ARPjs = __nccwpck_require__(2166);
+
+// src/BatchInterceptor.ts
+var BatchInterceptor = class extends _chunkA7U44ARPjs.Interceptor {
+  constructor(options) {
+    BatchInterceptor.symbol = Symbol(options.name);
+    super(BatchInterceptor.symbol);
+    this.interceptors = options.interceptors;
+  }
+  setup() {
+    const logger = this.logger.extend("setup");
+    logger.info("applying all %d interceptors...", this.interceptors.length);
+    for (const interceptor of this.interceptors) {
+      logger.info('applying "%s" interceptor...', interceptor.constructor.name);
+      interceptor.apply();
+      logger.info("adding interceptor dispose subscription");
+      this.subscriptions.push(() => interceptor.dispose());
+    }
+  }
+  on(event, listener) {
+    for (const interceptor of this.interceptors) {
+      interceptor.on(event, listener);
+    }
+    return this;
+  }
+  once(event, listener) {
+    for (const interceptor of this.interceptors) {
+      interceptor.once(event, listener);
+    }
+    return this;
+  }
+  off(event, listener) {
+    for (const interceptor of this.interceptors) {
+      interceptor.off(event, listener);
+    }
+    return this;
+  }
+  removeAllListeners(event) {
+    for (const interceptors of this.interceptors) {
+      interceptors.removeAllListeners(event);
+    }
+    return this;
+  }
+};
+
+
+
+exports.BatchInterceptor = BatchInterceptor;
+//# sourceMappingURL=chunk-R6JVCM7X.js.map
+
+/***/ }),
+
+/***/ 3116:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+Object.defineProperty(exports, "__esModule", ({value: true}));// src/getRawRequest.ts
+var kRawRequest = Symbol("kRawRequest");
+function getRawRequest(request) {
+  return Reflect.get(request, kRawRequest);
+}
+function setRawRequest(request, rawRequest) {
+  Reflect.set(request, kRawRequest, rawRequest);
+}
+
+
+
+
+exports.getRawRequest = getRawRequest; exports.setRawRequest = setRawRequest;
+//# sourceMappingURL=chunk-SMXZPJEA.js.map
+
+/***/ }),
+
+/***/ 4621:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+Object.defineProperty(exports, "__esModule", ({value: true})); function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var _chunkPFGO5BSMjs = __nccwpck_require__(8831);
+
+
+var _chunk73NOP3T5js = __nccwpck_require__(5883);
+
+
+
+
+var _chunkC2JSMMHYjs = __nccwpck_require__(8329);
+
+
+
+
+
+var _chunkA7U44ARPjs = __nccwpck_require__(2166);
+
+
+var _chunkSMXZPJEAjs = __nccwpck_require__(3116);
+
+// src/interceptors/fetch/index.ts
+var _outvariant = __nccwpck_require__(1183);
+var _deferredpromise = __nccwpck_require__(4681);
+
+// src/interceptors/fetch/utils/createNetworkError.ts
+function createNetworkError(cause) {
+  return Object.assign(new TypeError("Failed to fetch"), {
+    cause
+  });
+}
+
+// src/interceptors/fetch/utils/followRedirect.ts
+var REQUEST_BODY_HEADERS = [
+  "content-encoding",
+  "content-language",
+  "content-location",
+  "content-type",
+  "content-length"
+];
+var kRedirectCount = Symbol("kRedirectCount");
+async function followFetchRedirect(request, response) {
+  if (response.status !== 303 && request.body != null) {
+    return Promise.reject(createNetworkError());
+  }
+  const requestUrl = new URL(request.url);
+  let locationUrl;
+  try {
+    locationUrl = new URL(response.headers.get("location"), request.url);
+  } catch (error) {
+    return Promise.reject(createNetworkError(error));
+  }
+  if (!(locationUrl.protocol === "http:" || locationUrl.protocol === "https:")) {
+    return Promise.reject(
+      createNetworkError("URL scheme must be a HTTP(S) scheme")
+    );
+  }
+  if (Reflect.get(request, kRedirectCount) > 20) {
+    return Promise.reject(createNetworkError("redirect count exceeded"));
+  }
+  Object.defineProperty(request, kRedirectCount, {
+    value: (Reflect.get(request, kRedirectCount) || 0) + 1
+  });
+  if (request.mode === "cors" && (locationUrl.username || locationUrl.password) && !sameOrigin(requestUrl, locationUrl)) {
+    return Promise.reject(
+      createNetworkError('cross origin not allowed for request mode "cors"')
+    );
+  }
+  const requestInit = {};
+  if ([301, 302].includes(response.status) && request.method === "POST" || response.status === 303 && !["HEAD", "GET"].includes(request.method)) {
+    requestInit.method = "GET";
+    requestInit.body = null;
+    REQUEST_BODY_HEADERS.forEach((headerName) => {
+      request.headers.delete(headerName);
+    });
+  }
+  if (!sameOrigin(requestUrl, locationUrl)) {
+    request.headers.delete("authorization");
+    request.headers.delete("proxy-authorization");
+    request.headers.delete("cookie");
+    request.headers.delete("host");
+  }
+  requestInit.headers = request.headers;
+  return fetch(new Request(locationUrl, requestInit));
+}
+function sameOrigin(left, right) {
+  if (left.origin === right.origin && left.origin === "null") {
+    return true;
+  }
+  if (left.protocol === right.protocol && left.hostname === right.hostname && left.port === right.port) {
+    return true;
+  }
+  return false;
+}
+
+// src/interceptors/fetch/utils/brotli-decompress.ts
+var _zlib = __nccwpck_require__(9796); var _zlib2 = _interopRequireDefault(_zlib);
+var BrotliDecompressionStream = class extends TransformStream {
+  constructor() {
+    const decompress = _zlib2.default.createBrotliDecompress({
+      flush: _zlib2.default.constants.BROTLI_OPERATION_FLUSH,
+      finishFlush: _zlib2.default.constants.BROTLI_OPERATION_FLUSH
+    });
+    super({
+      async transform(chunk, controller) {
+        const buffer = Buffer.from(chunk);
+        const decompressed = await new Promise((resolve, reject) => {
+          decompress.write(buffer, (error) => {
+            if (error)
+              reject(error);
+          });
+          decompress.flush();
+          decompress.once("data", (data) => resolve(data));
+          decompress.once("error", (error) => reject(error));
+          decompress.once("end", () => controller.terminate());
+        }).catch((error) => {
+          controller.error(error);
+        });
+        controller.enqueue(decompressed);
+      }
+    });
+  }
+};
+
+// src/interceptors/fetch/utils/decompression.ts
+var PipelineStream = class extends TransformStream {
+  constructor(transformStreams, ...strategies) {
+    super({}, ...strategies);
+    const readable = [super.readable, ...transformStreams].reduce(
+      (readable2, transform) => readable2.pipeThrough(transform)
+    );
+    Object.defineProperty(this, "readable", {
+      get() {
+        return readable;
+      }
+    });
+  }
+};
+function parseContentEncoding(contentEncoding) {
+  return contentEncoding.toLowerCase().split(",").map((coding) => coding.trim());
+}
+function createDecompressionStream(contentEncoding) {
+  if (contentEncoding === "") {
+    return null;
+  }
+  const codings = parseContentEncoding(contentEncoding);
+  if (codings.length === 0) {
+    return null;
+  }
+  const transformers = codings.reduceRight(
+    (transformers2, coding) => {
+      if (coding === "gzip" || coding === "x-gzip") {
+        return transformers2.concat(new DecompressionStream("gzip"));
+      } else if (coding === "deflate") {
+        return transformers2.concat(new DecompressionStream("deflate"));
+      } else if (coding === "br") {
+        return transformers2.concat(new BrotliDecompressionStream());
+      } else {
+        transformers2.length = 0;
+      }
+      return transformers2;
+    },
+    []
+  );
+  return new PipelineStream(transformers);
+}
+function decompressResponse(response) {
+  if (response.body === null) {
+    return null;
+  }
+  const decompressionStream = createDecompressionStream(
+    response.headers.get("content-encoding") || ""
+  );
+  if (!decompressionStream) {
+    return null;
+  }
+  response.body.pipeTo(decompressionStream.writable);
+  return decompressionStream.readable;
+}
+
+// src/interceptors/fetch/index.ts
+var _FetchInterceptor = class extends _chunkA7U44ARPjs.Interceptor {
+  constructor() {
+    super(_FetchInterceptor.symbol);
+  }
+  checkEnvironment() {
+    return _chunkPFGO5BSMjs.hasConfigurableGlobal.call(void 0, "fetch");
+  }
+  async setup() {
+    const pureFetch = globalThis.fetch;
+    _outvariant.invariant.call(void 0, 
+      !pureFetch[_chunk73NOP3T5js.IS_PATCHED_MODULE],
+      'Failed to patch the "fetch" module: already patched.'
+    );
+    globalThis.fetch = async (input, init) => {
+      const requestId = _chunkA7U44ARPjs.createRequestId.call(void 0, );
+      const resolvedInput = typeof input === "string" && typeof location !== "undefined" && !_chunkA7U44ARPjs.canParseUrl.call(void 0, input) ? new URL(input, location.href) : input;
+      const request = new Request(resolvedInput, init);
+      if (input instanceof Request) {
+        _chunkSMXZPJEAjs.setRawRequest.call(void 0, request, input);
+      }
+      const responsePromise = new (0, _deferredpromise.DeferredPromise)();
+      const controller = new (0, _chunkC2JSMMHYjs.RequestController)(request);
+      this.logger.info("[%s] %s", request.method, request.url);
+      this.logger.info("awaiting for the mocked response...");
+      this.logger.info(
+        'emitting the "request" event for %s listener(s)...',
+        this.emitter.listenerCount("request")
+      );
+      const isRequestHandled = await _chunkC2JSMMHYjs.handleRequest.call(void 0, {
+        request,
+        requestId,
+        emitter: this.emitter,
+        controller,
+        onResponse: async (rawResponse) => {
+          this.logger.info("received mocked response!", {
+            rawResponse
+          });
+          const decompressedStream = decompressResponse(rawResponse);
+          const response = decompressedStream === null ? rawResponse : new (0, _chunkA7U44ARPjs.FetchResponse)(decompressedStream, rawResponse);
+          _chunkA7U44ARPjs.FetchResponse.setUrl(request.url, response);
+          if (_chunkA7U44ARPjs.FetchResponse.isRedirectResponse(response.status)) {
+            if (request.redirect === "error") {
+              responsePromise.reject(createNetworkError("unexpected redirect"));
+              return;
+            }
+            if (request.redirect === "follow") {
+              followFetchRedirect(request, response).then(
+                (response2) => {
+                  responsePromise.resolve(response2);
+                },
+                (reason) => {
+                  responsePromise.reject(reason);
+                }
+              );
+              return;
+            }
+          }
+          if (this.emitter.listenerCount("response") > 0) {
+            this.logger.info('emitting the "response" event...');
+            await _chunkC2JSMMHYjs.emitAsync.call(void 0, this.emitter, "response", {
+              // Clone the mocked response for the "response" event listener.
+              // This way, the listener can read the response and not lock its body
+              // for the actual fetch consumer.
+              response: response.clone(),
+              isMockedResponse: true,
+              request,
+              requestId
+            });
+          }
+          responsePromise.resolve(response);
+        },
+        onRequestError: (response) => {
+          this.logger.info("request has errored!", { response });
+          responsePromise.reject(createNetworkError(response));
+        },
+        onError: (error) => {
+          this.logger.info("request has been aborted!", { error });
+          responsePromise.reject(error);
+        }
+      });
+      if (isRequestHandled) {
+        this.logger.info("request has been handled, returning mock promise...");
+        return responsePromise;
+      }
+      this.logger.info(
+        "no mocked response received, performing request as-is..."
+      );
+      const requestCloneForResponseEvent = request.clone();
+      return pureFetch(request).then(async (response) => {
+        this.logger.info("original fetch performed", response);
+        if (this.emitter.listenerCount("response") > 0) {
+          this.logger.info('emitting the "response" event...');
+          const responseClone = response.clone();
+          await _chunkC2JSMMHYjs.emitAsync.call(void 0, this.emitter, "response", {
+            response: responseClone,
+            isMockedResponse: false,
+            request: requestCloneForResponseEvent,
+            requestId
+          });
+        }
+        return response;
+      });
+    };
+    Object.defineProperty(globalThis.fetch, _chunk73NOP3T5js.IS_PATCHED_MODULE, {
+      enumerable: true,
+      configurable: true,
+      value: true
+    });
+    this.subscriptions.push(() => {
+      Object.defineProperty(globalThis.fetch, _chunk73NOP3T5js.IS_PATCHED_MODULE, {
+        value: void 0
+      });
+      globalThis.fetch = pureFetch;
+      this.logger.info(
+        'restored native "globalThis.fetch"!',
+        globalThis.fetch.name
+      );
+    });
+  }
+};
+var FetchInterceptor = _FetchInterceptor;
+FetchInterceptor.symbol = Symbol("fetch");
+
+
+
+exports.FetchInterceptor = FetchInterceptor;
+//# sourceMappingURL=chunk-YAIEISAR.js.map
+
+/***/ }),
+
+/***/ 4947:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+Object.defineProperty(exports, "__esModule", ({value: true}));
+
+var _chunkR6JVCM7Xjs = __nccwpck_require__(7924);
+
+
+
+var _chunkLK6DILFKjs = __nccwpck_require__(1024);
+
+
+var _chunk73NOP3T5js = __nccwpck_require__(5883);
+
+
+
+
+
+
+
+
+var _chunkA7U44ARPjs = __nccwpck_require__(2166);
+
+
+var _chunkSMXZPJEAjs = __nccwpck_require__(3116);
+
+// src/utils/getCleanUrl.ts
+function getCleanUrl(url, isAbsolute = true) {
+  return [isAbsolute && url.origin, url.pathname].filter(Boolean).join("");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+exports.BatchInterceptor = _chunkR6JVCM7Xjs.BatchInterceptor; exports.FetchResponse = _chunkA7U44ARPjs.FetchResponse; exports.INTERNAL_REQUEST_ID_HEADER_NAME = _chunkA7U44ARPjs.INTERNAL_REQUEST_ID_HEADER_NAME; exports.IS_PATCHED_MODULE = _chunk73NOP3T5js.IS_PATCHED_MODULE; exports.Interceptor = _chunkA7U44ARPjs.Interceptor; exports.InterceptorReadyState = _chunkA7U44ARPjs.InterceptorReadyState; exports.createRequestId = _chunkA7U44ARPjs.createRequestId; exports.decodeBuffer = _chunkLK6DILFKjs.decodeBuffer; exports.deleteGlobalSymbol = _chunkA7U44ARPjs.deleteGlobalSymbol; exports.encodeBuffer = _chunkLK6DILFKjs.encodeBuffer; exports.getCleanUrl = getCleanUrl; exports.getGlobalSymbol = _chunkA7U44ARPjs.getGlobalSymbol; exports.getRawRequest = _chunkSMXZPJEAjs.getRawRequest;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 7883:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+Object.defineProperty(exports, "__esModule", ({value: true}));
+
+var _chunkATZKM2BZjs = __nccwpck_require__(8049);
+__nccwpck_require__(6755);
+
+
+var _chunk4WG2AM2Tjs = __nccwpck_require__(2919);
+__nccwpck_require__(1024);
+
+
+var _chunkYAIEISARjs = __nccwpck_require__(4621);
+__nccwpck_require__(8831);
+__nccwpck_require__(5883);
+__nccwpck_require__(8329);
+__nccwpck_require__(2166);
+__nccwpck_require__(3116);
+
+// src/presets/node.ts
+var node_default = [
+  new (0, _chunkATZKM2BZjs.ClientRequestInterceptor)(),
+  new (0, _chunk4WG2AM2Tjs.XMLHttpRequestInterceptor)(),
+  new (0, _chunkYAIEISARjs.FetchInterceptor)()
+];
+
+
+exports["default"] = node_default;
+//# sourceMappingURL=node.js.map
+
+/***/ }),
+
 /***/ 4193:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -48808,6 +51928,455 @@ class RequestError extends Error {
 exports.RequestError = RequestError;
 //# sourceMappingURL=index.js.map
 
+
+/***/ }),
+
+/***/ 4681:
+/***/ ((module) => {
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// src/index.ts
+var src_exports = {};
+__export(src_exports, {
+  DeferredPromise: () => DeferredPromise,
+  createDeferredExecutor: () => createDeferredExecutor
+});
+module.exports = __toCommonJS(src_exports);
+
+// src/createDeferredExecutor.ts
+function createDeferredExecutor() {
+  const executor = (resolve, reject) => {
+    executor.state = "pending";
+    executor.resolve = (data) => {
+      if (executor.state !== "pending") {
+        return;
+      }
+      executor.result = data;
+      const onFulfilled = (value) => {
+        executor.state = "fulfilled";
+        return value;
+      };
+      return resolve(
+        data instanceof Promise ? data : Promise.resolve(data).then(onFulfilled)
+      );
+    };
+    executor.reject = (reason) => {
+      if (executor.state !== "pending") {
+        return;
+      }
+      queueMicrotask(() => {
+        executor.state = "rejected";
+      });
+      return reject(executor.rejectionReason = reason);
+    };
+  };
+  return executor;
+}
+
+// src/DeferredPromise.ts
+var DeferredPromise = class extends Promise {
+  #executor;
+  resolve;
+  reject;
+  constructor(executor = null) {
+    const deferredExecutor = createDeferredExecutor();
+    super((originalResolve, originalReject) => {
+      deferredExecutor(originalResolve, originalReject);
+      executor?.(deferredExecutor.resolve, deferredExecutor.reject);
+    });
+    this.#executor = deferredExecutor;
+    this.resolve = this.#executor.resolve;
+    this.reject = this.#executor.reject;
+  }
+  get state() {
+    return this.#executor.state;
+  }
+  get rejectionReason() {
+    return this.#executor.rejectionReason;
+  }
+  then(onFulfilled, onRejected) {
+    return this.#decorate(super.then(onFulfilled, onRejected));
+  }
+  catch(onRejected) {
+    return this.#decorate(super.catch(onRejected));
+  }
+  finally(onfinally) {
+    return this.#decorate(super.finally(onfinally));
+  }
+  #decorate(promise) {
+    return Object.defineProperties(promise, {
+      resolve: { configurable: true, value: this.resolve },
+      reject: { configurable: true, value: this.reject }
+    });
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (0);
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 6911:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// src/index.ts
+var src_exports = {};
+__export(src_exports, {
+  Logger: () => Logger
+});
+module.exports = __toCommonJS(src_exports);
+var import_is_node_process = __nccwpck_require__(3518);
+var import_outvariant = __nccwpck_require__(1183);
+
+// src/colors.ts
+var colors_exports = {};
+__export(colors_exports, {
+  blue: () => blue,
+  gray: () => gray,
+  green: () => green,
+  red: () => red,
+  yellow: () => yellow
+});
+function yellow(text) {
+  return `\x1B[33m${text}\x1B[0m`;
+}
+function blue(text) {
+  return `\x1B[34m${text}\x1B[0m`;
+}
+function gray(text) {
+  return `\x1B[90m${text}\x1B[0m`;
+}
+function red(text) {
+  return `\x1B[31m${text}\x1B[0m`;
+}
+function green(text) {
+  return `\x1B[32m${text}\x1B[0m`;
+}
+
+// src/index.ts
+var IS_NODE = (0, import_is_node_process.isNodeProcess)();
+var Logger = class {
+  constructor(name) {
+    this.name = name;
+    this.prefix = `[${this.name}]`;
+    const LOGGER_NAME = getVariable("DEBUG");
+    const LOGGER_LEVEL = getVariable("LOG_LEVEL");
+    const isLoggingEnabled = LOGGER_NAME === "1" || LOGGER_NAME === "true" || typeof LOGGER_NAME !== "undefined" && this.name.startsWith(LOGGER_NAME);
+    if (isLoggingEnabled) {
+      this.debug = isDefinedAndNotEquals(LOGGER_LEVEL, "debug") ? noop : this.debug;
+      this.info = isDefinedAndNotEquals(LOGGER_LEVEL, "info") ? noop : this.info;
+      this.success = isDefinedAndNotEquals(LOGGER_LEVEL, "success") ? noop : this.success;
+      this.warning = isDefinedAndNotEquals(LOGGER_LEVEL, "warning") ? noop : this.warning;
+      this.error = isDefinedAndNotEquals(LOGGER_LEVEL, "error") ? noop : this.error;
+    } else {
+      this.info = noop;
+      this.success = noop;
+      this.warning = noop;
+      this.error = noop;
+      this.only = noop;
+    }
+  }
+  prefix;
+  extend(domain) {
+    return new Logger(`${this.name}:${domain}`);
+  }
+  /**
+   * Print a debug message.
+   * @example
+   * logger.debug('no duplicates found, creating a document...')
+   */
+  debug(message, ...positionals) {
+    this.logEntry({
+      level: "debug",
+      message: gray(message),
+      positionals,
+      prefix: this.prefix,
+      colors: {
+        prefix: "gray"
+      }
+    });
+  }
+  /**
+   * Print an info message.
+   * @example
+   * logger.info('start parsing...')
+   */
+  info(message, ...positionals) {
+    this.logEntry({
+      level: "info",
+      message,
+      positionals,
+      prefix: this.prefix,
+      colors: {
+        prefix: "blue"
+      }
+    });
+    const performance2 = new PerformanceEntry();
+    return (message2, ...positionals2) => {
+      performance2.measure();
+      this.logEntry({
+        level: "info",
+        message: `${message2} ${gray(`${performance2.deltaTime}ms`)}`,
+        positionals: positionals2,
+        prefix: this.prefix,
+        colors: {
+          prefix: "blue"
+        }
+      });
+    };
+  }
+  /**
+   * Print a success message.
+   * @example
+   * logger.success('successfully created document')
+   */
+  success(message, ...positionals) {
+    this.logEntry({
+      level: "info",
+      message,
+      positionals,
+      prefix: `\u2714 ${this.prefix}`,
+      colors: {
+        timestamp: "green",
+        prefix: "green"
+      }
+    });
+  }
+  /**
+   * Print a warning.
+   * @example
+   * logger.warning('found legacy document format')
+   */
+  warning(message, ...positionals) {
+    this.logEntry({
+      level: "warning",
+      message,
+      positionals,
+      prefix: `\u26A0 ${this.prefix}`,
+      colors: {
+        timestamp: "yellow",
+        prefix: "yellow"
+      }
+    });
+  }
+  /**
+   * Print an error message.
+   * @example
+   * logger.error('something went wrong')
+   */
+  error(message, ...positionals) {
+    this.logEntry({
+      level: "error",
+      message,
+      positionals,
+      prefix: `\u2716 ${this.prefix}`,
+      colors: {
+        timestamp: "red",
+        prefix: "red"
+      }
+    });
+  }
+  /**
+   * Execute the given callback only when the logging is enabled.
+   * This is skipped in its entirety and has no runtime cost otherwise.
+   * This executes regardless of the log level.
+   * @example
+   * logger.only(() => {
+   *   logger.info('additional info')
+   * })
+   */
+  only(callback) {
+    callback();
+  }
+  createEntry(level, message) {
+    return {
+      timestamp: /* @__PURE__ */ new Date(),
+      level,
+      message
+    };
+  }
+  logEntry(args) {
+    const {
+      level,
+      message,
+      prefix,
+      colors: customColors,
+      positionals = []
+    } = args;
+    const entry = this.createEntry(level, message);
+    const timestampColor = customColors?.timestamp || "gray";
+    const prefixColor = customColors?.prefix || "gray";
+    const colorize = {
+      timestamp: colors_exports[timestampColor],
+      prefix: colors_exports[prefixColor]
+    };
+    const write = this.getWriter(level);
+    write(
+      [colorize.timestamp(this.formatTimestamp(entry.timestamp))].concat(prefix != null ? colorize.prefix(prefix) : []).concat(serializeInput(message)).join(" "),
+      ...positionals.map(serializeInput)
+    );
+  }
+  formatTimestamp(timestamp) {
+    return `${timestamp.toLocaleTimeString(
+      "en-GB"
+    )}:${timestamp.getMilliseconds()}`;
+  }
+  getWriter(level) {
+    switch (level) {
+      case "debug":
+      case "success":
+      case "info": {
+        return log;
+      }
+      case "warning": {
+        return warn;
+      }
+      case "error": {
+        return error;
+      }
+    }
+  }
+};
+var PerformanceEntry = class {
+  startTime;
+  endTime;
+  deltaTime;
+  constructor() {
+    this.startTime = performance.now();
+  }
+  measure() {
+    this.endTime = performance.now();
+    const deltaTime = this.endTime - this.startTime;
+    this.deltaTime = deltaTime.toFixed(2);
+  }
+};
+var noop = () => void 0;
+function log(message, ...positionals) {
+  if (IS_NODE) {
+    process.stdout.write((0, import_outvariant.format)(message, ...positionals) + "\n");
+    return;
+  }
+  console.log(message, ...positionals);
+}
+function warn(message, ...positionals) {
+  if (IS_NODE) {
+    process.stderr.write((0, import_outvariant.format)(message, ...positionals) + "\n");
+    return;
+  }
+  console.warn(message, ...positionals);
+}
+function error(message, ...positionals) {
+  if (IS_NODE) {
+    process.stderr.write((0, import_outvariant.format)(message, ...positionals) + "\n");
+    return;
+  }
+  console.error(message, ...positionals);
+}
+function getVariable(variableName) {
+  if (IS_NODE) {
+    return process.env[variableName];
+  }
+  return globalThis[variableName]?.toString();
+}
+function isDefinedAndNotEquals(value, expected) {
+  return value !== void 0 && value !== expected;
+}
+function serializeInput(message) {
+  if (typeof message === "undefined") {
+    return "undefined";
+  }
+  if (message === null) {
+    return "null";
+  }
+  if (typeof message === "string") {
+    return message;
+  }
+  if (typeof message === "object") {
+    return JSON.stringify(message);
+  }
+  return message.toString();
+}
+
+
+/***/ }),
+
+/***/ 8309:
+/***/ ((module) => {
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// src/index.ts
+var src_exports = {};
+__export(src_exports, {
+  until: () => until
+});
+module.exports = __toCommonJS(src_exports);
+
+// src/until.ts
+var until = async (promise) => {
+  try {
+    const data = await promise().catch((error) => {
+      throw error;
+    });
+    return { error: null, data };
+  } catch (error) {
+    return { error, data: null };
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (0);
+//# sourceMappingURL=index.js.map
 
 /***/ }),
 
@@ -59236,7 +62805,7 @@ var bind = __nccwpck_require__(8334);
 
 var $apply = __nccwpck_require__(4177);
 var $call = __nccwpck_require__(2808);
-var $reflectApply = __nccwpck_require__(8309);
+var $reflectApply = __nccwpck_require__(910);
 
 /** @type {import('./actualApply')} */
 module.exports = $reflectApply || bind.call($call, $apply);
@@ -59291,7 +62860,7 @@ module.exports = function callBindBasic(args) {
 
 /***/ }),
 
-/***/ 8309:
+/***/ 910:
 /***/ ((module) => {
 
 "use strict";
@@ -60589,6 +64158,52 @@ module.exports = bind.call(call, $hasOwn);
 
 /***/ }),
 
+/***/ 3518:
+/***/ ((module) => {
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// src/index.ts
+var src_exports = {};
+__export(src_exports, {
+  isNodeProcess: () => isNodeProcess
+});
+module.exports = __toCommonJS(src_exports);
+function isNodeProcess() {
+  if (typeof navigator !== "undefined" && navigator.product === "ReactNative") {
+    return true;
+  }
+  if (typeof process !== "undefined") {
+    const type = process.type;
+    if (type === "renderer" || type === "worker") {
+      return false;
+    }
+    return !!(process.versions && process.versions.node);
+  }
+  return false;
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (0);
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
 /***/ 3287:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -60631,6 +64246,40 @@ function isPlainObject(o) {
 }
 
 exports.isPlainObject = isPlainObject;
+
+
+/***/ }),
+
+/***/ 7073:
+/***/ ((module, exports) => {
+
+exports = module.exports = stringify
+exports.getSerialize = serializer
+
+function stringify(obj, replacer, spaces, cycleReplacer) {
+  return JSON.stringify(obj, serializer(replacer, cycleReplacer), spaces)
+}
+
+function serializer(replacer, cycleReplacer) {
+  var stack = [], keys = []
+
+  if (cycleReplacer == null) cycleReplacer = function(key, value) {
+    if (stack[0] === value) return "[Circular ~]"
+    return "[Circular ~." + keys.slice(0, stack.indexOf(value)).join(".") + "]"
+  }
+
+  return function(key, value) {
+    if (stack.length > 0) {
+      var thisPos = stack.indexOf(this)
+      ~thisPos ? stack.splice(thisPos + 1) : stack.push(this)
+      ~thisPos ? keys.splice(thisPos, Infinity, key) : keys.push(key)
+      if (~stack.indexOf(value)) value = cycleReplacer.call(this, key, value)
+    }
+    else stack.push(value)
+
+    return replacer == null ? value : replacer.call(this, key, value)
+  }
+}
 
 
 /***/ }),
@@ -62168,6 +65817,4030 @@ function globUnescape (s) {
 
 function regExpEscape (s) {
   return s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
+}
+
+
+/***/ }),
+
+/***/ 8437:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const back = __nccwpck_require__(1846)
+const emitter = __nccwpck_require__(9935)
+const {
+  activate,
+  isActive,
+  isDone,
+  isOn,
+  pendingMocks,
+  activeMocks,
+  removeInterceptor,
+  disableNetConnect,
+  enableNetConnect,
+  removeAll,
+  abortPendingRequests,
+} = __nccwpck_require__(7607)
+const recorder = __nccwpck_require__(2096)
+const { Scope, load, loadDefs, define } = __nccwpck_require__(7004)
+
+module.exports = (basePath, options) => new Scope(basePath, options)
+
+Object.assign(module.exports, {
+  activate,
+  isActive,
+  isDone,
+  pendingMocks,
+  activeMocks,
+  removeInterceptor,
+  disableNetConnect,
+  enableNetConnect,
+  cleanAll: removeAll,
+  abortPendingRequests,
+  load,
+  loadDefs,
+  define,
+  emitter,
+  recorder: {
+    rec: recorder.record,
+    clear: recorder.clear,
+    play: recorder.outputs,
+  },
+  restore: recorder.restore,
+  back,
+})
+
+// We always activate Nock on import, overriding the globals.
+// Setting the Back mode "activates" Nock by overriding the global entries in the `http/s` modules.
+// If Nock Back is configured, we need to honor that setting for backward compatibility,
+// otherwise we rely on Nock Back's default initializing side effect.
+if (isOn()) {
+  back.setMode(process.env.NOCK_BACK_MODE || 'dryrun')
+}
+
+
+/***/ }),
+
+/***/ 1846:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const assert = __nccwpck_require__(9491)
+const recorder = __nccwpck_require__(2096)
+const {
+  activate,
+  disableNetConnect,
+  enableNetConnect,
+  removeAll: cleanAll,
+} = __nccwpck_require__(7607)
+const { loadDefs, define } = __nccwpck_require__(7004)
+const { back: debug } = __nccwpck_require__(7287)
+const { format } = __nccwpck_require__(3837)
+const path = __nccwpck_require__(1017)
+
+let _mode = null
+
+let fs
+
+try {
+  fs = __nccwpck_require__(7147)
+} catch (err) {
+  // do nothing, probably in browser
+}
+
+/**
+ * nock the current function with the fixture given
+ *
+ * @param {string}   fixtureName  - the name of the fixture, e.x. 'foo.json'
+ * @param {object}   options      - [optional] extra options for nock with, e.x. `{ assert: true }`
+ * @param {function} nockedFn     - [optional] callback function to be executed with the given fixture being loaded;
+ *                                  if defined the function will be called with context `{ scopes: loaded_nocks || [] }`
+ *                                  set as `this` and `nockDone` callback function as first and only parameter;
+ *                                  if not defined a promise resolving to `{nockDone, context}` where `context` is
+ *                                  aforementioned `{ scopes: loaded_nocks || [] }`
+ *
+ * List of options:
+ *
+ * @param {function} before       - a preprocessing function, gets called before nock.define
+ * @param {function} after        - a postprocessing function, gets called after nock.define
+ * @param {function} afterRecord  - a postprocessing function, gets called after recording. Is passed the array
+ *                                  of scopes recorded and should return the array scopes to save to the fixture
+ * @param {function} recorder     - custom options to pass to the recorder
+ *
+ */
+function Back(fixtureName, options, nockedFn) {
+  if (!Back.fixtures) {
+    throw new Error(
+      'Back requires nock.back.fixtures to be set\n' +
+        'Ex:\n' +
+        "\trequire(nock).back.fixtures = '/path/to/fixtures/'",
+    )
+  }
+
+  if (typeof fixtureName !== 'string') {
+    throw new Error('Parameter fixtureName must be a string')
+  }
+
+  if (arguments.length === 1) {
+    options = {}
+  } else if (arguments.length === 2) {
+    // If 2nd parameter is a function then `options` has been omitted
+    // otherwise `options` haven't been omitted but `nockedFn` was.
+    if (typeof options === 'function') {
+      nockedFn = options
+      options = {}
+    }
+  }
+
+  _mode.setup()
+
+  const fixture = path.join(Back.fixtures, fixtureName)
+  const context = _mode.start(fixture, options)
+
+  const nockDone = function () {
+    _mode.finish(fixture, options, context)
+  }
+
+  debug('context:', context)
+  // If nockedFn is a function then invoke it, otherwise return a promise resolving to nockDone.
+  if (typeof nockedFn === 'function') {
+    nockedFn.call(context, nockDone)
+  } else {
+    return Promise.resolve({ nockDone, context })
+  }
+}
+
+/*******************************************************************************
+ *                                    Modes                                     *
+ *******************************************************************************/
+
+const wild = {
+  setup: function () {
+    cleanAll()
+    recorder.restore()
+    activate()
+    enableNetConnect()
+  },
+
+  start: function () {
+    return load() // don't load anything but get correct context
+  },
+
+  finish: function () {
+    // nothing to do
+  },
+}
+
+const dryrun = {
+  setup: function () {
+    recorder.restore()
+    cleanAll()
+    activate()
+    //  We have to explicitly enable net connectivity as by default it's off.
+    enableNetConnect()
+  },
+
+  start: function (fixture, options) {
+    const contexts = load(fixture, options)
+
+    enableNetConnect()
+    return contexts
+  },
+
+  finish: function () {
+    // nothing to do
+  },
+}
+
+const record = {
+  setup: function () {
+    recorder.restore()
+    recorder.clear()
+    cleanAll()
+    activate()
+    disableNetConnect()
+  },
+
+  start: function (fixture, options) {
+    if (!fs) {
+      throw new Error('no fs')
+    }
+    const context = load(fixture, options)
+
+    if (!context.isLoaded) {
+      recorder.record({
+        dont_print: true,
+        output_objects: true,
+        ...options.recorder,
+      })
+
+      context.isRecording = true
+    }
+
+    return context
+  },
+
+  finish: function (fixture, options, context) {
+    if (context.isRecording) {
+      let outputs = recorder.outputs()
+
+      if (typeof options.afterRecord === 'function') {
+        outputs = options.afterRecord(outputs)
+      }
+
+      outputs =
+        typeof outputs === 'string' ? outputs : JSON.stringify(outputs, null, 4)
+      debug('recorder outputs:', outputs)
+
+      fs.mkdirSync(path.dirname(fixture), { recursive: true })
+      fs.writeFileSync(fixture, outputs)
+    }
+  },
+}
+
+const update = {
+  setup: function () {
+    recorder.restore()
+    recorder.clear()
+    cleanAll()
+    activate()
+    disableNetConnect()
+  },
+
+  start: function (fixture, options) {
+    if (!fs) {
+      throw new Error('no fs')
+    }
+    const context = removeFixture(fixture)
+    recorder.record({
+      dont_print: true,
+      output_objects: true,
+      ...options.recorder,
+    })
+
+    context.isRecording = true
+
+    return context
+  },
+
+  finish: function (fixture, options, context) {
+    let outputs = recorder.outputs()
+
+    if (typeof options.afterRecord === 'function') {
+      outputs = options.afterRecord(outputs)
+    }
+
+    outputs =
+      typeof outputs === 'string' ? outputs : JSON.stringify(outputs, null, 4)
+    debug('recorder outputs:', outputs)
+
+    fs.mkdirSync(path.dirname(fixture), { recursive: true })
+    fs.writeFileSync(fixture, outputs)
+  },
+}
+
+const lockdown = {
+  setup: function () {
+    recorder.restore()
+    recorder.clear()
+    cleanAll()
+    activate()
+    disableNetConnect()
+  },
+
+  start: function (fixture, options) {
+    return load(fixture, options)
+  },
+
+  finish: function () {
+    // nothing to do
+  },
+}
+
+function load(fixture, options) {
+  const context = {
+    scopes: [],
+    assertScopesFinished: function () {
+      assertScopes(this.scopes, fixture)
+    },
+    query: function () {
+      const nested = this.scopes.map(scope =>
+        scope.interceptors.map(interceptor => ({
+          method: interceptor.method,
+          uri: interceptor.uri,
+          basePath: interceptor.basePath,
+          path: interceptor.path,
+          queries: interceptor.queries,
+          counter: interceptor.counter,
+          body: interceptor.body,
+          statusCode: interceptor.statusCode,
+          optional: interceptor.optional,
+        })),
+      )
+
+      return [].concat.apply([], nested)
+    },
+  }
+
+  if (fixture && fixtureExists(fixture)) {
+    let scopes = loadDefs(fixture)
+    applyHook(scopes, options.before)
+
+    scopes = define(scopes)
+    applyHook(scopes, options.after)
+
+    context.scopes = scopes
+    context.isLoaded = true
+  }
+
+  return context
+}
+
+function removeFixture(fixture, options) {
+  const context = {
+    scopes: [],
+    assertScopesFinished: function () {},
+  }
+
+  if (fixture && fixtureExists(fixture)) {
+    /* istanbul ignore next - fs.unlinkSync is for node 10 support */
+    fs.rmSync ? fs.rmSync(fixture) : fs.unlinkSync(fixture)
+  }
+  context.isLoaded = false
+  return context
+}
+
+function applyHook(scopes, fn) {
+  if (!fn) {
+    return
+  }
+
+  if (typeof fn !== 'function') {
+    throw new Error('processing hooks must be a function')
+  }
+
+  scopes.forEach(fn)
+}
+
+function fixtureExists(fixture) {
+  if (!fs) {
+    throw new Error('no fs')
+  }
+
+  return fs.existsSync(fixture)
+}
+
+function assertScopes(scopes, fixture) {
+  const pending = scopes
+    .filter(scope => !scope.isDone())
+    .map(scope => scope.pendingMocks())
+
+  if (pending.length) {
+    assert.fail(
+      format(
+        '%j was not used, consider removing %s to rerecord fixture',
+        [].concat(...pending),
+        fixture,
+      ),
+    )
+  }
+}
+
+const Modes = {
+  wild, // all requests go out to the internet, dont replay anything, doesnt record anything
+
+  dryrun, // use recorded nocks, allow http calls, doesnt record anything, useful for writing new tests (default)
+
+  record, // use recorded nocks, record new nocks
+
+  update, // allow http calls, record all nocks, don't use recorded nocks
+
+  lockdown, // use recorded nocks, disables all http calls even when not nocked, doesnt record
+}
+
+Back.setMode = function (mode) {
+  if (!(mode in Modes)) {
+    throw new Error(`Unknown mode: ${mode}`)
+  }
+
+  Back.currentMode = mode
+  debug('New nock back mode:', Back.currentMode)
+
+  _mode = Modes[mode]
+  _mode.setup()
+}
+
+Back.fixtures = null
+Back.currentMode = null
+
+module.exports = Back
+
+
+/***/ }),
+
+/***/ 1521:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { common: debug } = __nccwpck_require__(7287)
+const url = __nccwpck_require__(7310)
+const util = __nccwpck_require__(3837)
+const http = __nccwpck_require__(3685)
+
+/**
+ * Normalizes the request options so that it always has `host` property.
+ *
+ * @param  {Object} options - a parsed options object of the request
+ */
+function normalizeRequestOptions(options) {
+  options.proto = options.proto || 'http'
+  options.port = options.port || (options.proto === 'http' ? 80 : 443)
+  if (options.host) {
+    debug('options.host:', options.host)
+    if (!options.hostname) {
+      if (options.host.split(':').length === 2) {
+        options.hostname = options.host.split(':')[0]
+      } else {
+        options.hostname = options.host
+      }
+    }
+  }
+  debug('options.hostname in the end: %j', options.hostname)
+  options.host = `${options.hostname || 'localhost'}:${options.port}`
+  debug('options.host in the end: %j', options.host)
+
+  /// lowercase host names
+  ;['hostname', 'host'].forEach(function (attr) {
+    if (options[attr]) {
+      options[attr] = options[attr].toLowerCase()
+    }
+  })
+
+  return options
+}
+
+/**
+ * Returns true if the data contained in buffer can be reconstructed
+ * from its utf8 representation.
+ *
+ * @param  {Object} buffer - a Buffer object
+ * @returns {boolean}
+ */
+function isUtf8Representable(buffer) {
+  const utfEncodedBuffer = buffer.toString('utf8')
+  const reconstructedBuffer = Buffer.from(utfEncodedBuffer, 'utf8')
+  return reconstructedBuffer.equals(buffer)
+}
+
+/**
+ * In WHATWG URL vernacular, this returns the origin portion of a URL.
+ * However, the port is not included if it's standard and not already present on the host.
+ */
+function normalizeOrigin(proto, host, port) {
+  const hostHasPort = host.includes(':')
+  const portIsStandard =
+    (proto === 'http' && (port === 80 || port === '80')) ||
+    (proto === 'https' && (port === 443 || port === '443'))
+  const portStr = hostHasPort || portIsStandard ? '' : `:${port}`
+
+  return `${proto}://${host}${portStr}`
+}
+
+/**
+ * Get high level information about request as string
+ * @param  {Object} options
+ * @param  {string} options.method
+ * @param  {number|string} options.port
+ * @param  {string} options.proto Set internally. always http or https
+ * @param  {string} options.hostname
+ * @param  {string} options.path
+ * @param  {Object} options.headers
+ * @param  {string} body
+ * @return {string}
+ */
+function stringifyRequest(options, body) {
+  const { method = 'GET', path = '', port } = options
+  const origin = normalizeOrigin(options.proto, options.hostname, port)
+
+  const log = {
+    method,
+    url: `${origin}${path}`,
+    headers: options.headers,
+  }
+
+  if (body) {
+    log.body = body
+  }
+
+  return JSON.stringify(log, null, 2)
+}
+
+function isContentEncoded(headers) {
+  const contentEncoding = headers['content-encoding']
+  return typeof contentEncoding === 'string' && contentEncoding !== ''
+}
+
+function contentEncoding(headers, encoder) {
+  const contentEncoding = headers['content-encoding']
+  return contentEncoding !== undefined && contentEncoding.toString() === encoder
+}
+
+function isJSONContent(headers) {
+  // https://tools.ietf.org/html/rfc8259
+  const contentType = String(headers['content-type'] || '').toLowerCase()
+  return contentType.startsWith('application/json')
+}
+
+/**
+ * Return a new object with all field names of the headers lower-cased.
+ *
+ * Duplicates throw an error.
+ */
+function headersFieldNamesToLowerCase(headers, throwOnDuplicate) {
+  if (!isPlainObject(headers)) {
+    throw Error('Headers must be provided as an object')
+  }
+
+  const lowerCaseHeaders = {}
+  Object.entries(headers).forEach(([fieldName, fieldValue]) => {
+    const key = fieldName.toLowerCase()
+    if (lowerCaseHeaders[key] !== undefined) {
+      if (throwOnDuplicate) {
+        throw Error(
+          `Failed to convert header keys to lower case due to field name conflict: ${key}`,
+        )
+      } else {
+        debug(
+          `Duplicate header provided in request: ${key}. Only the last value can be matched.`,
+        )
+      }
+    }
+    lowerCaseHeaders[key] = fieldValue
+  })
+
+  return lowerCaseHeaders
+}
+
+const headersFieldsArrayToLowerCase = headers => [
+  ...new Set(headers.map(fieldName => fieldName.toLowerCase())),
+]
+
+/**
+ * Converts the various accepted formats of headers into a flat array representing "raw headers".
+ *
+ * Nock allows headers to be provided as a raw array, a plain object, or a Map.
+ *
+ * While all the header names are expected to be strings, the values are left intact as they can
+ * be functions, strings, or arrays of strings.
+ *
+ *  https://nodejs.org/api/http.html#http_message_rawheaders
+ */
+function headersInputToRawArray(headers) {
+  if (headers === undefined) {
+    return []
+  }
+
+  if (Array.isArray(headers)) {
+    // If the input is an array, assume it's already in the raw format and simply return a copy
+    // but throw an error if there aren't an even number of items in the array
+    if (headers.length % 2) {
+      throw new Error(
+        `Raw headers must be provided as an array with an even number of items. [fieldName, value, ...]`,
+      )
+    }
+    return [...headers]
+  }
+
+  // [].concat(...) is used instead of Array.flat until v11 is the minimum Node version
+  if (util.types.isMap(headers)) {
+    return [].concat(...Array.from(headers, ([k, v]) => [k.toString(), v]))
+  }
+
+  if (isPlainObject(headers)) {
+    return [].concat(...Object.entries(headers))
+  }
+
+  throw new Error(
+    `Headers must be provided as an array of raw values, a Map, or a plain Object. ${headers}`,
+  )
+}
+
+/**
+ * Converts an array of raw headers to an object, using the same rules as Nodes `http.IncomingMessage.headers`.
+ *
+ * Header names/keys are lower-cased.
+ */
+function headersArrayToObject(rawHeaders) {
+  if (!Array.isArray(rawHeaders)) {
+    throw Error('Expected a header array')
+  }
+
+  const accumulator = {}
+
+  forEachHeader(rawHeaders, (value, fieldName) => {
+    addHeaderLine(accumulator, fieldName, value)
+  })
+
+  return accumulator
+}
+
+const noDuplicatesHeaders = new Set([
+  'age',
+  'authorization',
+  'content-length',
+  'content-type',
+  'etag',
+  'expires',
+  'from',
+  'host',
+  'if-modified-since',
+  'if-unmodified-since',
+  'last-modified',
+  'location',
+  'max-forwards',
+  'proxy-authorization',
+  'referer',
+  'retry-after',
+  'user-agent',
+])
+
+/**
+ * Set key/value data in accordance with Node's logic for folding duplicate headers.
+ *
+ * The `value` param should be a function, string, or array of strings.
+ *
+ * Node's docs and source:
+ * https://nodejs.org/api/http.html#http_message_headers
+ * https://github.com/nodejs/node/blob/908292cf1f551c614a733d858528ffb13fb3a524/lib/_http_incoming.js#L245
+ *
+ * Header names are lower-cased.
+ * Duplicates in raw headers are handled in the following ways, depending on the header name:
+ * - Duplicates of field names listed in `noDuplicatesHeaders` (above) are discarded.
+ * - `set-cookie` is always an array. Duplicates are added to the array.
+ * - For duplicate `cookie` headers, the values are joined together with '; '.
+ * - For all other headers, the values are joined together with ', '.
+ *
+ * Node's implementation is larger because it highly optimizes for not having to call `toLowerCase()`.
+ * We've opted to always call `toLowerCase` in exchange for a more concise function.
+ *
+ * While Node has the luxury of knowing `value` is always a string, we do an extra step of coercion at the top.
+ */
+function addHeaderLine(headers, name, value) {
+  let values // code below expects `values` to be an array of strings
+  if (typeof value === 'function') {
+    // Function values are evaluated towards the end of the response, before that we use a placeholder
+    // string just to designate that the header exists. Useful when `Content-Type` is set with a function.
+    values = [value.name]
+  } else if (Array.isArray(value)) {
+    values = value.map(String)
+  } else {
+    values = [String(value)]
+  }
+
+  const key = name.toLowerCase()
+  if (key === 'set-cookie') {
+    // Array header -- only Set-Cookie at the moment
+    if (headers['set-cookie'] === undefined) {
+      headers['set-cookie'] = values
+    } else {
+      headers['set-cookie'].push(...values)
+    }
+  } else if (noDuplicatesHeaders.has(key)) {
+    if (headers[key] === undefined) {
+      // Drop duplicates
+      headers[key] = values[0]
+    }
+  } else {
+    if (headers[key] !== undefined) {
+      values = [headers[key], ...values]
+    }
+
+    const separator = key === 'cookie' ? '; ' : ', '
+    headers[key] = values.join(separator)
+  }
+}
+
+/**
+ * Deletes the given `fieldName` property from `headers` object by performing
+ * case-insensitive search through keys.
+ *
+ * @headers   {Object} headers - object of header field names and values
+ * @fieldName {String} field name - string with the case-insensitive field name
+ */
+function deleteHeadersField(headers, fieldNameToDelete) {
+  if (!isPlainObject(headers)) {
+    throw Error('headers must be an object')
+  }
+
+  if (typeof fieldNameToDelete !== 'string') {
+    throw Error('field name must be a string')
+  }
+
+  const lowerCaseFieldNameToDelete = fieldNameToDelete.toLowerCase()
+
+  // Search through the headers and delete all values whose field name matches the given field name.
+  Object.keys(headers)
+    .filter(fieldName => fieldName.toLowerCase() === lowerCaseFieldNameToDelete)
+    .forEach(fieldName => delete headers[fieldName])
+}
+
+/**
+ * Utility for iterating over a raw headers array.
+ *
+ * The callback is called with:
+ *  - The header value. string, array of strings, or a function
+ *  - The header field name. string
+ *  - Index of the header field in the raw header array.
+ */
+function forEachHeader(rawHeaders, callback) {
+  for (let i = 0; i < rawHeaders.length; i += 2) {
+    callback(rawHeaders[i + 1], rawHeaders[i], i)
+  }
+}
+
+function percentDecode(str) {
+  try {
+    return decodeURIComponent(str.replace(/\+/g, ' '))
+  } catch (e) {
+    return str
+  }
+}
+
+/**
+ * URI encode the provided string, stringently adhering to RFC 3986.
+ *
+ * RFC 3986 reserves !, ', (, ), and * but encodeURIComponent does not encode them so we do it manually.
+ *
+ * https://tools.ietf.org/html/rfc3986
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
+ */
+function percentEncode(str) {
+  return encodeURIComponent(str).replace(/[!'()*]/g, function (c) {
+    return `%${c.charCodeAt(0).toString(16).toUpperCase()}`
+  })
+}
+
+function matchStringOrRegexp(target, pattern) {
+  const targetStr =
+    target === undefined || target === null ? '' : String(target)
+
+  if (pattern instanceof RegExp) {
+    // if the regexp happens to have a global flag, we want to ensure we test the entire target
+    pattern.lastIndex = 0
+    return pattern.test(targetStr)
+  }
+  return targetStr === String(pattern)
+}
+
+/**
+ * Formats a query parameter.
+ *
+ * @param key                The key of the query parameter to format.
+ * @param value              The value of the query parameter to format.
+ * @param stringFormattingFn The function used to format string values. Can
+ *                           be used to encode or decode the query value.
+ *
+ * @returns *[] the formatted [key, value] pair.
+ */
+function formatQueryValue(key, value, stringFormattingFn) {
+  // TODO: Probably refactor code to replace `switch(true)` with `if`/`else`.
+  switch (true) {
+    case typeof value === 'number': // fall-through
+    case typeof value === 'boolean':
+      value = value.toString()
+      break
+    case value === null:
+    case value === undefined:
+      value = ''
+      break
+    case typeof value === 'string':
+      if (stringFormattingFn) {
+        value = stringFormattingFn(value)
+      }
+      break
+    case value instanceof RegExp:
+      break
+    case Array.isArray(value): {
+      value = value.map(function (val, idx) {
+        return formatQueryValue(idx, val, stringFormattingFn)[1]
+      })
+      break
+    }
+    case typeof value === 'object': {
+      value = Object.entries(value).reduce(function (acc, [subKey, subVal]) {
+        const subPair = formatQueryValue(subKey, subVal, stringFormattingFn)
+        acc[subPair[0]] = subPair[1]
+
+        return acc
+      }, {})
+      break
+    }
+  }
+
+  if (stringFormattingFn) key = stringFormattingFn(key)
+  return [key, value]
+}
+
+function isStream(obj) {
+  return (
+    obj &&
+    typeof obj !== 'string' &&
+    !Buffer.isBuffer(obj) &&
+    typeof obj.setEncoding === 'function'
+  )
+}
+
+/**
+ * Converts the arguments from the various signatures of http[s].request into a standard
+ * options object and an optional callback function.
+ *
+ * https://nodejs.org/api/http.html#http_http_request_url_options_callback
+ *
+ * Taken from the beginning of the native `ClientRequest`.
+ * https://github.com/nodejs/node/blob/908292cf1f551c614a733d858528ffb13fb3a524/lib/_http_client.js#L68
+ */
+function normalizeClientRequestArgs(input, options, cb) {
+  if (typeof input === 'string') {
+    input = urlToOptions(new url.URL(input))
+  } else if (input instanceof url.URL) {
+    input = urlToOptions(input)
+  } else {
+    cb = options
+    options = input
+    input = null
+  }
+
+  if (typeof options === 'function') {
+    cb = options
+    options = input || {}
+  } else {
+    options = Object.assign(input || {}, options)
+  }
+
+  return { options, callback: cb }
+}
+
+/**
+ * Utility function that converts a URL object into an ordinary
+ * options object as expected by the http.request and https.request APIs.
+ *
+ * This was copied from Node's source
+ * https://github.com/nodejs/node/blob/908292cf1f551c614a733d858528ffb13fb3a524/lib/internal/url.js#L1257
+ */
+function urlToOptions(url) {
+  const options = {
+    protocol: url.protocol,
+    hostname:
+      typeof url.hostname === 'string' && url.hostname.startsWith('[')
+        ? url.hostname.slice(1, -1)
+        : url.hostname,
+    hash: url.hash,
+    search: url.search,
+    pathname: url.pathname,
+    path: `${url.pathname}${url.search || ''}`,
+    href: url.href,
+  }
+  if (url.port !== '') {
+    options.port = Number(url.port)
+  }
+  if (url.username || url.password) {
+    options.auth = `${url.username}:${url.password}`
+  }
+  return options
+}
+
+/**
+ * Determines if request data matches the expected schema.
+ *
+ * Used for comparing decoded search parameters, request body JSON objects,
+ * and URL decoded request form bodies.
+ *
+ * Performs a general recursive strict comparison with two caveats:
+ *  - The expected data can use regexp to compare values
+ *  - JSON path notation and nested objects are considered equal
+ */
+const dataEqual = (expected, actual) => {
+  if (isPlainObject(expected)) {
+    expected = expand(expected)
+  }
+  if (isPlainObject(actual)) {
+    actual = expand(actual)
+  }
+  return deepEqual(expected, actual)
+}
+
+/**
+ * Performs a recursive strict comparison between two values.
+ *
+ * Expected values or leaf nodes of expected object values that are RegExp use test() for comparison.
+ */
+function deepEqual(expected, actual) {
+  debug('deepEqual comparing', typeof expected, expected, typeof actual, actual)
+  if (expected instanceof RegExp) {
+    return expected.test(actual)
+  }
+
+  if (Array.isArray(expected) && Array.isArray(actual)) {
+    if (expected.length !== actual.length) {
+      return false
+    }
+
+    return expected.every((expVal, idx) => deepEqual(expVal, actual[idx]))
+  }
+
+  if (isPlainObject(expected) && isPlainObject(actual)) {
+    const allKeys = Array.from(
+      new Set(Object.keys(expected).concat(Object.keys(actual))),
+    )
+
+    return allKeys.every(key => deepEqual(expected[key], actual[key]))
+  }
+
+  return expected === actual
+}
+
+const timeouts = new Set()
+const immediates = new Set()
+
+const _setImmediate = (callback, ...timerArgs) => {
+  const cb = (...callbackArgs) => {
+    try {
+      // eslint-disable-next-line n/no-callback-literal
+      callback(...callbackArgs)
+    } finally {
+      immediates.delete(id)
+    }
+  }
+
+  const id = setImmediate(cb, 0, ...timerArgs)
+
+  immediates.add(id)
+  return id
+}
+
+const _setTimeout = (callback, ...timerArgs) => {
+  const cb = (...callbackArgs) => {
+    try {
+      // eslint-disable-next-line n/no-callback-literal
+      callback(...callbackArgs)
+    } finally {
+      timeouts.delete(id)
+    }
+  }
+
+  const id = setTimeout(cb, ...timerArgs)
+  timeouts.add(id)
+  return id
+}
+
+function clearTimer(clear, ids) {
+  ids.forEach(clear)
+  ids.clear()
+}
+
+function removeAllTimers() {
+  debug('remove all timers')
+  clearTimer(clearTimeout, timeouts)
+  clearTimer(clearImmediate, immediates)
+}
+
+/**
+ * Check if the Client Request has been cancelled.
+ *
+ * Until Node 14 is the minimum, we need to look at both flags to see if the request has been cancelled.
+ * The two flags have the same purpose, but the Node maintainers are migrating from `abort(ed)` to
+ * `destroy(ed)` terminology, to be more consistent with `stream.Writable`.
+ * In Node 14.x+, Calling `abort()` will set both `aborted` and `destroyed` to true, however,
+ * calling `destroy()` will only set `destroyed` to true.
+ * Falling back on checking if the socket is destroyed to cover the case of Node <14.x where
+ * `destroy()` is called, but `destroyed` is undefined.
+ *
+ * Node Client Request history:
+ * - `request.abort()`: Added in: v0.3.8, Deprecated since: v14.1.0, v13.14.0
+ * - `request.aborted`: Added in: v0.11.14, Became a boolean instead of a timestamp: v11.0.0, Not deprecated (yet)
+ * - `request.destroy()`: Added in: v0.3.0
+ * - `request.destroyed`: Added in: v14.1.0, v13.14.0
+ *
+ * @param {ClientRequest} req
+ * @returns {boolean}
+ */
+function isRequestDestroyed(req) {
+  return !!(
+    req.destroyed === true ||
+    req.aborted ||
+    (req.socket && req.socket.destroyed)
+  )
+}
+
+/**
+ * @param {Request} request
+ */
+function convertFetchRequestToClientRequest(request) {
+  const url = new URL(request.url)
+  const options = {
+    ...urlToOptions(url),
+    method: request.method,
+    host: url.hostname,
+    port: url.port || (url.protocol === 'https:' ? 443 : 80),
+    path: url.pathname + url.search,
+    proto: url.protocol.slice(0, -1),
+    headers: Object.fromEntries(request.headers.entries()),
+  }
+
+  // By default, Node adds a host header, but for maximum backward compatibility, we are now removing it.
+  // However, we need to consider leaving the header and fixing the tests.
+  if (options.headers.host === options.host) {
+    const { host, ...restHeaders } = options.headers
+    options.headers = restHeaders
+  }
+
+  return new http.ClientRequest(options)
+}
+
+/**
+ * Returns true if the given value is a plain object and not an Array.
+ * @param {*} value
+ * @returns {boolean}
+ */
+function isPlainObject(value) {
+  if (typeof value !== 'object' || value === null) return false
+
+  if (Object.prototype.toString.call(value) !== '[object Object]') return false
+
+  const proto = Object.getPrototypeOf(value)
+  if (proto === null) return true
+
+  const Ctor =
+    Object.prototype.hasOwnProperty.call(proto, 'constructor') &&
+    proto.constructor
+  return (
+    typeof Ctor === 'function' &&
+    Ctor instanceof Ctor &&
+    Function.prototype.call(Ctor) === Function.prototype.call(value)
+  )
+}
+
+const prototypePollutionBlockList = ['__proto__', 'prototype', 'constructor']
+const blocklistFilter = function (part) {
+  return prototypePollutionBlockList.indexOf(part) === -1
+}
+
+/**
+ * Converts flat objects whose keys use JSON path notation to nested objects.
+ *
+ * The input object is not mutated.
+ *
+ * @example
+ * { 'foo[bar][0]': 'baz' } -> { foo: { bar: [ 'baz' ] } }
+ */
+const expand = input => {
+  if (input === undefined || input === null) {
+    return input
+  }
+
+  const keys = Object.keys(input)
+
+  const result = {}
+  let resultPtr = result
+
+  for (let path of keys) {
+    const originalPath = path
+    if (path.indexOf('[') >= 0) {
+      path = path.replace(/\[/g, '.').replace(/]/g, '')
+    }
+
+    const parts = path.split('.')
+
+    const check = parts.filter(blocklistFilter)
+
+    if (check.length !== parts.length) {
+      return undefined
+    }
+    resultPtr = result
+    const lastIndex = parts.length - 1
+
+    for (let i = 0; i < parts.length; ++i) {
+      const part = parts[i]
+      if (i === lastIndex) {
+        if (Array.isArray(resultPtr)) {
+          resultPtr[+part] = input[originalPath]
+        } else {
+          resultPtr[part] = input[originalPath]
+        }
+      } else {
+        if (resultPtr[part] === undefined || resultPtr[part] === null) {
+          const nextPart = parts[i + 1]
+          if (/^\d+$/.test(nextPart)) {
+            resultPtr[part] = []
+          } else {
+            resultPtr[part] = {}
+          }
+        }
+        resultPtr = resultPtr[part]
+      }
+    }
+  }
+  return result
+}
+
+module.exports = {
+  contentEncoding,
+  dataEqual,
+  deleteHeadersField,
+  expand,
+  forEachHeader,
+  formatQueryValue,
+  headersArrayToObject,
+  headersFieldNamesToLowerCase,
+  headersFieldsArrayToLowerCase,
+  headersInputToRawArray,
+  isContentEncoded,
+  isJSONContent,
+  isPlainObject,
+  isRequestDestroyed,
+  isStream,
+  isUtf8Representable,
+  matchStringOrRegexp,
+  normalizeClientRequestArgs,
+  normalizeOrigin,
+  normalizeRequestOptions,
+  percentDecode,
+  percentEncode,
+  removeAllTimers,
+  setImmediate: _setImmediate,
+  setTimeout: _setTimeout,
+  stringifyRequest,
+  convertFetchRequestToClientRequest,
+}
+
+
+/***/ }),
+
+/***/ 7540:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { STATUS_CODES } = __nccwpck_require__(3685)
+
+/**
+ * Creates a Fetch API `Response` instance from the given
+ * `http.IncomingMessage` instance.
+ * Inspired by: https://github.com/mswjs/interceptors/blob/04152ed914f8041272b6e92ed374216b8177e1b2/src/interceptors/ClientRequest/utils/createResponse.ts#L8
+ */
+
+/**
+ * Response status codes for responses that cannot have body.
+ * @see https://fetch.spec.whatwg.org/#statuses
+ */
+const responseStatusCodesWithoutBody = [204, 205, 304]
+
+/**
+ * @param {import('http').IncomingMessage} message
+ * @param {AbortSignal} signal
+ */
+function createResponse(message, signal) {
+  const responseBodyOrNull = responseStatusCodesWithoutBody.includes(
+    message.statusCode || 200,
+  )
+    ? null
+    : new ReadableStream({
+        start(controller) {
+          message.on('data', chunk => controller.enqueue(chunk))
+          message.on('end', () => controller.close())
+          message.on('error', error => controller.error(error))
+          signal.addEventListener('abort', () => message.destroy(signal.reason))
+        },
+        cancel() {
+          message.destroy()
+        },
+      })
+
+  const rawHeaders = new Headers()
+  for (let i = 0; i < message.rawHeaders.length; i += 2) {
+    rawHeaders.append(message.rawHeaders[i], message.rawHeaders[i + 1])
+  }
+
+  // @mswjs/interceptors supports rawHeaders. https://github.com/mswjs/interceptors/pull/598
+  const response = new Response(responseBodyOrNull, {
+    status: message.statusCode,
+    statusText: message.statusMessage || STATUS_CODES[message.statusCode],
+    headers: rawHeaders,
+  })
+
+  return response
+}
+
+module.exports = { createResponse }
+
+
+/***/ }),
+
+/***/ 7287:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { debuglog } = __nccwpck_require__(3837)
+
+module.exports.back = debuglog('nock:back')
+module.exports.common = debuglog('nock:common')
+module.exports.intercept = debuglog('nock:intercept')
+module.exports.request_overrider = debuglog('nock:request_overrider')
+module.exports.playback_interceptor = debuglog('nock:playback_interceptor')
+module.exports.recorder = debuglog('nock:recorder')
+module.exports.socket = debuglog('nock:socket')
+module.exports.scopeDebuglog = namespace => debuglog(`nock:scope:${namespace}`)
+
+
+/***/ }),
+
+/***/ 9935:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { EventEmitter } = __nccwpck_require__(2361)
+
+module.exports = new EventEmitter()
+
+
+/***/ }),
+
+/***/ 7607:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+/**
+ * @module nock/intercept
+ */
+
+const { InterceptedRequestRouter } = __nccwpck_require__(4694)
+const common = __nccwpck_require__(1521)
+const { inherits } = __nccwpck_require__(3837)
+const http = __nccwpck_require__(3685)
+const { intercept: debug } = __nccwpck_require__(7287)
+const globalEmitter = __nccwpck_require__(9935)
+const { BatchInterceptor, getRawRequest } = __nccwpck_require__(4947)
+const {
+  default: nodeInterceptors,
+} = __nccwpck_require__(7883)
+const { createResponse } = __nccwpck_require__(7540)
+const { once } = __nccwpck_require__(2361)
+const { arrayBuffer } = __nccwpck_require__(1232)
+
+const interceptor = new BatchInterceptor({
+  name: 'nock-interceptor',
+  interceptors: nodeInterceptors,
+})
+let isNockActive = false
+
+/**
+ * @name NetConnectNotAllowedError
+ * @private
+ * @desc Error trying to make a connection when disabled external access.
+ * @class
+ * @example
+ * nock.disableNetConnect();
+ * http.get('http://zombo.com');
+ * // throw NetConnectNotAllowedError
+ */
+function NetConnectNotAllowedError(host, path) {
+  Error.call(this)
+
+  this.name = 'NetConnectNotAllowedError'
+  this.code = 'ENETUNREACH'
+  this.message = `Nock: Disallowed net connect for "${host}${path}"`
+
+  Error.captureStackTrace(this, this.constructor)
+}
+
+inherits(NetConnectNotAllowedError, Error)
+
+let allInterceptors = {}
+let allowNetConnect
+
+/**
+ * Enabled real request.
+ * @public
+ * @param {String|RegExp} matcher=RegExp.new('.*') Expression to match
+ * @example
+ * // Enables all real requests
+ * nock.enableNetConnect();
+ * @example
+ * // Enables real requests for url that matches google
+ * nock.enableNetConnect('google');
+ * @example
+ * // Enables real requests for url that matches google and amazon
+ * nock.enableNetConnect(/(google|amazon)/);
+ * @example
+ * // Enables real requests for url that includes google
+ * nock.enableNetConnect(host => host.includes('google'));
+ */
+function enableNetConnect(matcher) {
+  if (typeof matcher === 'string') {
+    allowNetConnect = new RegExp(matcher)
+  } else if (matcher instanceof RegExp) {
+    allowNetConnect = matcher
+  } else if (typeof matcher === 'function') {
+    allowNetConnect = { test: matcher }
+  } else {
+    allowNetConnect = /.*/
+  }
+}
+
+function isEnabledForNetConnect(options) {
+  common.normalizeRequestOptions(options)
+
+  const enabled = allowNetConnect && allowNetConnect.test(options.host)
+  debug('Net connect', enabled ? '' : 'not', 'enabled for', options.host)
+  return enabled
+}
+
+/**
+ * Disable all real requests.
+ * @public
+ * @example
+ * nock.disableNetConnect();
+ */
+function disableNetConnect() {
+  allowNetConnect = undefined
+}
+
+function isOn() {
+  return !isOff()
+}
+
+function isOff() {
+  return process.env.NOCK_OFF === 'true'
+}
+
+function addInterceptor(key, interceptor, scope, scopeOptions, host) {
+  if (!(key in allInterceptors)) {
+    allInterceptors[key] = { key, interceptors: [] }
+  }
+  interceptor.__nock_scope = scope
+
+  //  We need scope's key and scope options for scope filtering function (if defined)
+  interceptor.__nock_scopeKey = key
+  interceptor.__nock_scopeOptions = scopeOptions
+  //  We need scope's host for setting correct request headers for filtered scopes.
+  interceptor.__nock_scopeHost = host
+  interceptor.interceptionCounter = 0
+
+  if (scopeOptions.allowUnmocked) allInterceptors[key].allowUnmocked = true
+
+  allInterceptors[key].interceptors.push(interceptor)
+}
+
+function remove(interceptor) {
+  if (interceptor.__nock_scope.shouldPersist() || --interceptor.counter > 0) {
+    return
+  }
+
+  const { basePath } = interceptor
+  const interceptors =
+    (allInterceptors[basePath] && allInterceptors[basePath].interceptors) || []
+
+  // TODO: There is a clearer way to write that we want to delete the first
+  // matching instance. I'm also not sure why we couldn't delete _all_
+  // matching instances.
+  interceptors.some(function (thisInterceptor, i) {
+    return thisInterceptor === interceptor ? interceptors.splice(i, 1) : false
+  })
+}
+
+function removeAll() {
+  Object.keys(allInterceptors).forEach(function (key) {
+    allInterceptors[key].interceptors.forEach(function (interceptor) {
+      interceptor.scope.keyedInterceptors = {}
+    })
+  })
+  allInterceptors = {}
+}
+
+/**
+ * Return all the Interceptors whose Scopes match against the base path of the provided options.
+ *
+ * @returns {Interceptor[]}
+ */
+function interceptorsFor(options) {
+  common.normalizeRequestOptions(options)
+
+  debug('interceptors for %j', options.host)
+
+  const basePath = `${options.proto}://${options.host}`
+
+  debug('filtering interceptors for basepath', basePath)
+
+  // First try to use filteringScope if any of the interceptors has it defined.
+  for (const { key, interceptors, allowUnmocked } of Object.values(
+    allInterceptors,
+  )) {
+    for (const interceptor of interceptors) {
+      const { filteringScope } = interceptor.__nock_scopeOptions
+
+      // If scope filtering function is defined and returns a truthy value then
+      // we have to treat this as a match.
+      if (filteringScope && filteringScope(basePath)) {
+        interceptor.scope.logger('found matching scope interceptor')
+
+        // Keep the filtered scope (its key) to signal the rest of the module
+        // that this wasn't an exact but filtered match.
+        interceptors.forEach(ic => {
+          ic.__nock_filteredScope = ic.__nock_scopeKey
+        })
+        return interceptors
+      }
+    }
+
+    if (common.matchStringOrRegexp(basePath, key)) {
+      if (allowUnmocked && interceptors.length === 0) {
+        debug('matched base path with allowUnmocked (no matching interceptors)')
+        return [
+          {
+            options: { allowUnmocked: true },
+            matchOrigin() {
+              return false
+            },
+          },
+        ]
+      } else {
+        debug(
+          `matched base path (${interceptors.length} interceptor${
+            interceptors.length > 1 ? 's' : ''
+          })`,
+        )
+        return interceptors
+      }
+    }
+  }
+
+  return undefined
+}
+
+function removeInterceptor(options) {
+  // Lazily import to avoid circular imports.
+  const Interceptor = __nccwpck_require__(5419)
+
+  let baseUrl, key, method, proto
+  if (options instanceof Interceptor) {
+    baseUrl = options.basePath
+    key = options._key
+  } else {
+    proto = options.proto ? options.proto : 'http'
+
+    common.normalizeRequestOptions(options)
+    baseUrl = `${proto}://${options.host}`
+    method = (options.method && options.method.toUpperCase()) || 'GET'
+    key = `${method} ${baseUrl}${options.path || '/'}`
+  }
+
+  if (
+    allInterceptors[baseUrl] &&
+    allInterceptors[baseUrl].interceptors.length > 0
+  ) {
+    for (let i = 0; i < allInterceptors[baseUrl].interceptors.length; i++) {
+      const interceptor = allInterceptors[baseUrl].interceptors[i]
+      if (
+        options instanceof Interceptor
+          ? interceptor === options
+          : interceptor._key === key
+      ) {
+        allInterceptors[baseUrl].interceptors.splice(i, 1)
+        interceptor.scope.remove(key, interceptor)
+        break
+      }
+    }
+
+    return true
+  }
+
+  return false
+}
+//  Variable where we keep the ClientRequest we have overridden
+//  (which might or might not be node's original http.ClientRequest)
+let originalClientRequest
+
+function overrideClientRequest() {
+  // Here's some background discussion about overriding ClientRequest:
+  // - https://github.com/nodejitsu/mock-request/issues/4
+  // - https://github.com/nock/nock/issues/26
+  // It would be good to add a comment that explains this more clearly.
+  debug('Overriding ClientRequest')
+
+  // ----- Extending http.ClientRequest
+
+  //  Define the overriding client request that nock uses internally.
+  function OverriddenClientRequest(...args) {
+    const { options, callback } = common.normalizeClientRequestArgs(...args)
+
+    if (Object.keys(options).length === 0) {
+      // As weird as it is, it's possible to call `http.request` without
+      // options, and it makes a request to localhost or somesuch. We should
+      // support it too, for parity. However it doesn't work today, and fixing
+      // it seems low priority. Giving an explicit error is nicer than
+      // crashing with a weird stack trace. `http[s].request()`, nock's other
+      // client-facing entry point, makes a similar check.
+      // https://github.com/nock/nock/pull/1386
+      // https://github.com/nock/nock/pull/1440
+      throw Error(
+        'Creating a ClientRequest with empty `options` is not supported in Nock',
+      )
+    }
+
+    http.OutgoingMessage.call(this)
+
+    //  Filter the interceptors per request options.
+    const interceptors = interceptorsFor(options)
+
+    if (isOn() && interceptors) {
+      debug('using', interceptors.length, 'interceptors')
+
+      //  Use filtered interceptors to intercept requests.
+      // TODO: this shouldn't be a class anymore
+      // the overrider explicitly overrides methods and attrs on the request so the `assign` below should be removed.
+      const overrider = new InterceptedRequestRouter({
+        req: this,
+        options,
+        interceptors,
+      })
+      Object.assign(this, overrider)
+
+      if (callback) {
+        this.once('response', callback)
+      }
+    } else {
+      debug('falling back to original ClientRequest')
+
+      //  Fallback to original ClientRequest if nock is off or the net connection is enabled.
+      if (isOff() || isEnabledForNetConnect(options)) {
+        originalClientRequest.apply(this, arguments)
+      } else {
+        common.setImmediate(
+          function () {
+            const error = new NetConnectNotAllowedError(
+              options.host,
+              options.path,
+            )
+            this.emit('error', error)
+          }.bind(this),
+        )
+      }
+    }
+  }
+  inherits(OverriddenClientRequest, http.ClientRequest)
+
+  //  Override the http module's request but keep the original so that we can use it and later restore it.
+  //  NOTE: We only override http.ClientRequest as https module also uses it.
+  originalClientRequest = http.ClientRequest
+  http.ClientRequest = OverriddenClientRequest
+
+  debug('ClientRequest overridden')
+}
+
+function restoreOverriddenClientRequest() {
+  debug('restoring overridden ClientRequest')
+
+  //  Restore the ClientRequest we have overridden.
+  if (!originalClientRequest) {
+    debug('- ClientRequest was not overridden')
+  } else {
+    isNockActive = false
+    interceptor.dispose()
+    http.ClientRequest = originalClientRequest
+    originalClientRequest = undefined
+
+    debug('- ClientRequest restored')
+  }
+}
+
+function isActive() {
+  return isNockActive
+}
+
+function interceptorScopes() {
+  const nestedInterceptors = Object.values(allInterceptors).map(
+    i => i.interceptors,
+  )
+  const scopes = new Set([].concat(...nestedInterceptors).map(i => i.scope))
+  return [...scopes]
+}
+
+function isDone() {
+  return interceptorScopes().every(scope => scope.isDone())
+}
+
+function pendingMocks() {
+  return [].concat(...interceptorScopes().map(scope => scope.pendingMocks()))
+}
+
+function activeMocks() {
+  return [].concat(...interceptorScopes().map(scope => scope.activeMocks()))
+}
+
+function activate() {
+  if (isNockActive) {
+    throw new Error('Nock already active')
+  }
+
+  overrideClientRequest()
+  interceptor.apply()
+  // Force msw to forward Nock's error instead of coerce it into 500 error
+  interceptor.on('unhandledException', ({ controller, error }) => {
+    controller.errorWith(error)
+  })
+  interceptor.on(
+    'request',
+    async function ({ request: mswRequest, controller }) {
+      const request = mswRequest.clone()
+      const { options } = common.normalizeClientRequestArgs(request.url)
+      options.proto = options.protocol.slice(0, -1)
+      options.method = request.method
+      const interceptors = interceptorsFor(options)
+      if (isOn() && interceptors) {
+        const matches = interceptors.some(interceptor =>
+          interceptor.matchOrigin(options),
+        )
+        const allowUnmocked = interceptors.some(
+          interceptor => interceptor.options.allowUnmocked,
+        )
+
+        const nockRequest = common.convertFetchRequestToClientRequest(request)
+        if (!matches && allowUnmocked) {
+          globalEmitter.emit('no match', nockRequest)
+        } else {
+          nockRequest.on('response', nockResponse => {
+            const response = createResponse(nockResponse, mswRequest.signal)
+            controller.respondWith(response)
+          })
+
+          const promise = Promise.race([
+            // TODO: temp hacky way to handle allowUnmocked in startPlayback
+            once(nockRequest, 'real-request'),
+            once(nockRequest, 'error'),
+            once(nockRequest, 'response'),
+          ])
+
+          const rawRequest = getRawRequest(mswRequest)
+
+          // If this is GET request with body, we need to read the body from the socket because Fetch API doesn't support this.
+          const buffer =
+            rawRequest instanceof originalClientRequest &&
+            rawRequest.method === 'GET' &&
+            rawRequest.getHeader('content-length') > 0
+              ? // TODO: use getClientRequestBodyStream instead of access to internal properties
+                await arrayBuffer(rawRequest.socket.requestStream)
+              : await request.arrayBuffer()
+          nockRequest.write(buffer)
+          nockRequest.end()
+          await promise
+        }
+      } else {
+        globalEmitter.emit('no match', options)
+        if (!(isOff() || isEnabledForNetConnect(options))) {
+          throw new NetConnectNotAllowedError(options.host, options.path)
+        }
+      }
+    },
+  )
+  isNockActive = true
+}
+
+module.exports = {
+  addInterceptor,
+  remove,
+  removeAll,
+  removeInterceptor,
+  isOn,
+  activate,
+  isActive,
+  isDone,
+  pendingMocks,
+  activeMocks,
+  enableNetConnect,
+  disableNetConnect,
+  restoreOverriddenClientRequest,
+  abortPendingRequests: common.removeAllTimers,
+}
+
+
+/***/ }),
+
+/***/ 4694:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { request_overrider: debug } = __nccwpck_require__(7287)
+const { IncomingMessage, ClientRequest } = __nccwpck_require__(3685)
+const propagate = __nccwpck_require__(9577)
+const common = __nccwpck_require__(1521)
+const globalEmitter = __nccwpck_require__(9935)
+const Socket = __nccwpck_require__(5676)
+const { playbackInterceptor } = __nccwpck_require__(6523)
+
+function socketOnClose(req) {
+  debug('socket close')
+
+  if (!req.res && !req.socket._hadError) {
+    // If we don't have a response then we know that the socket
+    // ended prematurely and we need to emit an error on the request.
+    req.socket._hadError = true
+    const err = new Error('socket hang up')
+    err.code = 'ECONNRESET'
+    req.emit('error', err)
+  }
+  req.emit('close')
+}
+
+/**
+ * Given a group of interceptors, appropriately route an outgoing request.
+ * Identify which interceptor ought to respond, if any, then delegate to
+ * `playbackInterceptor()` to consume the request itself.
+ */
+class InterceptedRequestRouter {
+  constructor({ req, options, interceptors }) {
+    this.req = req
+    this.options = {
+      // We may be changing the options object and we don't want those changes
+      // affecting the user so we use a clone of the object.
+      ...options,
+      // We use lower-case header field names throughout Nock.
+      headers: common.headersFieldNamesToLowerCase(
+        options.headers || {},
+        false,
+      ),
+    }
+    this.interceptors = interceptors
+
+    this.socket = new Socket(options)
+
+    // support setting `timeout` using request `options`
+    // https://nodejs.org/docs/latest-v12.x/api/http.html#http_http_request_url_options_callback
+    // any timeout in the request options override any timeout in the agent options.
+    // per https://github.com/nodejs/node/pull/21204
+    const timeout =
+      options.timeout ||
+      (options.agent && options.agent.options && options.agent.options.timeout)
+
+    if (timeout) {
+      this.socket.setTimeout(timeout)
+    }
+
+    this.response = new IncomingMessage(this.socket)
+    this.requestBodyBuffers = []
+    this.playbackStarted = false
+
+    // For parity with Node, it's important the socket event is emitted before we begin playback.
+    // This flag is set when playback is triggered if we haven't yet gotten the
+    // socket event to indicate that playback should start as soon as it comes in.
+    this.readyToStartPlaybackOnSocketEvent = false
+
+    this.attachToReq()
+
+    // Emit a fake socket event on the next tick to mimic what would happen on a real request.
+    // Some clients listen for a 'socket' event to be emitted before calling end(),
+    // which causes Nock to hang.
+    process.nextTick(() => this.connectSocket())
+  }
+
+  attachToReq() {
+    const { req, options } = this
+
+    for (const [name, val] of Object.entries(options.headers)) {
+      req.setHeader(name.toLowerCase(), val)
+    }
+
+    if (options.auth && !options.headers.authorization) {
+      req.setHeader(
+        // We use lower-case header field names throughout Nock.
+        'authorization',
+        `Basic ${Buffer.from(options.auth).toString('base64')}`,
+      )
+    }
+
+    req.path = options.path
+    req.method = options.method
+
+    req.write = (...args) => this.handleWrite(...args)
+    req.end = (...args) => this.handleEnd(...args)
+    req.flushHeaders = (...args) => this.handleFlushHeaders(...args)
+
+    // https://github.com/nock/nock/issues/256
+    if (options.headers.expect === '100-continue') {
+      common.setImmediate(() => {
+        debug('continue')
+        req.emit('continue')
+      })
+    }
+  }
+
+  connectSocket() {
+    const { req, socket } = this
+
+    if (common.isRequestDestroyed(req)) {
+      return
+    }
+
+    // ClientRequest.connection is an alias for ClientRequest.socket
+    // https://nodejs.org/api/http.html#http_request_socket
+    // https://github.com/nodejs/node/blob/b0f75818f39ed4e6bd80eb7c4010c1daf5823ef7/lib/_http_client.js#L640-L641
+    // The same Socket is shared between the request and response to mimic native behavior.
+    req.socket = req.connection = socket
+
+    propagate(['error', 'timeout'], socket, req)
+    socket.on('close', () => socketOnClose(req))
+
+    socket.connecting = false
+    req.emit('socket', socket)
+
+    // https://nodejs.org/api/net.html#net_event_connect
+    socket.emit('connect')
+
+    // https://nodejs.org/api/tls.html#tls_event_secureconnect
+    if (socket.authorized) {
+      socket.emit('secureConnect')
+    }
+
+    if (this.readyToStartPlaybackOnSocketEvent) {
+      this.maybeStartPlayback()
+    }
+  }
+
+  // from docs: When write function is called with empty string or buffer, it does nothing and waits for more input.
+  // However, actually implementation checks the state of finished and aborted before checking if the first arg is empty.
+  handleWrite(...args) {
+    debug('request write')
+
+    let [buffer, encoding] = args
+
+    const { req } = this
+
+    if (req.finished) {
+      const err = new Error('write after end')
+      err.code = 'ERR_STREAM_WRITE_AFTER_END'
+      process.nextTick(() => req.emit('error', err))
+
+      // It seems odd to return `true` here, not sure why you'd want to have
+      // the stream potentially written to more, but it's what Node does.
+      // https://github.com/nodejs/node/blob/a9270dcbeba4316b1e179b77ecb6c46af5aa8c20/lib/_http_outgoing.js#L662-L665
+      return true
+    }
+
+    if (req.socket && req.socket.destroyed) {
+      return false
+    }
+
+    if (!buffer) {
+      return true
+    }
+
+    if (!Buffer.isBuffer(buffer)) {
+      buffer = Buffer.from(buffer, encoding)
+    }
+    this.requestBodyBuffers.push(buffer)
+
+    // writable.write encoding param is optional
+    // so if callback is present it's the last argument
+    const callback = args.length > 1 ? args[args.length - 1] : undefined
+    // can't use instanceof Function because some test runners
+    // run tests in vm.runInNewContext where Function is not same
+    // as that in the current context
+    // https://github.com/nock/nock/pull/1754#issuecomment-571531407
+    if (typeof callback === 'function') {
+      callback()
+    }
+
+    common.setImmediate(function () {
+      req.emit('drain')
+    })
+
+    return false
+  }
+
+  handleEnd(chunk, encoding, callback) {
+    debug('request end')
+    const { req } = this
+
+    // handle the different overloaded arg signatures
+    if (typeof chunk === 'function') {
+      callback = chunk
+      chunk = null
+    } else if (typeof encoding === 'function') {
+      callback = encoding
+      encoding = null
+    }
+
+    if (typeof callback === 'function') {
+      req.once('finish', callback)
+    }
+
+    if (chunk) {
+      req.write(chunk, encoding)
+    }
+    req.finished = true
+    this.maybeStartPlayback()
+
+    return req
+  }
+
+  handleFlushHeaders() {
+    debug('request flushHeaders')
+    this.maybeStartPlayback()
+  }
+
+  /**
+   * Set request headers of the given request. This is needed both during the
+   * routing phase, in case header filters were specified, and during the
+   * interceptor-playback phase, to correctly pass mocked request headers.
+   * TODO There are some problems with this; see https://github.com/nock/nock/issues/1718
+   */
+  setHostHeaderUsingInterceptor(interceptor) {
+    const { req, options } = this
+
+    // If a filtered scope is being used we have to use scope's host in the
+    // header, otherwise 'host' header won't match.
+    // NOTE: We use lower-case header field names throughout Nock.
+    const HOST_HEADER = 'host'
+    if (interceptor.__nock_filteredScope && interceptor.__nock_scopeHost) {
+      options.headers[HOST_HEADER] = interceptor.__nock_scopeHost
+      req.setHeader(HOST_HEADER, interceptor.__nock_scopeHost)
+    } else {
+      // For all other cases, we always add host header equal to the requested
+      // host unless it was already defined.
+      if (options.host && !req.getHeader(HOST_HEADER)) {
+        let hostHeader = options.host
+
+        if (options.port === 80 || options.port === 443) {
+          hostHeader = hostHeader.split(':')[0]
+        }
+
+        req.setHeader(HOST_HEADER, hostHeader)
+      }
+    }
+  }
+
+  maybeStartPlayback() {
+    const { req, socket, playbackStarted } = this
+
+    // In order to get the events in the right order we need to delay playback
+    // if we get here before the `socket` event is emitted.
+    if (socket.connecting) {
+      this.readyToStartPlaybackOnSocketEvent = true
+      return
+    }
+
+    if (!common.isRequestDestroyed(req) && !playbackStarted) {
+      this.startPlayback()
+    }
+  }
+
+  startPlayback() {
+    debug('ending')
+    this.playbackStarted = true
+
+    const { req, response, socket, options, interceptors } = this
+
+    Object.assign(options, {
+      // Re-update `options` with the current value of `req.path` because badly
+      // behaving agents like superagent like to change `req.path` mid-flight.
+      path: req.path,
+      // Similarly, node-http-proxy will modify headers in flight, so we have
+      // to put the headers back into options.
+      // https://github.com/nock/nock/pull/1484
+      headers: req.getHeaders(),
+      // Fixes https://github.com/nock/nock/issues/976
+      protocol: `${options.proto}:`,
+    })
+
+    interceptors.forEach(interceptor => {
+      this.setHostHeaderUsingInterceptor(interceptor)
+    })
+
+    const requestBodyBuffer = Buffer.concat(this.requestBodyBuffers)
+    // When request body is a binary buffer we internally use in its hexadecimal
+    // representation.
+    const requestBodyIsUtf8Representable =
+      common.isUtf8Representable(requestBodyBuffer)
+    const requestBodyString = requestBodyBuffer.toString(
+      requestBodyIsUtf8Representable ? 'utf8' : 'hex',
+    )
+
+    const matchedInterceptor = interceptors.find(i =>
+      i.match(req, options, requestBodyString),
+    )
+
+    if (matchedInterceptor) {
+      matchedInterceptor.scope.logger(
+        'interceptor identified, starting mocking',
+      )
+
+      matchedInterceptor.markConsumed()
+
+      // wait to emit the finish event until we know for sure an Interceptor is going to playback.
+      // otherwise an unmocked request might emit finish twice.
+      req.emit('finish')
+
+      playbackInterceptor({
+        req,
+        socket,
+        options,
+        requestBodyString,
+        requestBodyIsUtf8Representable,
+        response,
+        interceptor: matchedInterceptor,
+      })
+    } else {
+      globalEmitter.emit('no match', req, options, requestBodyString)
+
+      // Try to find a hostname match that allows unmocked.
+      const allowUnmocked = interceptors.some(
+        i => i.matchHostName(options) && i.options.allowUnmocked,
+      )
+
+      if (allowUnmocked && req instanceof ClientRequest) {
+        req.emit('real-request')
+      } else {
+        const reqStr = common.stringifyRequest(options, requestBodyString)
+        const err = new Error(`Nock: No match for request ${reqStr}`)
+        err.code = 'ERR_NOCK_NO_MATCH'
+        err.statusCode = err.status = 404
+        req.destroy(err)
+      }
+    }
+  }
+}
+
+module.exports = { InterceptedRequestRouter }
+
+
+/***/ }),
+
+/***/ 5419:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const stringify = __nccwpck_require__(7073)
+const querystring = __nccwpck_require__(3477)
+const { URL, URLSearchParams } = __nccwpck_require__(7310)
+
+const common = __nccwpck_require__(1521)
+const { remove } = __nccwpck_require__(7607)
+const matchBody = __nccwpck_require__(3986)
+
+let fs
+try {
+  fs = __nccwpck_require__(7147)
+} catch (err) {
+  // do nothing, we're in the browser
+}
+
+module.exports = class Interceptor {
+  /**
+   *
+   * Valid argument types for `uri`:
+   *  - A string used for strict comparisons with pathname.
+   *    The search portion of the URI may also be postfixed, in which case the search params
+   *    are striped and added via the `query` method.
+   *  - A RegExp instance that tests against only the pathname of requests.
+   *  - A synchronous function bound to this Interceptor instance. It's provided the pathname
+   *    of requests and must return a boolean denoting if the request is considered a match.
+   */
+  constructor(scope, uri, method, requestBody, interceptorOptions) {
+    const uriIsStr = typeof uri === 'string'
+    // Check for leading slash. Uri can be either a string or a regexp, but
+    // When enabled filteringScope ignores the passed URL entirely so we skip validation.
+
+    if (
+      uriIsStr &&
+      !scope.scopeOptions.filteringScope &&
+      !scope.basePathname &&
+      !uri.startsWith('/') &&
+      !uri.startsWith('*')
+    ) {
+      throw Error(
+        `Non-wildcard URL path strings must begin with a slash (otherwise they won't match anything) (got: ${uri})`,
+      )
+    }
+
+    if (!method) {
+      throw new Error(
+        'The "method" parameter is required for an intercept call.',
+      )
+    }
+
+    this.scope = scope
+    this.interceptorMatchHeaders = []
+    this.method = method.toUpperCase()
+    this.uri = uri
+    this._key = `${this.method} ${scope.basePath}${scope.basePathname}${
+      uriIsStr ? '' : '/'
+    }${uri}`
+    this.basePath = this.scope.basePath
+    this.path = uriIsStr ? scope.basePathname + uri : uri
+    this.queries = null
+
+    this.options = interceptorOptions || {}
+    this.counter = 1
+    this._requestBody = requestBody
+
+    //  We use lower-case header field names throughout Nock.
+    this.reqheaders = common.headersFieldNamesToLowerCase(
+      scope.scopeOptions.reqheaders || {},
+      true,
+    )
+    this.badheaders = common.headersFieldsArrayToLowerCase(
+      scope.scopeOptions.badheaders || [],
+    )
+
+    this.delayBodyInMs = 0
+    this.delayConnectionInMs = 0
+
+    this.optional = false
+
+    // strip off literal query parameters if they were provided as part of the URI
+    if (uriIsStr && uri.includes('?')) {
+      // localhost is a dummy value because the URL constructor errors for only relative inputs
+      const parsedURL = new URL(this.path, 'http://localhost')
+      this.path = parsedURL.pathname
+      this.query(parsedURL.searchParams)
+      this._key = `${this.method} ${scope.basePath}${this.path}`
+    }
+  }
+
+  optionally(flag = true) {
+    // The default behaviour of optionally() with no arguments is to make the mock optional.
+    if (typeof flag !== 'boolean') {
+      throw new Error('Invalid arguments: argument should be a boolean')
+    }
+
+    this.optional = flag
+
+    return this
+  }
+
+  replyWithError(errorMessage) {
+    this.errorMessage = errorMessage
+
+    this.options = {
+      ...this.scope.scopeOptions,
+      ...this.options,
+    }
+
+    this.scope.add(this._key, this)
+    return this.scope
+  }
+
+  reply(statusCode, body, rawHeaders) {
+    // support the format of only passing in a callback
+    if (typeof statusCode === 'function') {
+      if (arguments.length > 1) {
+        // It's not very Javascript-y to throw an error for extra args to a function, but because
+        // of legacy behavior, this error was added to reduce confusion for those migrating.
+        throw Error(
+          'Invalid arguments. When providing a function for the first argument, .reply does not accept other arguments.',
+        )
+      }
+      this.statusCode = null
+      this.fullReplyFunction = statusCode
+    } else {
+      if (statusCode !== undefined && !Number.isInteger(statusCode)) {
+        throw new Error(`Invalid ${typeof statusCode} value for status code`)
+      }
+
+      this.statusCode = statusCode || 200
+      if (typeof body === 'function') {
+        this.replyFunction = body
+        body = null
+      }
+    }
+
+    this.options = {
+      ...this.scope.scopeOptions,
+      ...this.options,
+    }
+
+    this.rawHeaders = common.headersInputToRawArray(rawHeaders)
+
+    if (this.scope.date) {
+      // https://tools.ietf.org/html/rfc7231#section-7.1.1.2
+      this.rawHeaders.push('Date', this.scope.date.toUTCString())
+    }
+
+    // Prepare the headers temporarily so we can make best guesses about content-encoding and content-type
+    // below as well as while the response is being processed in RequestOverrider.end().
+    // Including all the default headers is safe for our purposes because of the specific headers we introspect.
+    // A more thoughtful process is used to merge the default headers when the response headers are finally computed.
+    this.headers = common.headersArrayToObject(
+      this.rawHeaders.concat(this.scope._defaultReplyHeaders),
+    )
+
+    //  If the content is not encoded we may need to transform the response body.
+    //  Otherwise, we leave it as it is.
+    if (
+      body &&
+      typeof body !== 'string' &&
+      !Buffer.isBuffer(body) &&
+      !common.isStream(body) &&
+      !common.isContentEncoded(this.headers)
+    ) {
+      try {
+        body = stringify(body)
+      } catch (err) {
+        throw new Error('Error encoding response body into JSON')
+      }
+
+      if (!this.headers['content-type']) {
+        // https://tools.ietf.org/html/rfc7231#section-3.1.1.5
+        this.rawHeaders.push('Content-Type', 'application/json')
+      }
+    }
+
+    if (this.scope.contentLen) {
+      // https://tools.ietf.org/html/rfc7230#section-3.3.2
+      if (typeof body === 'string') {
+        this.rawHeaders.push('Content-Length', body.length)
+      } else if (Buffer.isBuffer(body)) {
+        this.rawHeaders.push('Content-Length', body.byteLength)
+      }
+    }
+
+    this.scope.logger('reply.headers:', this.headers)
+    this.scope.logger('reply.rawHeaders:', this.rawHeaders)
+
+    this.body = body
+
+    this.scope.add(this._key, this)
+    return this.scope
+  }
+
+  replyWithFile(statusCode, filePath, headers) {
+    if (!fs) {
+      throw new Error('No fs')
+    }
+    this.filePath = filePath
+    return this.reply(
+      statusCode,
+      () => {
+        const readStream = fs.createReadStream(filePath)
+        readStream.pause()
+        return readStream
+      },
+      headers,
+    )
+  }
+
+  // Also match request headers
+  // https://github.com/nock/nock/issues/163
+  reqheaderMatches(options, key) {
+    const reqHeader = this.reqheaders[key]
+    let header = options.headers[key]
+
+    // https://github.com/nock/nock/issues/399
+    // https://github.com/nock/nock/issues/822
+    if (header && typeof header !== 'string' && header.toString) {
+      header = header.toString()
+    }
+
+    // We skip 'host' header comparison unless it's available in both mock and
+    // actual request. This because 'host' may get inserted by Nock itself and
+    // then get recorded. NOTE: We use lower-case header field names throughout
+    // Nock. See https://github.com/nock/nock/pull/196.
+    if (key === 'host' && (header === undefined || reqHeader === undefined)) {
+      return true
+    }
+
+    if (reqHeader !== undefined && header !== undefined) {
+      if (typeof reqHeader === 'function') {
+        return reqHeader(header)
+      } else if (common.matchStringOrRegexp(header, reqHeader)) {
+        return true
+      }
+    }
+
+    this.scope.logger(
+      "request header field doesn't match:",
+      key,
+      header,
+      reqHeader,
+    )
+    return false
+  }
+
+  match(req, options, body) {
+    this.scope.logger('attempting match %j, body = %j', options, body)
+
+    const method = (options.method || 'GET').toUpperCase()
+    let { path = '/' } = options
+    let matches
+    let matchKey
+    const { proto } = options
+
+    if (this.method !== method) {
+      this.scope.logger(
+        `Method did not match. Request ${method} Interceptor ${this.method}`,
+      )
+      return false
+    }
+
+    if (this.scope.transformPathFunction) {
+      path = this.scope.transformPathFunction(path)
+    }
+
+    const requestMatchesFilter = ({ name, value: predicate }) => {
+      const headerValue = req.getHeader(name)
+      if (typeof predicate === 'function') {
+        return predicate(headerValue)
+      } else {
+        return common.matchStringOrRegexp(headerValue, predicate)
+      }
+    }
+
+    if (
+      !this.scope.matchHeaders.every(requestMatchesFilter) ||
+      !this.interceptorMatchHeaders.every(requestMatchesFilter)
+    ) {
+      this.scope.logger("headers don't match")
+      return false
+    }
+
+    const reqHeadersMatch = Object.keys(this.reqheaders).every(key =>
+      this.reqheaderMatches(options, key),
+    )
+
+    if (!reqHeadersMatch) {
+      this.scope.logger("headers don't match")
+      return false
+    }
+
+    if (
+      this.scope.scopeOptions.conditionally &&
+      !this.scope.scopeOptions.conditionally()
+    ) {
+      this.scope.logger(
+        'matching failed because Scope.conditionally() did not validate',
+      )
+      return false
+    }
+
+    const badHeaders = this.badheaders.filter(
+      header => header in options.headers,
+    )
+
+    if (badHeaders.length) {
+      this.scope.logger('request contains bad headers', ...badHeaders)
+      return false
+    }
+
+    // Match query strings when using query()
+    if (this.queries === null) {
+      this.scope.logger('query matching skipped')
+    } else {
+      // can't rely on pathname or search being in the options, but path has a default
+      const [pathname, search] = path.split('?')
+      const matchQueries = this.matchQuery({ search })
+
+      this.scope.logger(
+        matchQueries ? 'query matching succeeded' : 'query matching failed',
+      )
+
+      if (!matchQueries) {
+        return false
+      }
+
+      // If the query string was explicitly checked then subsequent checks against
+      // the path using a callback or regexp only validate the pathname.
+      path = pathname
+    }
+
+    // If we have a filtered scope then we use it instead reconstructing the
+    // scope from the request options (proto, host and port) as these two won't
+    // necessarily match and we have to remove the scope that was matched (vs.
+    // that was defined).
+    if (this.__nock_filteredScope) {
+      matchKey = this.__nock_filteredScope
+    } else {
+      matchKey = common.normalizeOrigin(proto, options.host, options.port)
+    }
+
+    if (typeof this.uri === 'function') {
+      matches =
+        common.matchStringOrRegexp(matchKey, this.basePath) &&
+        // This is a false positive, as `uri` is not bound to `this`.
+        // eslint-disable-next-line no-useless-call
+        this.uri.call(this, path)
+    } else {
+      matches =
+        common.matchStringOrRegexp(matchKey, this.basePath) &&
+        common.matchStringOrRegexp(path, this.path)
+    }
+
+    this.scope.logger(`matching ${matchKey}${path} to ${this._key}: ${matches}`)
+
+    if (matches && this._requestBody !== undefined) {
+      if (this.scope.transformRequestBodyFunction) {
+        body = this.scope.transformRequestBodyFunction(body, this._requestBody)
+      }
+
+      matches = matchBody(options, this._requestBody, body)
+      if (!matches) {
+        this.scope.logger(
+          "bodies don't match: \n",
+          this._requestBody,
+          '\n',
+          body,
+        )
+      }
+    }
+
+    return matches
+  }
+
+  /**
+   * Return true when the interceptor's method, protocol, host, port, and path
+   * match the provided options.
+   */
+  matchOrigin(options) {
+    const isPathFn = typeof this.path === 'function'
+    const isRegex = this.path instanceof RegExp
+    const isRegexBasePath = this.scope.basePath instanceof RegExp
+
+    const method = (options.method || 'GET').toUpperCase()
+    let { path } = options
+    const { proto } = options
+
+    // NOTE: Do not split off the query params as the regex could use them
+    if (!isRegex) {
+      path = path ? path.split('?')[0] : ''
+    }
+
+    if (this.scope.transformPathFunction) {
+      path = this.scope.transformPathFunction(path)
+    }
+    const comparisonKey = isPathFn || isRegex ? this.__nock_scopeKey : this._key
+    const matchKey = `${method} ${proto}://${options.host}${path}`
+
+    if (isPathFn) {
+      return !!(matchKey.match(comparisonKey) && this.path(path))
+    }
+
+    if (isRegex && !isRegexBasePath) {
+      return !!matchKey.match(comparisonKey) && this.path.test(path)
+    }
+
+    if (isRegexBasePath) {
+      return this.scope.basePath.test(matchKey) && !!path.match(this.path)
+    }
+
+    return comparisonKey === matchKey
+  }
+
+  matchHostName(options) {
+    const { basePath } = this.scope
+
+    if (basePath instanceof RegExp) {
+      return basePath.test(options.hostname)
+    }
+
+    return options.hostname === this.scope.urlParts.hostname
+  }
+
+  matchQuery(options) {
+    if (this.queries === true) {
+      return true
+    }
+
+    const reqQueries = querystring.parse(options.search)
+    this.scope.logger('Interceptor queries: %j', this.queries)
+    this.scope.logger('    Request queries: %j', reqQueries)
+
+    if (typeof this.queries === 'function') {
+      return this.queries(reqQueries)
+    }
+
+    return common.dataEqual(this.queries, reqQueries)
+  }
+
+  filteringPath(...args) {
+    this.scope.filteringPath(...args)
+    return this
+  }
+
+  // TODO filtering by path is valid on the intercept level, but not filtering
+  // by request body?
+
+  markConsumed() {
+    this.interceptionCounter++
+
+    remove(this)
+
+    if (!this.scope.shouldPersist() && this.counter < 1) {
+      this.scope.remove(this._key, this)
+    }
+  }
+
+  matchHeader(name, value) {
+    this.interceptorMatchHeaders.push({ name, value })
+    return this
+  }
+
+  basicAuth({ user, pass = '' }) {
+    const encoded = Buffer.from(`${user}:${pass}`).toString('base64')
+    this.matchHeader('authorization', `Basic ${encoded}`)
+    return this
+  }
+
+  /**
+   * Set query strings for the interceptor
+   * @name query
+   * @param queries Object of query string name,values (accepts regexp values)
+   * @public
+   * @example
+   * // Will match 'http://zombo.com/?q=t'
+   * nock('http://zombo.com').get('/').query({q: 't'});
+   */
+  query(queries) {
+    if (this.queries !== null) {
+      throw Error(`Query parameters have already been defined`)
+    }
+
+    // Allow all query strings to match this route
+    if (queries === true) {
+      this.queries = queries
+      return this
+    }
+
+    if (typeof queries === 'function') {
+      this.queries = queries
+      return this
+    }
+
+    let strFormattingFn
+    if (this.scope.scopeOptions.encodedQueryParams) {
+      strFormattingFn = common.percentDecode
+    }
+
+    if (queries instanceof URLSearchParams || typeof queries === 'string') {
+      // Normalize the data into the shape that is matched against.
+      // Duplicate keys are handled by combining the values into an array.
+      queries = querystring.parse(queries.toString())
+    } else if (!common.isPlainObject(queries)) {
+      throw Error(`Argument Error: ${queries}`)
+    }
+
+    this.queries = {}
+    for (const [key, value] of Object.entries(queries)) {
+      const formatted = common.formatQueryValue(key, value, strFormattingFn)
+      const [formattedKey, formattedValue] = formatted
+      this.queries[formattedKey] = formattedValue
+    }
+
+    return this
+  }
+
+  /**
+   * Set number of times will repeat the interceptor
+   * @name times
+   * @param newCounter Number of times to repeat (should be > 0)
+   * @public
+   * @example
+   * // Will repeat mock 5 times for same king of request
+   * nock('http://zombo.com).get('/').times(5).reply(200, 'Ok');
+   */
+  times(newCounter) {
+    if (newCounter < 1) {
+      return this
+    }
+
+    this.counter = newCounter
+
+    return this
+  }
+
+  /**
+   * An sugar syntax for times(1)
+   * @name once
+   * @see {@link times}
+   * @public
+   * @example
+   * nock('http://zombo.com).get('/').once().reply(200, 'Ok');
+   */
+  once() {
+    return this.times(1)
+  }
+
+  /**
+   * An sugar syntax for times(2)
+   * @name twice
+   * @see {@link times}
+   * @public
+   * @example
+   * nock('http://zombo.com).get('/').twice().reply(200, 'Ok');
+   */
+  twice() {
+    return this.times(2)
+  }
+
+  /**
+   * An sugar syntax for times(3).
+   * @name thrice
+   * @see {@link times}
+   * @public
+   * @example
+   * nock('http://zombo.com).get('/').thrice().reply(200, 'Ok');
+   */
+  thrice() {
+    return this.times(3)
+  }
+
+  /**
+   * Delay the response by a certain number of ms.
+   *
+   * @param {(integer|object)} opts - Number of milliseconds to wait, or an object
+   * @param {integer} [opts.head] - Number of milliseconds to wait before response is sent
+   * @param {integer} [opts.body] - Number of milliseconds to wait before response body is sent
+   * @return {Interceptor} - the current interceptor for chaining
+   */
+  delay(opts) {
+    let headDelay
+    let bodyDelay
+    if (typeof opts === 'number') {
+      headDelay = opts
+      bodyDelay = 0
+    } else if (typeof opts === 'object') {
+      headDelay = opts.head || 0
+      bodyDelay = opts.body || 0
+    } else {
+      throw new Error(`Unexpected input opts ${opts}`)
+    }
+
+    return this.delayConnection(headDelay).delayBody(bodyDelay)
+  }
+
+  /**
+   * Delay the response body by a certain number of ms.
+   *
+   * @param {integer} ms - Number of milliseconds to wait before response is sent
+   * @return {Interceptor} - the current interceptor for chaining
+   */
+  delayBody(ms) {
+    this.delayBodyInMs = ms
+    return this
+  }
+
+  /**
+   * Delay the connection by a certain number of ms.
+   *
+   * @param  {integer} ms - Number of milliseconds to wait
+   * @return {Interceptor} - the current interceptor for chaining
+   */
+  delayConnection(ms) {
+    this.delayConnectionInMs = ms
+    return this
+  }
+}
+
+
+/***/ }),
+
+/***/ 3986:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const querystring = __nccwpck_require__(3477)
+
+const common = __nccwpck_require__(1521)
+
+module.exports = function matchBody(options, spec, body) {
+  if (spec instanceof RegExp) {
+    return spec.test(body)
+  }
+
+  if (Buffer.isBuffer(spec)) {
+    const encoding = common.isUtf8Representable(spec) ? 'utf8' : 'hex'
+    spec = spec.toString(encoding)
+  }
+
+  const contentType = (
+    (options.headers &&
+      (options.headers['Content-Type'] || options.headers['content-type'])) ||
+    ''
+  ).toString()
+
+  const isMultipart = contentType.includes('multipart')
+  const isUrlencoded = contentType.includes('application/x-www-form-urlencoded')
+
+  // try to transform body to json
+  let json
+  if (typeof spec === 'object' || typeof spec === 'function') {
+    try {
+      json = JSON.parse(body)
+    } catch (err) {
+      // not a valid JSON string
+    }
+    if (json !== undefined) {
+      body = json
+    } else if (isUrlencoded) {
+      body = querystring.parse(body)
+    }
+  }
+
+  if (typeof spec === 'function') {
+    return spec.call(options, body)
+  }
+
+  // strip line endings from both so that we get a match no matter what OS we are running on
+  // if Content-Type does not contain 'multipart'
+  if (!isMultipart && typeof body === 'string') {
+    body = body.replace(/\r?\n|\r/g, '')
+  }
+
+  if (!isMultipart && typeof spec === 'string') {
+    spec = spec.replace(/\r?\n|\r/g, '')
+  }
+
+  // Because the nature of URL encoding, all the values in the body must be cast to strings.
+  // dataEqual does strict checking, so we have to cast the non-regexp values in the spec too.
+  if (isUrlencoded) {
+    spec = mapValuesDeep(spec, val => (val instanceof RegExp ? val : `${val}`))
+  }
+
+  return common.dataEqual(spec, body)
+}
+
+function mapValues(object, cb) {
+  const keys = Object.keys(object)
+  const clonedObject = { ...object }
+  for (const key of keys) {
+    clonedObject[key] = cb(clonedObject[key], key, clonedObject)
+  }
+  return clonedObject
+}
+
+/**
+ * Based on lodash issue discussion
+ * https://github.com/lodash/lodash/issues/1244
+ */
+function mapValuesDeep(obj, cb) {
+  if (Array.isArray(obj)) {
+    return obj.map(v => mapValuesDeep(v, cb))
+  }
+  if (common.isPlainObject(obj)) {
+    return mapValues(obj, v => mapValuesDeep(v, cb))
+  }
+  return cb(obj)
+}
+
+
+/***/ }),
+
+/***/ 6523:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const stream = __nccwpck_require__(2781)
+const util = __nccwpck_require__(3837)
+const zlib = __nccwpck_require__(9796)
+const { playback_interceptor: debug } = __nccwpck_require__(7287)
+const common = __nccwpck_require__(1521)
+
+function parseJSONRequestBody(req, requestBody) {
+  if (!requestBody || !common.isJSONContent(req.headers)) {
+    return requestBody
+  }
+
+  if (common.contentEncoding(req.headers, 'gzip')) {
+    requestBody = String(zlib.gunzipSync(Buffer.from(requestBody, 'hex')))
+  } else if (common.contentEncoding(req.headers, 'deflate')) {
+    requestBody = String(zlib.inflateSync(Buffer.from(requestBody, 'hex')))
+  }
+
+  return JSON.parse(requestBody)
+}
+
+function parseFullReplyResult(response, fullReplyResult) {
+  debug('full response from callback result: %j', fullReplyResult)
+
+  if (!Array.isArray(fullReplyResult)) {
+    throw Error('A single function provided to .reply MUST return an array')
+  }
+
+  if (fullReplyResult.length > 3) {
+    throw Error(
+      'The array returned from the .reply callback contains too many values',
+    )
+  }
+
+  const [status, body = '', headers] = fullReplyResult
+
+  if (!Number.isInteger(status)) {
+    throw new Error(`Invalid ${typeof status} value for status code`)
+  }
+
+  response.statusCode = status
+  response.rawHeaders.push(...common.headersInputToRawArray(headers))
+  debug('response.rawHeaders after reply: %j', response.rawHeaders)
+
+  return body
+}
+
+/**
+ * Determine which of the default headers should be added to the response.
+ *
+ * Don't include any defaults whose case-insensitive keys are already on the response.
+ */
+function selectDefaultHeaders(existingHeaders, defaultHeaders) {
+  if (!defaultHeaders.length) {
+    return [] // return early if we don't need to bother
+  }
+
+  const definedHeaders = new Set()
+  const result = []
+
+  common.forEachHeader(existingHeaders, (_, fieldName) => {
+    definedHeaders.add(fieldName.toLowerCase())
+  })
+  common.forEachHeader(defaultHeaders, (value, fieldName) => {
+    if (!definedHeaders.has(fieldName.toLowerCase())) {
+      result.push(fieldName, value)
+    }
+  })
+
+  return result
+}
+
+// Presents a list of Buffers as a Readable
+class ReadableBuffers extends stream.Readable {
+  constructor(buffers, opts = {}) {
+    super(opts)
+
+    this.buffers = buffers
+  }
+
+  _read(_size) {
+    while (this.buffers.length) {
+      if (!this.push(this.buffers.shift())) {
+        return
+      }
+    }
+    this.push(null)
+  }
+}
+
+function convertBodyToStream(body) {
+  if (common.isStream(body)) {
+    return body
+  }
+
+  if (body === undefined) {
+    return new ReadableBuffers([])
+  }
+
+  if (Buffer.isBuffer(body)) {
+    return new ReadableBuffers([body])
+  }
+
+  if (typeof body !== 'string') {
+    body = JSON.stringify(body)
+  }
+
+  return new ReadableBuffers([Buffer.from(body)])
+}
+
+/**
+ * Play back an interceptor using the given request and mock response.
+ */
+function playbackInterceptor({
+  req,
+  socket,
+  options,
+  requestBodyString,
+  requestBodyIsUtf8Representable,
+  response,
+  interceptor,
+}) {
+  const { logger } = interceptor.scope
+
+  function start() {
+    req.headers = req.getHeaders()
+
+    interceptor.scope.emit('request', req, interceptor, requestBodyString)
+
+    if (typeof interceptor.errorMessage !== 'undefined') {
+      let error
+      if (typeof interceptor.errorMessage === 'object') {
+        error = interceptor.errorMessage
+      } else {
+        error = new Error(interceptor.errorMessage)
+      }
+
+      const delay = interceptor.delayBodyInMs + interceptor.delayConnectionInMs
+      common.setTimeout(() => req.destroy(error), delay)
+      return
+    }
+
+    // This will be null if we have a fullReplyFunction,
+    // in that case status code will be set in `parseFullReplyResult`
+    response.statusCode = interceptor.statusCode
+
+    // Clone headers/rawHeaders to not override them when evaluating later
+    response.rawHeaders = [...interceptor.rawHeaders]
+    logger('response.rawHeaders:', response.rawHeaders)
+
+    // TODO: MAJOR: Don't tack the request onto the interceptor.
+    // The only reason we do this is so that it's available inside reply functions.
+    // It would be better to pass the request as an argument to the functions instead.
+    // Not adding the req as a third arg now because it should first be decided if (path, body, req)
+    // is the signature we want to go with going forward.
+    interceptor.req = req
+
+    if (interceptor.replyFunction) {
+      const parsedRequestBody = parseJSONRequestBody(req, requestBodyString)
+
+      let fn = interceptor.replyFunction
+      if (fn.length === 3) {
+        // Handle the case of an async reply function, the third parameter being the callback.
+        fn = util.promisify(fn)
+      }
+
+      // At this point `fn` is either a synchronous function or a promise-returning function;
+      // wrapping in `Promise.resolve` makes it into a promise either way.
+      Promise.resolve(fn.call(interceptor, options.path, parsedRequestBody))
+        .then(continueWithResponseBody)
+        .catch(err => req.destroy(err))
+      return
+    }
+
+    if (interceptor.fullReplyFunction) {
+      const parsedRequestBody = parseJSONRequestBody(req, requestBodyString)
+
+      let fn = interceptor.fullReplyFunction
+      if (fn.length === 3) {
+        fn = util.promisify(fn)
+      }
+
+      Promise.resolve(fn.call(interceptor, options.path, parsedRequestBody))
+        .then(continueWithFullResponse)
+        .catch(err => req.destroy(err))
+      return
+    }
+
+    if (
+      common.isContentEncoded(interceptor.headers) &&
+      !common.isStream(interceptor.body)
+    ) {
+      //  If the content is encoded we know that the response body *must* be an array
+      //  of response buffers which should be mocked one by one.
+      //  (otherwise decompressions after the first one fails as unzip expects to receive
+      //  buffer by buffer and not one single merged buffer)
+      const bufferData = Array.isArray(interceptor.body)
+        ? interceptor.body
+        : [interceptor.body]
+      const responseBuffers = bufferData.map(data => Buffer.from(data, 'hex'))
+      const responseBody = new ReadableBuffers(responseBuffers)
+      continueWithResponseBody(responseBody)
+      return
+    }
+
+    // If we get to this point, the body is either a string or an object that
+    // will eventually be JSON stringified.
+    let responseBody = interceptor.body
+
+    // If the request was not UTF8-representable then we assume that the
+    // response won't be either. In that case we send the response as a Buffer
+    // object as that's what the client will expect.
+    if (!requestBodyIsUtf8Representable && typeof responseBody === 'string') {
+      // Try to create the buffer from the interceptor's body response as hex.
+      responseBody = Buffer.from(responseBody, 'hex')
+
+      // Creating buffers does not necessarily throw errors; check for difference in size.
+      if (
+        !responseBody ||
+        (interceptor.body.length > 0 && responseBody.length === 0)
+      ) {
+        // We fallback on constructing buffer from utf8 representation of the body.
+        responseBody = Buffer.from(interceptor.body, 'utf8')
+      }
+    }
+
+    return continueWithResponseBody(responseBody)
+  }
+
+  function continueWithFullResponse(fullReplyResult) {
+    let responseBody
+    try {
+      responseBody = parseFullReplyResult(response, fullReplyResult)
+    } catch (err) {
+      req.destroy(err)
+      return
+    }
+
+    continueWithResponseBody(responseBody)
+  }
+
+  function prepareResponseHeaders(body) {
+    const defaultHeaders = [...interceptor.scope._defaultReplyHeaders]
+
+    // Include a JSON content type when JSON.stringify is called on the body.
+    // This is a convenience added by Nock that has no analog in Node. It's added to the
+    // defaults, so it will be ignored if the caller explicitly provided the header already.
+    const isJSON =
+      body !== undefined &&
+      typeof body !== 'string' &&
+      !Buffer.isBuffer(body) &&
+      !common.isStream(body)
+
+    if (isJSON) {
+      defaultHeaders.push('Content-Type', 'application/json')
+    }
+
+    response.rawHeaders.push(
+      ...selectDefaultHeaders(response.rawHeaders, defaultHeaders),
+    )
+
+    // Evaluate functional headers.
+    common.forEachHeader(response.rawHeaders, (value, fieldName, i) => {
+      if (typeof value === 'function') {
+        response.rawHeaders[i + 1] = value(req, response, body)
+      }
+    })
+
+    response.headers = common.headersArrayToObject(response.rawHeaders)
+  }
+
+  function continueWithResponseBody(rawBody) {
+    prepareResponseHeaders(rawBody)
+    const bodyAsStream = convertBodyToStream(rawBody)
+    bodyAsStream.pause()
+
+    // IncomingMessage extends Readable so we can't simply pipe.
+    bodyAsStream.on('data', function (chunk) {
+      response.push(chunk)
+    })
+    bodyAsStream.on('end', function () {
+      // https://nodejs.org/dist/latest-v10.x/docs/api/http.html#http_message_complete
+      response.complete = true
+      response.push(null)
+
+      interceptor.scope.emit('replied', req, interceptor)
+    })
+    bodyAsStream.on('error', function (err) {
+      response.emit('error', err)
+    })
+
+    const { delayBodyInMs, delayConnectionInMs } = interceptor
+
+    function respond() {
+      if (common.isRequestDestroyed(req)) {
+        return
+      }
+
+      // Even though we've had the response object for awhile at this point,
+      // we only attach it to the request immediately before the `response`
+      // event because, as in Node, it alters the error handling around aborts.
+      req.res = response
+      response.req = req
+
+      logger('emitting response')
+      req.emit('response', response)
+
+      common.setTimeout(() => bodyAsStream.resume(), delayBodyInMs)
+    }
+
+    socket.applyDelay(delayConnectionInMs)
+    common.setTimeout(respond, delayConnectionInMs)
+  }
+
+  // Calling `start` immediately could take the request all the way to the connection delay
+  // during a single microtask execution. This setImmediate stalls the playback to ensure the
+  // correct events are emitted first ('socket', 'finish') and any aborts in the queue or
+  // called during a 'finish' listener can be called.
+  common.setImmediate(() => {
+    if (!common.isRequestDestroyed(req)) {
+      start()
+    }
+  })
+}
+
+module.exports = { playbackInterceptor }
+
+
+/***/ }),
+
+/***/ 2096:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { recorder: debug } = __nccwpck_require__(7287)
+const querystring = __nccwpck_require__(3477)
+const { inspect } = __nccwpck_require__(3837)
+
+const common = __nccwpck_require__(1521)
+const { restoreOverriddenClientRequest } = __nccwpck_require__(7607)
+const { gzipSync, brotliCompressSync, deflateSync } = __nccwpck_require__(9796)
+const {
+  default: nodeInterceptors,
+} = __nccwpck_require__(7883)
+const SEPARATOR = '\n<<<<<<-- cut here -->>>>>>\n'
+let recordingInProgress = false
+let outputs = []
+
+// TODO: don't reuse the nodeInterceptors, create new ones.
+const clientRequestInterceptor = nodeInterceptors[0]
+const fetchRequestInterceptor = nodeInterceptors[2]
+
+function getScope(options) {
+  const { proto, host, port } = common.normalizeRequestOptions(options)
+  return common.normalizeOrigin(proto, host, port)
+}
+
+function getMethod(options) {
+  return options.method || 'GET'
+}
+
+function getBodyFromChunks(chunks, headers) {
+  // If we have headers and there is content-encoding it means that the body
+  // shouldn't be merged but instead persisted as an array of hex strings so
+  // that the response chunks can be mocked one by one.
+  if (headers && common.isContentEncoded(headers)) {
+    return {
+      body: chunks.map(chunk => chunk.toString('hex')),
+    }
+  }
+
+  const mergedBuffer = Buffer.concat(chunks)
+
+  // The merged buffer can be one of three things:
+  // 1. A UTF-8-representable string buffer which represents a JSON object.
+  // 2. A UTF-8-representable buffer which doesn't represent a JSON object.
+  // 3. A non-UTF-8-representable buffer which then has to be recorded as a hex string.
+  const isUtf8Representable = common.isUtf8Representable(mergedBuffer)
+  if (isUtf8Representable) {
+    const maybeStringifiedJson = mergedBuffer.toString('utf8')
+    try {
+      return {
+        isUtf8Representable,
+        body: JSON.parse(maybeStringifiedJson),
+      }
+    } catch (err) {
+      return {
+        isUtf8Representable,
+        body: maybeStringifiedJson,
+      }
+    }
+  } else {
+    return {
+      isUtf8Representable,
+      body: mergedBuffer.toString('hex'),
+    }
+  }
+}
+
+function generateRequestAndResponseObject({
+  req,
+  bodyChunks,
+  options,
+  res,
+  dataChunks,
+  reqheaders,
+}) {
+  const { body, isUtf8Representable } = getBodyFromChunks(
+    dataChunks,
+    res.headers,
+  )
+  options.path = req.path
+
+  return {
+    scope: getScope(options),
+    method: getMethod(options),
+    path: options.path,
+    // Is it deliberate that `getBodyFromChunks()` is called a second time?
+    body: getBodyFromChunks(bodyChunks).body,
+    status: res.statusCode,
+    response: body,
+    rawHeaders: res.rawHeaders,
+    reqheaders: reqheaders || undefined,
+    // When content-encoding is enabled, isUtf8Representable is `undefined`,
+    // so we explicitly check for `false`.
+    responseIsBinary: isUtf8Representable === false,
+  }
+}
+
+function generateRequestAndResponse({
+  req,
+  bodyChunks,
+  options,
+  res,
+  dataChunks,
+  reqheaders,
+}) {
+  const requestBody = getBodyFromChunks(bodyChunks).body
+  const responseBody = getBodyFromChunks(dataChunks, res.headers).body
+
+  // Remove any query params from options.path so they can be added in the query() function
+  let { path } = options
+  const queryIndex = req.path.indexOf('?')
+  let queryObj = {}
+  if (queryIndex !== -1) {
+    // Remove the query from the path
+    path = path.substring(0, queryIndex)
+
+    const queryStr = req.path.slice(queryIndex + 1)
+    queryObj = querystring.parse(queryStr)
+  }
+
+  // Escape any single quotes in the path as the output uses them
+  path = path.replace(/'/g, `\\'`)
+
+  // Always encode the query parameters when recording.
+  const encodedQueryObj = {}
+  for (const key in queryObj) {
+    const formattedPair = common.formatQueryValue(
+      key,
+      queryObj[key],
+      common.percentEncode,
+    )
+    encodedQueryObj[formattedPair[0]] = formattedPair[1]
+  }
+
+  const lines = []
+
+  // We want a leading newline.
+  lines.push('')
+
+  const scope = getScope(options)
+  lines.push(`nock('${scope}', {"encodedQueryParams":true})`)
+
+  const methodName = getMethod(options).toLowerCase()
+  if (requestBody) {
+    lines.push(`  .${methodName}('${path}', ${JSON.stringify(requestBody)})`)
+  } else {
+    lines.push(`  .${methodName}('${path}')`)
+  }
+
+  Object.entries(reqheaders || {}).forEach(([fieldName, fieldValue]) => {
+    const safeName = JSON.stringify(fieldName)
+    const safeValue = JSON.stringify(fieldValue)
+    lines.push(`  .matchHeader(${safeName}, ${safeValue})`)
+  })
+
+  if (queryIndex !== -1) {
+    lines.push(`  .query(${JSON.stringify(encodedQueryObj)})`)
+  }
+
+  const statusCode = res.statusCode.toString()
+  const stringifiedResponseBody = JSON.stringify(responseBody)
+  const headers = inspect(res.rawHeaders)
+  lines.push(`  .reply(${statusCode}, ${stringifiedResponseBody}, ${headers});`)
+
+  return lines.join('\n')
+}
+
+//  This module variable is used to identify a unique recording ID in order to skip
+//  spurious requests that sometimes happen. This problem has been, so far,
+//  exclusively detected in nock's unit testing where 'checks if callback is specified'
+//  interferes with other tests as its t.end() is invoked without waiting for request
+//  to finish (which is the point of the test).
+let currentRecordingId = 0
+
+const defaultRecordOptions = {
+  dont_print: false,
+  enable_reqheaders_recording: false,
+  logging: console.log, // eslint-disable-line no-console
+  output_objects: false,
+  use_separator: true,
+}
+
+function record(recOptions) {
+  //  Trying to start recording with recording already in progress implies an error
+  //  in the recording configuration (double recording makes no sense and used to lead
+  //  to duplicates in output)
+  if (recordingInProgress) {
+    throw new Error('Nock recording already in progress')
+  }
+
+  recordingInProgress = true
+
+  // Set the new current recording ID and capture its value in this instance of record().
+  currentRecordingId = currentRecordingId + 1
+  const thisRecordingId = currentRecordingId
+
+  // Originally the parameter was a dont_print boolean flag.
+  // To keep the existing code compatible we take that case into account.
+  if (typeof recOptions === 'boolean') {
+    recOptions = { dont_print: recOptions }
+  }
+
+  recOptions = { ...defaultRecordOptions, ...recOptions }
+
+  debug('start recording', thisRecordingId, recOptions)
+
+  const {
+    dont_print: dontPrint,
+    enable_reqheaders_recording: enableReqHeadersRecording,
+    logging,
+    output_objects: outputObjects,
+    use_separator: useSeparator,
+  } = recOptions
+
+  debug(thisRecordingId, 'restoring overridden requests before new overrides')
+  //  To preserve backward compatibility (starting recording wasn't throwing if nock was already active)
+  //  we restore any requests that may have been overridden by other parts of nock (e.g. intercept)
+  //  NOTE: This is hacky as hell but it keeps the backward compatibility *and* allows correct
+  //    behavior in the face of other modules also overriding ClientRequest.
+  // common.restoreOverriddenRequests()
+  //  We restore ClientRequest as it messes with recording of modules that also override ClientRequest (e.g. xhr2)
+  restoreOverriddenClientRequest()
+
+  //  We override the requests so that we can save information on them before executing.
+  clientRequestInterceptor.apply()
+  fetchRequestInterceptor.apply()
+  clientRequestInterceptor.on(
+    'response',
+    async function ({ request, response }) {
+      await recordResponse(request, response)
+    },
+  )
+  fetchRequestInterceptor.on(
+    'response',
+    async function ({ request, response }) {
+      // fetch decompresses the body automatically, so we need to recompress it
+      const codings =
+        response.headers
+          .get('content-encoding')
+          ?.toLowerCase()
+          .split(',')
+          .map(c => c.trim()) || []
+
+      let body = await response.arrayBuffer()
+      for (const coding of codings) {
+        if (coding === 'gzip') {
+          body = gzipSync(body)
+        } else if (coding === 'deflate') {
+          body = deflateSync(body)
+        } else if (coding === 'br') {
+          body = brotliCompressSync(body)
+        }
+      }
+
+      await recordResponse(request, new Response(body, response))
+    },
+  )
+
+  async function recordResponse(mswRequest, mswResponse) {
+    const request = mswRequest.clone()
+    const response = mswResponse.clone()
+    const { options } = common.normalizeClientRequestArgs(request.url)
+    options.method = request.method
+    const proto = options.protocol.slice(0, -1)
+    if (proto === 'https') {
+      options.proto = 'https'
+    }
+    debug(thisRecordingId, proto, 'intercepted request ended')
+
+    let reqheaders
+    // Ignore request headers completely unless it was explicitly enabled by the user (see README)
+    if (enableReqHeadersRecording) {
+      // We never record user-agent headers as they are worse than useless -
+      // they actually make testing more difficult without providing any benefit (see README)
+      reqheaders = Object.fromEntries(request.headers.entries())
+      common.deleteHeadersField(reqheaders, 'user-agent')
+    }
+
+    const headers = Object.fromEntries(response.headers.entries())
+    const res = {
+      statusCode: response.status,
+      headers,
+      rawHeaders: headers,
+    }
+
+    const generateFn = outputObjects
+      ? generateRequestAndResponseObject
+      : generateRequestAndResponse
+    let out = generateFn({
+      req: options,
+      bodyChunks: [Buffer.from(await request.arrayBuffer())],
+      options,
+      res,
+      dataChunks: [Buffer.from(await response.arrayBuffer())],
+      reqheaders,
+    })
+
+    debug('out:', out)
+
+    //  Check that the request was made during the current recording.
+    //  If it hasn't then skip it. There is no other simple way to handle
+    //  this as it depends on the timing of requests and responses. Throwing
+    //  will make some recordings/unit tests fail randomly depending on how
+    //  fast/slow the response arrived.
+    //  If you are seeing this error then you need to make sure that all
+    //  the requests made during a single recording session finish before
+    //  ending the same recording session.
+    if (thisRecordingId !== currentRecordingId) {
+      debug('skipping recording of an out-of-order request', out)
+      return
+    }
+
+    outputs.push(out)
+
+    if (!dontPrint) {
+      if (useSeparator) {
+        if (typeof out !== 'string') {
+          out = JSON.stringify(out, null, 2)
+        }
+        logging(SEPARATOR + out + SEPARATOR)
+      } else {
+        logging(out)
+      }
+    }
+
+    debug('finished setting up intercepting')
+  }
+}
+
+// Restore *all* the overridden http/https modules' properties.
+function restore() {
+  debug(
+    currentRecordingId,
+    'restoring all the overridden http/https properties',
+  )
+
+  clientRequestInterceptor.dispose()
+  fetchRequestInterceptor.dispose()
+  restoreOverriddenClientRequest()
+  recordingInProgress = false
+}
+
+function clear() {
+  outputs = []
+}
+
+module.exports = {
+  record,
+  outputs: () => outputs,
+  restore,
+  clear,
+}
+
+
+/***/ }),
+
+/***/ 7004:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+/**
+ * @module nock/scope
+ */
+const { scopeDebuglog } = __nccwpck_require__(7287)
+const { addInterceptor, isOn } = __nccwpck_require__(7607)
+const common = __nccwpck_require__(1521)
+const assert = __nccwpck_require__(9491)
+const url = __nccwpck_require__(7310)
+const { EventEmitter } = __nccwpck_require__(2361)
+const Interceptor = __nccwpck_require__(5419)
+
+const { URL, Url: LegacyUrl } = url
+let fs
+
+try {
+  fs = __nccwpck_require__(7147)
+} catch (err) {
+  // do nothing, we're in the browser
+}
+
+/**
+ * Normalizes the passed url for consistent internal processing
+ * @param {string|LegacyUrl|URL} u
+ */
+function normalizeUrl(u) {
+  if (!(u instanceof URL)) {
+    if (u instanceof LegacyUrl) {
+      return normalizeUrl(new URL(url.format(u)))
+    }
+    // If the url is invalid, let the URL library report it
+    return normalizeUrl(new URL(u))
+  }
+
+  if (!/https?:/.test(u.protocol)) {
+    throw new TypeError(
+      `Protocol '${u.protocol}' not recognized. This commonly occurs when a hostname and port are included without a protocol, producing a URL that is valid but confusing, and probably not what you want.`,
+    )
+  }
+
+  return {
+    href: u.href,
+    origin: u.origin,
+    protocol: u.protocol,
+    username: u.username,
+    password: u.password,
+    host: u.host,
+    hostname:
+      // strip brackets from IPv6
+      typeof u.hostname === 'string' && u.hostname.startsWith('[')
+        ? u.hostname.slice(1, -1)
+        : u.hostname,
+    port: u.port || (u.protocol === 'http:' ? 80 : 443),
+    pathname: u.pathname,
+    search: u.search,
+    searchParams: u.searchParams,
+    hash: u.hash,
+  }
+}
+
+/**
+ * @param  {string|RegExp|LegacyUrl|URL} basePath
+ * @param  {Object}   options
+ * @param  {boolean}  options.allowUnmocked
+ * @param  {string[]} options.badheaders
+ * @param  {function} options.conditionally
+ * @param  {boolean}  options.encodedQueryParams
+ * @param  {function} options.filteringScope
+ * @param  {Object}   options.reqheaders
+ * @constructor
+ */
+class Scope extends EventEmitter {
+  constructor(basePath, options) {
+    super()
+
+    this.keyedInterceptors = {}
+    this.interceptors = []
+    this.transformPathFunction = null
+    this.transformRequestBodyFunction = null
+    this.matchHeaders = []
+    this.scopeOptions = options || {}
+    this.urlParts = {}
+    this._persist = false
+    this.contentLen = false
+    this.date = null
+    this.basePath = basePath
+    this.basePathname = ''
+    this.port = null
+    this._defaultReplyHeaders = []
+
+    let logNamespace = String(basePath)
+
+    if (!(basePath instanceof RegExp)) {
+      this.urlParts = normalizeUrl(basePath)
+      this.port = this.urlParts.port
+      this.basePathname = this.urlParts.pathname.replace(/\/$/, '')
+      this.basePath = `${this.urlParts.protocol}//${this.urlParts.hostname}:${this.port}`
+      logNamespace = this.urlParts.host
+    }
+
+    this.logger = scopeDebuglog(logNamespace)
+  }
+
+  add(key, interceptor) {
+    if (!(key in this.keyedInterceptors)) {
+      this.keyedInterceptors[key] = []
+    }
+    this.keyedInterceptors[key].push(interceptor)
+    addInterceptor(
+      this.basePath,
+      interceptor,
+      this,
+      this.scopeOptions,
+      this.urlParts.hostname,
+    )
+  }
+
+  remove(key, interceptor) {
+    if (this._persist) {
+      return
+    }
+    const arr = this.keyedInterceptors[key]
+    if (arr) {
+      arr.splice(arr.indexOf(interceptor), 1)
+      if (arr.length === 0) {
+        delete this.keyedInterceptors[key]
+      }
+    }
+  }
+
+  intercept(uri, method, requestBody, interceptorOptions) {
+    const ic = new Interceptor(
+      this,
+      uri,
+      method,
+      requestBody,
+      interceptorOptions,
+    )
+
+    this.interceptors.push(ic)
+    return ic
+  }
+
+  get(uri, requestBody, options) {
+    return this.intercept(uri, 'GET', requestBody, options)
+  }
+
+  post(uri, requestBody, options) {
+    return this.intercept(uri, 'POST', requestBody, options)
+  }
+
+  put(uri, requestBody, options) {
+    return this.intercept(uri, 'PUT', requestBody, options)
+  }
+
+  head(uri, requestBody, options) {
+    return this.intercept(uri, 'HEAD', requestBody, options)
+  }
+
+  patch(uri, requestBody, options) {
+    return this.intercept(uri, 'PATCH', requestBody, options)
+  }
+
+  merge(uri, requestBody, options) {
+    return this.intercept(uri, 'MERGE', requestBody, options)
+  }
+
+  delete(uri, requestBody, options) {
+    return this.intercept(uri, 'DELETE', requestBody, options)
+  }
+
+  options(uri, requestBody, options) {
+    return this.intercept(uri, 'OPTIONS', requestBody, options)
+  }
+
+  // Returns the list of keys for non-optional Interceptors that haven't been completed yet.
+  // TODO: This assumes that completed mocks are removed from the keyedInterceptors list
+  // (when persistence is off). We should change that (and this) in future.
+  pendingMocks() {
+    return this.activeMocks().filter(key =>
+      this.keyedInterceptors[key].some(({ interceptionCounter, optional }) => {
+        const persistedAndUsed = this._persist && interceptionCounter > 0
+        return !persistedAndUsed && !optional
+      }),
+    )
+  }
+
+  // Returns all keyedInterceptors that are active.
+  // This includes incomplete interceptors, persisted but complete interceptors, and
+  // optional interceptors, but not non-persisted and completed interceptors.
+  activeMocks() {
+    return Object.keys(this.keyedInterceptors)
+  }
+
+  isDone() {
+    if (!isOn()) {
+      return true
+    }
+
+    return this.pendingMocks().length === 0
+  }
+
+  done() {
+    assert.ok(
+      this.isDone(),
+      `Mocks not yet satisfied:\n${this.pendingMocks().join('\n')}`,
+    )
+  }
+
+  buildFilter() {
+    const filteringArguments = arguments
+
+    if (arguments[0] instanceof RegExp) {
+      return function (candidate) {
+        /* istanbul ignore if */
+        if (typeof candidate !== 'string') {
+          // Given the way nock is written, it seems like `candidate` will always
+          // be a string, regardless of what options might be passed to it.
+          // However the code used to contain a truthiness test of `candidate`.
+          // The check is being preserved for now.
+          throw Error(
+            `Nock internal assertion failed: typeof candidate is ${typeof candidate}. If you encounter this error, please report it as a bug.`,
+          )
+        }
+        return candidate.replace(filteringArguments[0], filteringArguments[1])
+      }
+    } else if (typeof arguments[0] === 'function') {
+      return arguments[0]
+    }
+  }
+
+  filteringPath() {
+    this.transformPathFunction = this.buildFilter.apply(this, arguments)
+    if (!this.transformPathFunction) {
+      throw new Error(
+        'Invalid arguments: filtering path should be a function or a regular expression',
+      )
+    }
+    return this
+  }
+
+  filteringRequestBody() {
+    this.transformRequestBodyFunction = this.buildFilter.apply(this, arguments)
+    if (!this.transformRequestBodyFunction) {
+      throw new Error(
+        'Invalid arguments: filtering request body should be a function or a regular expression',
+      )
+    }
+    return this
+  }
+
+  matchHeader(name, value) {
+    //  We use lower-case header field names throughout Nock.
+    this.matchHeaders.push({ name: name.toLowerCase(), value })
+    return this
+  }
+
+  defaultReplyHeaders(headers) {
+    this._defaultReplyHeaders = common.headersInputToRawArray(headers)
+    return this
+  }
+
+  persist(flag = true) {
+    if (typeof flag !== 'boolean') {
+      throw new Error('Invalid arguments: argument should be a boolean')
+    }
+    this._persist = flag
+    return this
+  }
+
+  /**
+   * @private
+   * @returns {boolean}
+   */
+  shouldPersist() {
+    return this._persist
+  }
+
+  replyContentLength() {
+    this.contentLen = true
+    return this
+  }
+
+  replyDate(d) {
+    this.date = d || new Date()
+    return this
+  }
+
+  clone() {
+    return new Scope(this.basePath, this.scopeOptions)
+  }
+}
+
+function loadDefs(path) {
+  if (!fs) {
+    throw new Error('No fs')
+  }
+
+  const contents = fs.readFileSync(path)
+  return JSON.parse(contents)
+}
+
+function load(path) {
+  return define(loadDefs(path))
+}
+
+function getStatusFromDefinition(nockDef) {
+  // Backward compatibility for when `status` was encoded as string in `reply`.
+  if (nockDef.reply !== undefined) {
+    const parsedReply = parseInt(nockDef.reply, 10)
+    if (isNaN(parsedReply)) {
+      throw Error('`reply`, when present, must be a numeric string')
+    }
+
+    return parsedReply
+  }
+
+  const DEFAULT_STATUS_OK = 200
+  return nockDef.status || DEFAULT_STATUS_OK
+}
+
+function getScopeFromDefinition(nockDef) {
+  //  Backward compatibility for when `port` was part of definition.
+  if (nockDef.port !== undefined) {
+    //  Include `port` into scope if it doesn't exist.
+    const options = url.parse(nockDef.scope)
+    if (options.port === null) {
+      return `${nockDef.scope}:${nockDef.port}`
+    } else {
+      if (parseInt(options.port) !== parseInt(nockDef.port)) {
+        throw new Error(
+          'Mismatched port numbers in scope and port properties of nock definition.',
+        )
+      }
+    }
+  }
+
+  return nockDef.scope
+}
+
+function tryJsonParse(string) {
+  try {
+    return JSON.parse(string)
+  } catch (err) {
+    return string
+  }
+}
+
+function define(nockDefs) {
+  const scopes = []
+
+  nockDefs.forEach(function (nockDef) {
+    const nscope = getScopeFromDefinition(nockDef)
+    const npath = nockDef.path
+    if (!nockDef.method) {
+      throw Error('Method is required')
+    }
+    const method = nockDef.method.toLowerCase()
+    const status = getStatusFromDefinition(nockDef)
+    const rawHeaders = nockDef.rawHeaders || []
+    const reqheaders = nockDef.reqheaders || {}
+    const badheaders = nockDef.badheaders || []
+    const options = { ...nockDef.options }
+
+    //  We use request headers for both filtering (see below) and mocking.
+    //  Here we are setting up mocked request headers but we don't want to
+    //  be changing the user's options object so we clone it first.
+    options.reqheaders = reqheaders
+    options.badheaders = badheaders
+
+    // Response is not always JSON as it could be a string or binary data or
+    // even an array of binary buffers (e.g. when content is encoded).
+    let response
+    if (!nockDef.response) {
+      response = ''
+      // TODO: Rename `responseIsBinary` to `responseIsUtf8Representable`.
+    } else if (nockDef.responseIsBinary) {
+      response = Buffer.from(nockDef.response, 'hex')
+    } else {
+      response =
+        typeof nockDef.response === 'string'
+          ? tryJsonParse(nockDef.response)
+          : nockDef.response
+    }
+
+    const scope = new Scope(nscope, options)
+
+    // If request headers were specified filter by them.
+    Object.entries(reqheaders).forEach(([fieldName, value]) => {
+      scope.matchHeader(fieldName, value)
+    })
+
+    const acceptableFilters = ['filteringRequestBody', 'filteringPath']
+    acceptableFilters.forEach(filter => {
+      if (nockDef[filter]) {
+        scope[filter](nockDef[filter])
+      }
+    })
+
+    scope
+      .intercept(npath, method, nockDef.body)
+      .reply(status, response, rawHeaders)
+
+    scopes.push(scope)
+  })
+
+  return scopes
+}
+
+module.exports = {
+  Scope,
+  load,
+  loadDefs,
+  define,
+}
+
+
+/***/ }),
+
+/***/ 5676:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { EventEmitter } = __nccwpck_require__(2361)
+const { socket: debug } = __nccwpck_require__(7287)
+
+module.exports = class Socket extends EventEmitter {
+  constructor(options) {
+    super()
+
+    // Pretend this is a TLSSocket
+    if (options.proto === 'https') {
+      // https://github.com/nock/nock/issues/158
+      this.authorized = true
+      // https://github.com/nock/nock/issues/2147
+      this.encrypted = true
+    }
+
+    this.bufferSize = 0
+    this.writableLength = 0
+    this.writable = true
+    this.readable = true
+    this.pending = false
+    this.destroyed = false
+    this.connecting = true
+
+    // Undocumented flag used by ClientRequest to ensure errors aren't double-fired
+    this._hadError = false
+
+    // Maximum allowed delay. 0 means unlimited.
+    this.timeout = 0
+
+    const ipv6 = options.family === 6
+    this.remoteFamily = ipv6 ? 'IPv6' : 'IPv4'
+    this.localAddress = this.remoteAddress = ipv6 ? '::1' : '127.0.0.1'
+    this.localPort = this.remotePort = parseInt(options.port)
+  }
+
+  setNoDelay() {}
+  setKeepAlive() {}
+  resume() {}
+  ref() {}
+  unref() {}
+  write() {}
+
+  address() {
+    return {
+      port: this.remotePort,
+      family: this.remoteFamily,
+      address: this.remoteAddress,
+    }
+  }
+
+  setTimeout(timeoutMs, fn) {
+    this.timeout = timeoutMs
+    if (fn) {
+      this.once('timeout', fn)
+    }
+    return this
+  }
+
+  /**
+   * Artificial delay that will trip socket timeouts when appropriate.
+   *
+   * Doesn't actually wait for time to pass.
+   * Timeout events don't necessarily end the request.
+   * While many clients choose to abort the request upon a timeout, Node itself does not.
+   */
+  applyDelay(delayMs) {
+    if (this.timeout && delayMs > this.timeout) {
+      debug('socket timeout')
+      this.emit('timeout')
+    }
+  }
+
+  getPeerCertificate() {
+    return Buffer.from(
+      (Math.random() * 10000 + Date.now()).toString(),
+    ).toString('base64')
+  }
+
+  /**
+   * Denotes that no more I/O activity should happen on this socket.
+   *
+   * The implementation in Node if far more complex as it juggles underlying async streams.
+   * For the purposes of Nock, we just need it to set some flags and on the first call
+   * emit a 'close' and optional 'error' event. Both events propagate through the request object.
+   */
+  destroy(err) {
+    if (this.destroyed) {
+      return this
+    }
+
+    debug('socket destroy')
+    this.destroyed = true
+    this.readable = this.writable = false
+    this.readableEnded = this.writableFinished = true
+
+    process.nextTick(() => {
+      if (err) {
+        this._hadError = true
+        this.emit('error', err)
+      }
+      this.emit('close')
+    })
+
+    return this
+  }
 }
 
 
@@ -64017,6 +71690,222 @@ function onceStrict (fn) {
 
 /***/ }),
 
+/***/ 1183:
+/***/ ((module) => {
+
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// src/index.ts
+var src_exports = {};
+__export(src_exports, {
+  InvariantError: () => InvariantError,
+  format: () => format,
+  invariant: () => invariant
+});
+module.exports = __toCommonJS(src_exports);
+
+// src/format.ts
+var POSITIONALS_EXP = /(%?)(%([sdijo]))/g;
+function serializePositional(positional, flag) {
+  switch (flag) {
+    case "s":
+      return positional;
+    case "d":
+    case "i":
+      return Number(positional);
+    case "j":
+      return JSON.stringify(positional);
+    case "o": {
+      if (typeof positional === "string") {
+        return positional;
+      }
+      const json = JSON.stringify(positional);
+      if (json === "{}" || json === "[]" || /^\[object .+?\]$/.test(json)) {
+        return positional;
+      }
+      return json;
+    }
+  }
+}
+function format(message, ...positionals) {
+  if (positionals.length === 0) {
+    return message;
+  }
+  let positionalIndex = 0;
+  let formattedMessage = message.replace(
+    POSITIONALS_EXP,
+    (match, isEscaped, _, flag) => {
+      const positional = positionals[positionalIndex];
+      const value = serializePositional(positional, flag);
+      if (!isEscaped) {
+        positionalIndex++;
+        return value;
+      }
+      return match;
+    }
+  );
+  if (positionalIndex < positionals.length) {
+    formattedMessage += ` ${positionals.slice(positionalIndex).join(" ")}`;
+  }
+  formattedMessage = formattedMessage.replace(/%{2,2}/g, "%");
+  return formattedMessage;
+}
+
+// src/invariant.ts
+var STACK_FRAMES_TO_IGNORE = 2;
+function cleanErrorStack(error) {
+  if (!error.stack) {
+    return;
+  }
+  const nextStack = error.stack.split("\n");
+  nextStack.splice(1, STACK_FRAMES_TO_IGNORE);
+  error.stack = nextStack.join("\n");
+}
+var InvariantError = class extends Error {
+  constructor(message, ...positionals) {
+    super(message);
+    this.message = message;
+    this.name = "Invariant Violation";
+    this.message = format(message, ...positionals);
+    cleanErrorStack(this);
+  }
+};
+var invariant = (predicate, message, ...positionals) => {
+  if (!predicate) {
+    throw new InvariantError(message, ...positionals);
+  }
+};
+invariant.as = (ErrorConstructor, predicate, message, ...positionals) => {
+  if (!predicate) {
+    const formatMessage = positionals.length === 0 ? message : format(message, ...positionals);
+    let error;
+    try {
+      error = Reflect.construct(ErrorConstructor, [
+        formatMessage
+      ]);
+    } catch (err) {
+      error = ErrorConstructor(formatMessage);
+    }
+    throw error;
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (0);
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 9577:
+/***/ ((module) => {
+
+"use strict";
+
+
+function propagate(events, source, dest) {
+  if (arguments.length < 3) {
+    dest = source
+    source = events
+    events = undefined
+  }
+
+  // events should be an array or object
+  const eventsIsObject = typeof events === 'object'
+  if (events && !eventsIsObject) events = [events]
+
+  if (eventsIsObject) {
+    return explicitPropagate(events, source, dest)
+  }
+
+  const shouldPropagate = eventName =>
+    events === undefined || events.includes(eventName)
+
+  const oldEmit = source.emit
+
+  // Returns true if the event had listeners, false otherwise.
+  // https://nodejs.org/api/events.html#events_emitter_emit_eventname_args
+  source.emit = (eventName, ...args) => {
+    const oldEmitHadListeners = oldEmit.call(source, eventName, ...args)
+
+    let destEmitHadListeners = false
+    if (shouldPropagate(eventName)) {
+      destEmitHadListeners = dest.emit(eventName, ...args)
+    }
+
+    return oldEmitHadListeners || destEmitHadListeners
+  }
+
+  function end() {
+    source.emit = oldEmit
+  }
+
+  return {
+    end,
+  }
+}
+
+module.exports = propagate
+
+function explicitPropagate(events, source, dest) {
+  let eventsIn
+  let eventsOut
+  if (Array.isArray(events)) {
+    eventsIn = events
+    eventsOut = events
+  } else {
+    eventsIn = Object.keys(events)
+    eventsOut = eventsIn.map(function(key) {
+      return events[key]
+    })
+  }
+
+  const listeners = eventsOut.map(function(event) {
+    return function() {
+      const args = Array.prototype.slice.call(arguments)
+      args.unshift(event)
+      dest.emit.apply(dest, args)
+    }
+  })
+
+  listeners.forEach(register)
+
+  return {
+    end,
+  }
+
+  function register(listener, i) {
+    source.on(eventsIn[i], listener)
+  }
+
+  function unregister(listener, i) {
+    source.removeListener(eventsIn[i], listener)
+  }
+
+  function end() {
+    listeners.forEach(unregister)
+  }
+}
+
+
+/***/ }),
+
 /***/ 2043:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -65595,6 +73484,207 @@ function onceStrict (fn) {
   }
 })( false ? 0 : exports)
 
+
+/***/ }),
+
+/***/ 2414:
+/***/ ((module) => {
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// src/index.ts
+var src_exports = {};
+__export(src_exports, {
+  Emitter: () => Emitter,
+  MemoryLeakError: () => MemoryLeakError
+});
+module.exports = __toCommonJS(src_exports);
+
+// src/MemoryLeakError.ts
+var MemoryLeakError = class extends Error {
+  constructor(emitter, type, count) {
+    super(
+      `Possible EventEmitter memory leak detected. ${count} ${type.toString()} listeners added. Use emitter.setMaxListeners() to increase limit`
+    );
+    this.emitter = emitter;
+    this.type = type;
+    this.count = count;
+    this.name = "MaxListenersExceededWarning";
+  }
+};
+
+// src/Emitter.ts
+var _Emitter = class {
+  static listenerCount(emitter, eventName) {
+    return emitter.listenerCount(eventName);
+  }
+  constructor() {
+    this.events = /* @__PURE__ */ new Map();
+    this.maxListeners = _Emitter.defaultMaxListeners;
+    this.hasWarnedAboutPotentialMemoryLeak = false;
+  }
+  _emitInternalEvent(internalEventName, eventName, listener) {
+    this.emit(
+      internalEventName,
+      ...[eventName, listener]
+    );
+  }
+  _getListeners(eventName) {
+    return Array.prototype.concat.apply([], this.events.get(eventName)) || [];
+  }
+  _removeListener(listeners, listener) {
+    const index = listeners.indexOf(listener);
+    if (index > -1) {
+      listeners.splice(index, 1);
+    }
+    return [];
+  }
+  _wrapOnceListener(eventName, listener) {
+    const onceListener = (...data) => {
+      this.removeListener(eventName, onceListener);
+      return listener.apply(this, data);
+    };
+    Object.defineProperty(onceListener, "name", { value: listener.name });
+    return onceListener;
+  }
+  setMaxListeners(maxListeners) {
+    this.maxListeners = maxListeners;
+    return this;
+  }
+  /**
+   * Returns the current max listener value for the `Emitter` which is
+   * either set by `emitter.setMaxListeners(n)` or defaults to
+   * `Emitter.defaultMaxListeners`.
+   */
+  getMaxListeners() {
+    return this.maxListeners;
+  }
+  /**
+   * Returns an array listing the events for which the emitter has registered listeners.
+   * The values in the array will be strings or Symbols.
+   */
+  eventNames() {
+    return Array.from(this.events.keys());
+  }
+  /**
+   * Synchronously calls each of the listeners registered for the event named `eventName`,
+   * in the order they were registered, passing the supplied arguments to each.
+   * Returns `true` if the event has listeners, `false` otherwise.
+   *
+   * @example
+   * const emitter = new Emitter<{ hello: [string] }>()
+   * emitter.emit('hello', 'John')
+   */
+  emit(eventName, ...data) {
+    const listeners = this._getListeners(eventName);
+    listeners.forEach((listener) => {
+      listener.apply(this, data);
+    });
+    return listeners.length > 0;
+  }
+  addListener(eventName, listener) {
+    this._emitInternalEvent("newListener", eventName, listener);
+    const nextListeners = this._getListeners(eventName).concat(listener);
+    this.events.set(eventName, nextListeners);
+    if (this.maxListeners > 0 && this.listenerCount(eventName) > this.maxListeners && !this.hasWarnedAboutPotentialMemoryLeak) {
+      this.hasWarnedAboutPotentialMemoryLeak = true;
+      const memoryLeakWarning = new MemoryLeakError(
+        this,
+        eventName,
+        this.listenerCount(eventName)
+      );
+      console.warn(memoryLeakWarning);
+    }
+    return this;
+  }
+  on(eventName, listener) {
+    return this.addListener(eventName, listener);
+  }
+  once(eventName, listener) {
+    return this.addListener(
+      eventName,
+      this._wrapOnceListener(eventName, listener)
+    );
+  }
+  prependListener(eventName, listener) {
+    const listeners = this._getListeners(eventName);
+    if (listeners.length > 0) {
+      const nextListeners = [listener].concat(listeners);
+      this.events.set(eventName, nextListeners);
+    } else {
+      this.events.set(eventName, listeners.concat(listener));
+    }
+    return this;
+  }
+  prependOnceListener(eventName, listener) {
+    return this.prependListener(
+      eventName,
+      this._wrapOnceListener(eventName, listener)
+    );
+  }
+  removeListener(eventName, listener) {
+    const listeners = this._getListeners(eventName);
+    if (listeners.length > 0) {
+      this._removeListener(listeners, listener);
+      this.events.set(eventName, listeners);
+      this._emitInternalEvent("removeListener", eventName, listener);
+    }
+    return this;
+  }
+  /**
+   * Alias for `emitter.removeListener()`.
+   *
+   * @example
+   * emitter.off('hello', listener)
+   */
+  off(eventName, listener) {
+    return this.removeListener(eventName, listener);
+  }
+  removeAllListeners(eventName) {
+    if (eventName) {
+      this.events.delete(eventName);
+    } else {
+      this.events.clear();
+    }
+    return this;
+  }
+  /**
+   * Returns a copy of the array of listeners for the event named `eventName`.
+   */
+  listeners(eventName) {
+    return Array.from(this._getListeners(eventName));
+  }
+  /**
+   * Returns the number of listeners listening to the event named `eventName`.
+   */
+  listenerCount(eventName) {
+    return this._getListeners(eventName).length;
+  }
+  rawListeners(eventName) {
+    return this.listeners(eventName);
+  }
+};
+var Emitter = _Emitter;
+Emitter.defaultMaxListeners = 10;
+// Annotate the CommonJS export names for ESM import in node:
+0 && (0);
+//# sourceMappingURL=index.js.map
 
 /***/ }),
 
@@ -95991,10 +104081,26 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 2291:
+/***/ ((module) => {
+
+module.exports = eval("require")("_http_common");
+
+
+/***/ }),
+
 /***/ 2877:
 /***/ ((module) => {
 
 module.exports = eval("require")("encoding");
+
+
+/***/ }),
+
+/***/ 1232:
+/***/ ((module) => {
+
+module.exports = eval("require")("stream/consumers");
 
 
 /***/ }),
