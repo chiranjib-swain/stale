@@ -361,7 +361,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.IssuesProcessor = void 0;
+exports.IssuesProcessor = exports.setupRateLimitMock = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github_1 = __nccwpck_require__(5438);
 const option_1 = __nccwpck_require__(5931);
@@ -390,12 +390,15 @@ const nock_1 = __importDefault(__nccwpck_require__(8437));
 /***
  * Handle processing of issues for staleness/closure.
  */
-// 👇 Place this BEFORE the getRateLimit call
-(0, nock_1.default)('https://api.github.com')
-    .get(uri => uri.includes('/rate_limit'))
-    .reply(429, { message: 'Rate limit exceeded' }, { 'Retry-After': '2' })
-    .get(uri => uri.includes('/rate_limit'))
-    .reply(200, { rate: { limit: 5000, remaining: 4999, reset: 1234567890 } });
+// Function to set up the nock mock
+function setupRateLimitMock() {
+    (0, nock_1.default)('https://api.github.com')
+        .get(uri => uri.includes('/rate_limit'))
+        .reply(429, { message: 'Rate limit exceeded' }, { 'Retry-After': '2' })
+        .get(uri => uri.includes('/rate_limit'))
+        .reply(200, { rate: { limit: 3000, remaining: 2999, reset: 1234567890 } });
+}
+exports.setupRateLimitMock = setupRateLimitMock;
 class IssuesProcessor {
     static _updatedSince(timestamp, num_days) {
         const daysInMillis = 1000 * 60 * 60 * 24 * num_days;
@@ -424,6 +427,8 @@ class IssuesProcessor {
         this.state = state;
         this.client = (0, github_1.getOctokit)(this.options.repoToken, undefined, plugin_retry_1.retry);
         this.operations = new stale_operations_1.StaleOperations(this.options);
+        // Set up the rate limit mock
+        setupRateLimitMock();
         this._logger.info(logger_service_1.LoggerService.yellow(`Starting the stale action process...`));
         if (this.options.debugOnly) {
             this._logger.warning(logger_service_1.LoggerService.yellowBright(`Executing in debug mode!`));
@@ -758,6 +763,7 @@ class IssuesProcessor {
             try {
                 logger.info('🔄 Attempting to fetch rate limit info...');
                 const rateLimitResult = yield this.client.rest.rateLimit.get();
+                logger.info(JSON.stringify(rateLimitResult.data, null, 2));
                 logger.info('✅ Successfully retrieved rate limit info.');
                 return new rate_limit_1.RateLimit(rateLimitResult.data.rate);
             }

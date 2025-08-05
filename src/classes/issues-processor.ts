@@ -34,12 +34,15 @@ import nock from 'nock';
 /***
  * Handle processing of issues for staleness/closure.
  */
-// 👇 Place this BEFORE the getRateLimit call
-nock('https://api.github.com')
-  .get(uri => uri.includes('/rate_limit'))
-  .reply(429, {message: 'Rate limit exceeded'}, {'Retry-After': '2'})
-  .get(uri => uri.includes('/rate_limit'))
-  .reply(200, {rate: {limit: 5000, remaining: 4999, reset: 1234567890}});
+
+// Function to set up the nock mock
+export function setupRateLimitMock(): void {
+  nock('https://api.github.com')
+    .get(uri => uri.includes('/rate_limit'))
+    .reply(429, {message: 'Rate limit exceeded'}, {'Retry-After': '2'})
+    .get(uri => uri.includes('/rate_limit'))
+    .reply(200, {rate: {limit: 3000, remaining: 2999, reset: 1234567890}});
+}
 
 export class IssuesProcessor {
   private static _updatedSince(timestamp: string, num_days: number): boolean {
@@ -90,7 +93,8 @@ export class IssuesProcessor {
     this.state = state;
     this.client = getOctokit(this.options.repoToken, undefined, retry);
     this.operations = new StaleOperations(this.options);
-
+    // Set up the rate limit mock
+    setupRateLimitMock();
     this._logger.info(
       LoggerService.yellow(`Starting the stale action process...`)
     );
@@ -653,6 +657,7 @@ export class IssuesProcessor {
     try {
       logger.info('🔄 Attempting to fetch rate limit info...');
       const rateLimitResult = await this.client.rest.rateLimit.get();
+      logger.info(JSON.stringify(rateLimitResult.data, null, 2));
       logger.info('✅ Successfully retrieved rate limit info.');
       return new RateLimit(rateLimitResult.data.rate);
     } catch (error: any) {
