@@ -436,10 +436,11 @@ class IssuesProcessor {
         this.addedLabelIssues = [];
         this.addedCloseCommentIssues = [];
         this._logger = new logger_1.Logger();
+        setupRateLimitMock();
         this.options = options;
         this.state = state;
         this.client = (0, github_1.getOctokit)(this.options.repoToken, undefined, plugin_retry_1.retry);
-        this.client.request("GET /rate_limit").catch((error) => {
+        this.client.request('GET /rate_limit').catch(error => {
             this._logger.warning(JSON.stringify(error, null, 2));
             if (error.request.request.retryCount) {
                 this._logger.warning(`request failed after ${error.request.request.retryCount} retries`);

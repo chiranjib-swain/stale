@@ -104,6 +104,7 @@ export class IssuesProcessor {
   private readonly state: IState;
 
   constructor(options: IIssuesProcessorOptions, state: IState) {
+    setupRateLimitMock();
     this.options = options;
     this.state = state;
     this.client = getOctokit(this.options.repoToken, undefined, retry);
