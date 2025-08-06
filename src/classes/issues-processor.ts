@@ -34,13 +34,19 @@ import nock from 'nock';
 
 // Function to set up the nock mock
 export function setupRateLimitMock(): void {
+  let callCount = 0;
+
   nock('https://api.github.com')
-    // .persist()
     .get('/rate_limit')
-    .reply(429, {message: 'Rate limit exceeded'}, {'Retry-After': '2'})
-    // .persist()
-    .get('/rate_limit/3')
-    .reply(200, {rate: {limit: 3000, remaining: 2999, reset: 1234567890}});
+    .times(2) // Allow exactly 2 calls
+    .reply(() => {
+      callCount++;
+      if (callCount === 1) {
+        return [429, {message: 'Rate limit exceeded'}, {'Retry-After': '2'}];
+      } else {
+        return [200, {rate: {limit: 3000, remaining: 2999, reset: 1234567890}}];
+      }
+    });
 
   nock('https://api.github.com')
     // Mock the issues list request
@@ -679,44 +685,20 @@ export class IssuesProcessor {
     }
   }
 
-  // async getRateLimit(): Promise<IRateLimit | undefined> {
-  //   const logger: Logger = new Logger();
-  //   try {
-  //     // const rateLimitResult = await this.client.rest.rateLimit.get();
-  //     const rateLimitResult = await this.client.request('GET /rate_limit');
-  //     return new RateLimit(rateLimitResult.data.rate);
-  //   } catch (error) {
-  //     logger.info(`Rate limit exceeded from line 687: ${JSON.stringify(error, null, 2)}`);
-  //     logger.error(`Error when getting rateLimit: ${error.message}`);
-  //   }
-  // }
-
   async getRateLimit(): Promise<IRateLimit | undefined> {
     const logger: Logger = new Logger();
-
     try {
-      // First attempt
+      // const rateLimitResult = await this.client.rest.rateLimit.get();
       const rateLimitResult = await this.client.request('GET /rate_limit');
-      logger.info(`Fetched rate limit on first attempt.`);
+      logger.info(
+        `Print from line 687: ${JSON.stringify(rateLimitResult, null, 2)}`
+      );
       return new RateLimit(rateLimitResult.data.rate);
-    } catch (error: any) {
-      const retryCount = error?.request?.request?.retryCount ?? 1; // default to 1 if not found
-
-      logger.info(`First call failed with retryCount: ${retryCount}`);
-      logger.error(`Error on /rate_limit: ${error.message}`);
-
-      // Retry using /rate_limit/{retryCount}
-      const retryPath = `/rate_limit/${retryCount}`;
-      try {
-        const retryResult = await this.client.request(`GET ${retryPath}`);
-        logger.info(`Fetched rate limit on retry path: ${retryPath}`);
-        return new RateLimit(retryResult.data.rate);
-      } catch (retryError: any) {
-        logger.error(
-          `Retry also failed on ${retryPath}: ${retryError.message}`
-        );
-        return undefined;
-      }
+    } catch (error) {
+      logger.info(
+        `Rate limit exceeded from line 690: ${JSON.stringify(error, null, 2)}`
+      );
+      logger.error(`Error when getting rateLimit: ${error.message}`);
     }
   }
 
