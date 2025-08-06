@@ -400,6 +400,7 @@ function setupRateLimitMock() {
         // .persist()
         .get('/rate_limit')
         .reply(429, { message: 'Rate limit exceeded' }, { 'Retry-After': '2' })
+        .persist()
         .get('/rate_limit')
         .reply(200, { rate: { limit: 3000, remaining: 2999, reset: 1234567890 } });
     (0, nock_1.default)('https://api.github.com')
@@ -448,7 +449,7 @@ class IssuesProcessor {
         // this.client = getOctokit(this.options.repoToken, undefined, retry);
         // Create a custom Octokit instance with retry plugin
         this.client = new MyOctokit({
-            auth: this.options.repoToken,
+            auth: this.options.repoToken
             // request: {
             //   retries: 3, // Number of retry attempts
             //   retryAfter: 2 // Retry delay in seconds

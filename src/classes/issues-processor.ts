@@ -44,6 +44,7 @@ export function setupRateLimitMock(): void {
     // .persist()
     .get('/rate_limit')
     .reply(429, {message: 'Rate limit exceeded'}, {'Retry-After': '2'})
+    .persist()
     .get('/rate_limit')
     .reply(200, {rate: {limit: 3000, remaining: 2999, reset: 1234567890}});
 
