@@ -455,9 +455,7 @@ class IssuesProcessor {
             }
         });
         this.client.request('GET /rate_limit').catch((error) => {
-            // this._logger.error(
-            //   `Error fetching rate limit: ${error.message}. Retrying...`
-            // );
+            this._logger.info(JSON.stringify(error, null, 2));
             if (error.request.request.retryCount) {
                 this._logger.error(`request failed after ${error.request.request.retryCount} retries`);
             }
