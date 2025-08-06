@@ -392,21 +392,14 @@ function setupRateLimitMock() {
     let callCount = 0;
     (0, nock_1.default)('https://api.github.com')
         .get('/rate_limit')
-        .times(2) // Allow exactly 2 calls
+        // .times(3) // Allow exactly 2 calls
         .reply(() => {
         callCount++;
         if (callCount === 1) {
-            return [
-                429,
-                { message: 'Rate limit exceeded' },
-                { 'Retry-After': '2' },
-            ];
+            return [429, { message: 'Rate limit exceeded' }, { 'Retry-After': '2' }];
         }
         else {
-            return [
-                200,
-                { rate: { limit: 3000, remaining: 2999, reset: 1234567890 } },
-            ];
+            return [200, { rate: { limit: 3000, remaining: 2999, reset: 1234567890 } }];
         }
     });
     (0, nock_1.default)('https://api.github.com')

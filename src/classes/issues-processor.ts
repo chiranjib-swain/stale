@@ -38,7 +38,7 @@ export function setupRateLimitMock(): void {
 
   nock('https://api.github.com')
     .get('/rate_limit')
-    .times(2) // Allow exactly 2 calls
+    // .times(3) // Allow exactly 2 calls
     .reply(() => {
       callCount++;
       if (callCount === 1) {
