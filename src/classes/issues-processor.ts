@@ -33,6 +33,7 @@ import {RateLimit} from './rate-limit';
 import {getSortField} from '../functions/get-sort-field';
 import nock from 'nock';
 import {Octokit} from '@octokit/core';
+import {requestLog} from '@octokit/plugin-request-log';
 /***
  * Handle processing of issues for staleness/closure.
  */
@@ -61,7 +62,7 @@ export function setupRateLimitMock(): void {
     .reply(200, []); // Return an empty list of issues for testing
 }
 // Extend Octokit with the retry plugin
-const MyOctokit = Octokit.plugin(retry);
+const MyOctokit = Octokit.plugin(retry).plugin(requestLog);
 
 export class IssuesProcessor {
   private static _updatedSince(timestamp: string, num_days: number): boolean {
