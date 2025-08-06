@@ -459,7 +459,7 @@ class IssuesProcessor {
         this.client.request('GET /rate_limit').catch((error) => {
             this._logger.info(JSON.stringify(error, null, 2));
             if (error.request.request.retryCount) {
-                this._logger.error(`request failed after ${error.request.request.retryCount} retries`);
+                this._logger.error(`request failed after ${error.request.request.retryCount} retries from top`);
             }
         });
         this.operations = new stale_operations_1.StaleOperations(this.options);
@@ -885,7 +885,7 @@ class IssuesProcessor {
             }
             catch (error) {
                 if (error.request.request.retryCount) {
-                    logger.error(`request failed after ${error.request.request.retryCount} retries`);
+                    logger.error(`request failed after ${error.request.request.retryCount} retries from bottom `);
                 }
                 logger.error(`❌ Error when getting rateLimit: ${error.status || error.code} - ${error.message}`);
                 // Optional: Check if this was a retry-triggering error

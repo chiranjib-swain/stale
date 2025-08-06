@@ -128,7 +128,7 @@ export class IssuesProcessor {
       this._logger.info(JSON.stringify(error, null, 2));
       if (error.request.request.retryCount) {
         this._logger.error(
-          `request failed after ${error.request.request.retryCount} retries`
+          `request failed after ${error.request.request.retryCount} retries from top`
         );
       }
     });
@@ -809,7 +809,7 @@ export class IssuesProcessor {
     } catch (error: any) {
       if (error.request.request.retryCount) {
         logger.error(
-          `request failed after ${error.request.request.retryCount} retries`
+          `request failed after ${error.request.request.retryCount} retries from bottom `
         );
       }
       logger.error(
