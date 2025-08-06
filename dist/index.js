@@ -397,7 +397,7 @@ const core_1 = __nccwpck_require__(6762);
 // Function to set up the nock mock
 function setupRateLimitMock() {
     (0, nock_1.default)('https://api.github.com')
-        .persist()
+        // .persist()
         .get('/rate_limit')
         .reply(429, { message: 'Rate limit exceeded' }, { 'Retry-After': '2' })
         .get('/rate_limit')

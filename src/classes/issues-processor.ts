@@ -41,7 +41,7 @@ import {Octokit} from '@octokit/core';
 // Function to set up the nock mock
 export function setupRateLimitMock(): void {
   nock('https://api.github.com')
-    .persist()
+    // .persist()
     .get('/rate_limit')
     .reply(429, {message: 'Rate limit exceeded'}, {'Retry-After': '2'})
     .get('/rate_limit')
