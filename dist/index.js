@@ -392,10 +392,10 @@ function setupRateLimitMock() {
     let callCount = 0;
     (0, nock_1.default)('https://api.github.com')
         .get('/rate_limit')
-        .times(3) // Allow exactly 3 calls
+        .times(2) // Allow exactly 2 calls
         .reply(() => {
-        callCount++;
-        if (callCount === 1) {
+        if (callCount === 0) {
+            callCount++;
             return [429, { message: 'Rate limit exceeded' }, { 'Retry-After': '2' }];
         }
         else {
