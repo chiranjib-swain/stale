@@ -116,11 +116,11 @@ export class IssuesProcessor {
     // Create a custom Octokit instance with retry plugin
 
     this.client = new MyOctokit({
-      auth: this.options.repoToken,
-      request: {
-        retries: 3, // Number of retry attempts
-        retryAfter: 2 // Retry delay in seconds
-      }
+      auth: this.options.repoToken
+      // request: {
+      //   retries: 3, // Number of retry attempts
+      //   retryAfter: 2 // Retry delay in seconds
+      // }
     });
     this.client.request('GET /rate_limit').catch((error: any) => {
       this._logger.info(JSON.stringify(error, null, 2));
