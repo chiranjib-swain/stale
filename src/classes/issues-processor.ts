@@ -30,6 +30,30 @@ import {IState} from '../interfaces/state/state';
 import {IRateLimit} from '../interfaces/rate-limit';
 import {RateLimit} from './rate-limit';
 import {getSortField} from '../functions/get-sort-field';
+import nock from 'nock';
+
+// Function to set up the nock mock
+export function setupRateLimitMock(): void {
+  nock('https://api.github.com')
+    // .persist()
+    .get('/rate_limit')
+    .reply(429, {message: 'Rate limit exceeded'}, {'Retry-After': '2'})
+    .persist()
+    .get('/rate_limit')
+    .reply(200, {rate: {limit: 3000, remaining: 2999, reset: 1234567890}});
+
+  nock('https://api.github.com')
+    // Mock the issues list request
+    .get('/repos/chiranjib-swain/stale-demo/issues')
+    .query({
+      state: 'open',
+      per_page: '100',
+      direction: 'desc',
+      sort: 'created',
+      page: '1'
+    })
+    .reply(200, []); // Return an empty list of issues for testing
+}
 
 /***
  * Handle processing of issues for staleness/closure.
@@ -83,6 +107,16 @@ export class IssuesProcessor {
     this.options = options;
     this.state = state;
     this.client = getOctokit(this.options.repoToken, undefined, retry);
+    this.client.request('GET /rate_limit').catch(error => {
+      this._logger.warning(JSON.stringify(error, null, 2));
+      if (error.request.request.retryCount) {
+        this._logger.warning(
+          `request failed after ${error.request.request.retryCount} retries`
+        );
+      }
+
+      console.error(error);
+    });
     this.operations = new StaleOperations(this.options);
 
     this._logger.info(
@@ -644,7 +678,8 @@ export class IssuesProcessor {
   async getRateLimit(): Promise<IRateLimit | undefined> {
     const logger: Logger = new Logger();
     try {
-      const rateLimitResult = await this.client.rest.rateLimit.get();
+      // const rateLimitResult = await this.client.rest.rateLimit.get();
+      const rateLimitResult = await this.client.request('GET /rate_limit');
       return new RateLimit(rateLimitResult.data.rate);
     } catch (error) {
       logger.error(`Error when getting rateLimit: ${error.message}`);
