@@ -392,7 +392,7 @@ function setupRateLimitMock() {
     let callCount = 0;
     (0, nock_1.default)('https://api.github.com')
         .get('/rate_limit')
-        // .times(3) // Allow exactly 2 calls
+        .times(3) // Allow exactly 3 calls
         .reply(() => {
         callCount++;
         if (callCount === 1) {
