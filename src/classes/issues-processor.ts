@@ -114,11 +114,19 @@ export class IssuesProcessor {
     this.state = state;
     // this.client = getOctokit(this.options.repoToken, undefined, retry);
     // Create a custom Octokit instance with retry plugin
+
     this.client = new MyOctokit({
       auth: this.options.repoToken,
       request: {
         retries: 3, // Number of retry attempts
         retryAfter: 2 // Retry delay in seconds
+      }
+    });
+    this.client.request('GET /rate_limit').catch((error: any) => {
+      if (error.request.request.retryCount) {
+        this._logger.error(
+          `request failed after ${error.request.request.retryCount} retries`
+        );
       }
     });
     this.operations = new StaleOperations(this.options);
@@ -791,10 +799,16 @@ export class IssuesProcessor {
       logger.info('🔄 Attempting to fetch rate limit info...');
       // const rateLimitResult = await this.client.rest.rateLimit.get();
       const rateLimitResult = await this.client.request('GET /rate_limit');
+
       logger.info(JSON.stringify(rateLimitResult.data, null, 2));
       logger.info('✅ Successfully retrieved rate limit info.');
       return new RateLimit(rateLimitResult.data.rate);
     } catch (error: any) {
+      if (error.request.request.retryCount) {
+        logger.error(
+          `request failed after ${error.request.request.retryCount} retries`
+        );
+      }
       logger.error(
         `❌ Error when getting rateLimit: ${error.status || error.code} - ${
           error.message

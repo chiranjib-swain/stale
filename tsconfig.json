@@ -9,5 +9,6 @@
     "useUnknownInCatchVariables": false /* Default catch clause variables as 'unknown' instead of 'any'. */
     //"sourceMap": true
   },
-  "include": ["src", "__tests__"]
+  "include": ["src", "__tests__"],
+  "moduleResolution": "node16", "module": "node16"
 }

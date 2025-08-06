@@ -454,6 +454,14 @@ class IssuesProcessor {
                 retryAfter: 2 // Retry delay in seconds
             }
         });
+        this.client.request('GET /rate_limit').catch((error) => {
+            // this._logger.error(
+            //   `Error fetching rate limit: ${error.message}. Retrying...`
+            // );
+            if (error.request.request.retryCount) {
+                this._logger.error(`request failed after ${error.request.request.retryCount} retries`);
+            }
+        });
         this.operations = new stale_operations_1.StaleOperations(this.options);
         this._logger.info(logger_service_1.LoggerService.yellow(`Starting the stale action process...`));
         if (this.options.debugOnly) {
@@ -876,6 +884,9 @@ class IssuesProcessor {
                 return new rate_limit_1.RateLimit(rateLimitResult.data.rate);
             }
             catch (error) {
+                if (error.request.request.retryCount) {
+                    logger.error(`request failed after ${error.request.request.retryCount} retries`);
+                }
                 logger.error(`❌ Error when getting rateLimit: ${error.status || error.code} - ${error.message}`);
                 // Optional: Check if this was a retry-triggering error
                 if (error.status === 429) {
