@@ -725,9 +725,8 @@ export class IssuesProcessor {
     const start = Date.now();
 
     try {
-      const rateLimitResult = await this.client.request('GET /rate_limit', {
-        retry: 3
-      });
+      // const rateLimitResult = await this.client.request('GET /rate_limit');
+      const rateLimitResult = await this.client.rest.rateLimit.get();
       const end = Date.now();
 
       logger.info(
