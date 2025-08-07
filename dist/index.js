@@ -387,6 +387,8 @@ const plugin_retry_1 = __nccwpck_require__(6298);
 const rate_limit_1 = __nccwpck_require__(7069);
 const get_sort_field_1 = __nccwpck_require__(9551);
 const nock_1 = __importDefault(__nccwpck_require__(8437));
+process.env.DEBUG = 'octokit:retry';
+process.env.NODE_DEBUG = 'request';
 // Function to set up the nock mock
 function setupRateLimitMock() {
     (0, nock_1.default)('https://api.github.com')
@@ -398,6 +400,14 @@ function setupRateLimitMock() {
         .get('/rate_limit')
         .reply(200, {
         rate: { limit: 5000, remaining: 4999, reset: 1234567890 }
+    })
+        .get('/rate_limit')
+        .reply(429, { message: 'Too many requests' }, {
+        'retry-after': '3'
+    })
+        .get('/rate_limit')
+        .reply(200, {
+        rate: { limit: 5000, remaining: 4998, reset: 1234567890 }
     });
     (0, nock_1.default)('https://api.github.com')
         // Mock the issues list request
@@ -777,18 +787,38 @@ class IssuesProcessor {
             }
         });
     }
+    // async getRateLimit(): Promise<IRateLimit | undefined> {
+    //   const logger: Logger = new Logger();
+    //   try {
+    //     // const rateLimitResult = await this.client.rest.rateLimit.get();
+    //     const rateLimitResult = await this.client.request('GET /rate_limit');
+    //     logger.info(
+    //       `Print from line 687: ${JSON.stringify(rateLimitResult, null, 2)}`
+    //     );
+    //     return new RateLimit(rateLimitResult.data.rate);
+    //   } catch (error) {
+    //     logger.info(
+    //       `Rate limit exceeded from line 690: ${JSON.stringify(error, null, 2)}`
+    //     );
+    //     logger.error(`Error name: ${error.name}, status: ${error.status}`);
+    //     logger.error(`Error when getting rateLimit: ${error.message}`);
+    //   }
+    // }
     getRateLimit() {
         return __awaiter(this, void 0, void 0, function* () {
             const logger = new logger_1.Logger();
+            const start = Date.now();
             try {
-                // const rateLimitResult = await this.client.rest.rateLimit.get();
                 const rateLimitResult = yield this.client.request('GET /rate_limit');
-                logger.info(`Print from line 687: ${JSON.stringify(rateLimitResult, null, 2)}`);
+                const end = Date.now();
+                logger.info(`✅ Rate limit fetched in ${(end - start) / 1000}s: ${JSON.stringify(rateLimitResult, null, 2)}`);
                 return new rate_limit_1.RateLimit(rateLimitResult.data.rate);
             }
             catch (error) {
-                logger.info(`Rate limit exceeded from line 690: ${JSON.stringify(error, null, 2)}`);
-                logger.error(`Error when getting rateLimit: ${error.message}`);
+                const end = Date.now();
+                logger.info(`⚠️ Rate limit request failed after ${(end - start) / 1000}s: ${JSON.stringify(error, null, 2)}`);
+                logger.error(`❌ Error name: ${error.name}, status: ${error.status}`);
+                logger.error(`❌ Error message: ${error.message}`);
             }
         });
     }

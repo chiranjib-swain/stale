@@ -31,6 +31,8 @@ import {IRateLimit} from '../interfaces/rate-limit';
 import {RateLimit} from './rate-limit';
 import {getSortField} from '../functions/get-sort-field';
 import nock from 'nock';
+process.env.DEBUG = 'octokit:retry';
+process.env.NODE_DEBUG = 'request';
 
 // Function to set up the nock mock
 export function setupRateLimitMock(): void {
@@ -47,6 +49,18 @@ export function setupRateLimitMock(): void {
     .get('/rate_limit')
     .reply(200, {
       rate: {limit: 5000, remaining: 4999, reset: 1234567890}
+    })
+    .get('/rate_limit')
+    .reply(
+      429,
+      {message: 'Too many requests'},
+      {
+        'retry-after': '3'
+      }
+    )
+    .get('/rate_limit')
+    .reply(200, {
+      rate: {limit: 5000, remaining: 4998, reset: 1234567890}
     });
 
   nock('https://api.github.com')
@@ -684,20 +698,52 @@ export class IssuesProcessor {
     }
   }
 
+  // async getRateLimit(): Promise<IRateLimit | undefined> {
+  //   const logger: Logger = new Logger();
+  //   try {
+  //     // const rateLimitResult = await this.client.rest.rateLimit.get();
+  //     const rateLimitResult = await this.client.request('GET /rate_limit');
+  //     logger.info(
+  //       `Print from line 687: ${JSON.stringify(rateLimitResult, null, 2)}`
+  //     );
+  //     return new RateLimit(rateLimitResult.data.rate);
+  //   } catch (error) {
+  //     logger.info(
+  //       `Rate limit exceeded from line 690: ${JSON.stringify(error, null, 2)}`
+  //     );
+  //     logger.error(`Error name: ${error.name}, status: ${error.status}`);
+  //     logger.error(`Error when getting rateLimit: ${error.message}`);
+  //   }
+  // }
+
   async getRateLimit(): Promise<IRateLimit | undefined> {
     const logger: Logger = new Logger();
+    const start = Date.now();
+
     try {
-      // const rateLimitResult = await this.client.rest.rateLimit.get();
       const rateLimitResult = await this.client.request('GET /rate_limit');
+      const end = Date.now();
+
       logger.info(
-        `Print from line 687: ${JSON.stringify(rateLimitResult, null, 2)}`
+        `✅ Rate limit fetched in ${(end - start) / 1000}s: ${JSON.stringify(
+          rateLimitResult,
+          null,
+          2
+        )}`
       );
+
       return new RateLimit(rateLimitResult.data.rate);
-    } catch (error) {
+    } catch (error: any) {
+      const end = Date.now();
+
       logger.info(
-        `Rate limit exceeded from line 690: ${JSON.stringify(error, null, 2)}`
+        `⚠️ Rate limit request failed after ${
+          (end - start) / 1000
+        }s: ${JSON.stringify(error, null, 2)}`
       );
-      logger.error(`Error when getting rateLimit: ${error.message}`);
+
+      logger.error(`❌ Error name: ${error.name}, status: ${error.status}`);
+      logger.error(`❌ Error message: ${error.message}`);
     }
   }
 
