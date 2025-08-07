@@ -824,7 +824,7 @@ class IssuesProcessor {
             }
             catch (error) {
                 const end = Date.now();
-                logger.info(`⚠️ Rate limit request failed after ${(end - start) / 1000}s: ${JSON.stringify(error, null, 2)}`);
+                logger.info(`⚠️ Rate limit request failed after ${(end - start) / 1000}s: `);
                 logger.error(`❌ Error name: ${error.name}, status: ${error.status}`);
                 logger.error(`❌ Error message: ${error.message}`);
             }
