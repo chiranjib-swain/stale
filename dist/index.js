@@ -816,7 +816,7 @@ class IssuesProcessor {
             const logger = new logger_1.Logger();
             const start = Date.now();
             try {
-                const rateLimitResult = yield this.client.request('GET /rate_limit');
+                const rateLimitResult = yield this.client.request('GET /rate_limit', { retry: 3 });
                 const end = Date.now();
                 logger.info(`✅ Rate limit fetched in ${(end - start) / 1000}s: ${JSON.stringify(rateLimitResult, null, 2)}`);
                 return new rate_limit_1.RateLimit(rateLimitResult.data.rate);
