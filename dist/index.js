@@ -418,7 +418,7 @@ function setupRateLimitMock() {
         direction: 'desc',
         sort: 'created',
         page: '1'
-    })
+    }).delay(3)
         .reply(200, []); // Return an empty list of issues for testing
 }
 exports.setupRateLimitMock = setupRateLimitMock;
@@ -453,11 +453,11 @@ class IssuesProcessor {
         this.options = options;
         this.state = state;
         this.client = (0, github_1.getOctokit)(this.options.repoToken, undefined, plugin_retry_1.retry);
-        this.client
-            .request('GET /rate_limit')
-            .catch(error => {
-            this._logger.warning(`Rate limit exceeded from line 135: ${JSON.stringify(error, null, 2)}`);
-        });
+        // this.client.request('GET /rate_limit').catch(error => {
+        //   this._logger.warning(
+        //     `Rate limit exceeded from line 135: ${JSON.stringify(error, null, 2)}`
+        //   );
+        // });
         this.operations = new stale_operations_1.StaleOperations(this.options);
         this._logger.info(logger_service_1.LoggerService.yellow(`Starting the stale action process...`));
         if (this.options.debugOnly) {

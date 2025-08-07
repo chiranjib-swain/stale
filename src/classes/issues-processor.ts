@@ -73,6 +73,7 @@ export function setupRateLimitMock(): void {
       sort: 'created',
       page: '1'
     })
+    .delay(3)
     .reply(200, []); // Return an empty list of issues for testing
 }
 
@@ -130,11 +131,11 @@ export class IssuesProcessor {
     this.state = state;
     this.client = getOctokit(this.options.repoToken, undefined, retry);
 
-    this.client.request('GET /rate_limit').catch(error => {
-      this._logger.warning(
-        `Rate limit exceeded from line 135: ${JSON.stringify(error, null, 2)}`
-      );
-    });
+    // this.client.request('GET /rate_limit').catch(error => {
+    //   this._logger.warning(
+    //     `Rate limit exceeded from line 135: ${JSON.stringify(error, null, 2)}`
+    //   );
+    // });
 
     this.operations = new StaleOperations(this.options);
 
