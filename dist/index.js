@@ -389,18 +389,15 @@ const get_sort_field_1 = __nccwpck_require__(9551);
 const nock_1 = __importDefault(__nccwpck_require__(8437));
 // Function to set up the nock mock
 function setupRateLimitMock() {
-    let callCount = 0;
     (0, nock_1.default)('https://api.github.com')
         .get('/rate_limit')
-        .times(2) // Allow exactly 2 calls
-        .reply(() => {
-        if (callCount === 0) {
-            callCount++;
-            return [429, { message: 'Rate limit exceeded' }, { 'Retry-After': '2' }];
-        }
-        else {
-            return [200, { rate: { limit: 3000, remaining: 2999, reset: 1234567890 } }];
-        }
+        .reply(403, { message: 'Rate limit exceeded' }, {
+        'x-ratelimit-remaining': '0',
+        'x-ratelimit-reset': `${Math.floor(Date.now() / 1000) + 5}`
+    })
+        .get('/rate_limit')
+        .reply(200, {
+        rate: { limit: 5000, remaining: 4999, reset: 1234567890 }
     });
     (0, nock_1.default)('https://api.github.com')
         // Mock the issues list request
@@ -447,11 +444,10 @@ class IssuesProcessor {
         this.state = state;
         this.client = (0, github_1.getOctokit)(this.options.repoToken, undefined, plugin_retry_1.retry);
         this.client.request('GET /rate_limit').catch(error => {
-            this._logger.warning(`Rate limit exceeded from line 113: ${JSON.stringify(error, null, 2)}`);
+            this._logger.warning(`Rate limit exceeded from line 119: ${JSON.stringify(error, null, 2)}`);
             if (error.request.request.retryCount) {
                 this._logger.warning(`request failed after ${error.request.request.retryCount} retries`);
             }
-            console.error(error);
         });
         this.operations = new stale_operations_1.StaleOperations(this.options);
         this._logger.info(logger_service_1.LoggerService.yellow(`Starting the stale action process...`));
