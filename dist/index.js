@@ -453,9 +453,13 @@ class IssuesProcessor {
         this.options = options;
         this.state = state;
         this.client = (0, github_1.getOctokit)(this.options.repoToken, undefined, plugin_retry_1.retry);
-        this.client.request('GET /rate_limit').catch(error => {
+        this.client
+            .request('GET /rate_limit')
+            .catch(error => {
             this._logger.warning(`Rate limit exceeded from line 135: ${JSON.stringify(error, null, 2)}`);
-        }).catch(error => {
+            throw error; // <--- add this to propagate the error
+        })
+            .catch(error => {
             this._logger.warning(`Rate limit exceeded from line 139: ${JSON.stringify(error, null, 2)}`);
         });
         this.operations = new stale_operations_1.StaleOperations(this.options);
