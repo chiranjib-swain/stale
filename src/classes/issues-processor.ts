@@ -718,10 +718,9 @@ export class IssuesProcessor {
     const start = Date.now();
 
     try {
-      // const rateLimitResult = await this.client.request('GET /rate_limit');
-      const rateLimitResult = await this.client.rest.rateLimit.get();
-      const end = Date.now();
+      const rateLimitResult = await this.client.request('GET /rate_limit'); // ✅ Reliable retry
 
+      const end = Date.now();
       logger.info(
         `✅ Rate limit fetched in ${(end - start) / 1000}s: ${JSON.stringify(
           rateLimitResult,
@@ -733,13 +732,14 @@ export class IssuesProcessor {
       return new RateLimit(rateLimitResult.data.rate);
     } catch (error: any) {
       const end = Date.now();
-
       logger.info(
         `⚠️ Rate limit request failed after ${(end - start) / 1000}s: `
       );
-
       logger.error(`❌ Error name: ${error.name}, status: ${error.status}`);
       logger.error(`❌ Error message: ${error.message}`);
+      if (error.request?.request?.retryCount !== undefined) {
+        logger.error(`🔁 Retry count: ${error.request.request.retryCount}`);
+      }
     }
   }
 

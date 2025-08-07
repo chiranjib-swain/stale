@@ -418,7 +418,8 @@ function setupRateLimitMock() {
         direction: 'desc',
         sort: 'created',
         page: '1'
-    }).delay(3)
+    })
+        .delay(3)
         .reply(200, []); // Return an empty list of issues for testing
 }
 exports.setupRateLimitMock = setupRateLimitMock;
@@ -804,12 +805,12 @@ class IssuesProcessor {
     //   }
     // }
     getRateLimit() {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             const logger = new logger_1.Logger();
             const start = Date.now();
             try {
-                // const rateLimitResult = await this.client.request('GET /rate_limit');
-                const rateLimitResult = yield this.client.rest.rateLimit.get();
+                const rateLimitResult = yield this.client.request('GET /rate_limit'); // ✅ Reliable retry
                 const end = Date.now();
                 logger.info(`✅ Rate limit fetched in ${(end - start) / 1000}s: ${JSON.stringify(rateLimitResult, null, 2)}`);
                 return new rate_limit_1.RateLimit(rateLimitResult.data.rate);
@@ -819,6 +820,9 @@ class IssuesProcessor {
                 logger.info(`⚠️ Rate limit request failed after ${(end - start) / 1000}s: `);
                 logger.error(`❌ Error name: ${error.name}, status: ${error.status}`);
                 logger.error(`❌ Error message: ${error.message}`);
+                if (((_b = (_a = error.request) === null || _a === void 0 ? void 0 : _a.request) === null || _b === void 0 ? void 0 : _b.retryCount) !== undefined) {
+                    logger.error(`🔁 Retry count: ${error.request.request.retryCount}`);
+                }
             }
         });
     }
