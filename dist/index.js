@@ -393,17 +393,17 @@ process.env.NODE_DEBUG = 'request';
 function setupRateLimitMock() {
     (0, nock_1.default)('https://api.github.com')
         .get('/rate_limit')
-        .reply(403, { message: 'Rate limit exceeded' }, {
-        'x-ratelimit-remaining': '0',
-        'x-ratelimit-reset': `${Math.floor(Date.now() / 1000) + 5}`
+        .reply(429, { message: 'Too many requests' }, {
+        'retry-after': '3'
     })
         .get('/rate_limit')
         .reply(200, {
         rate: { limit: 5000, remaining: 4999, reset: 1234567890 }
     })
         .get('/rate_limit')
-        .reply(429, { message: 'Too many requests' }, {
-        'retry-after': '3'
+        .reply(403, { message: 'Rate limit exceeded' }, {
+        'x-ratelimit-remaining': '0',
+        'x-ratelimit-reset': `${Math.floor(Date.now() / 1000) + 5}`
     })
         .get('/rate_limit')
         .reply(200, {

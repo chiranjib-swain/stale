@@ -39,11 +39,10 @@ export function setupRateLimitMock(): void {
   nock('https://api.github.com')
     .get('/rate_limit')
     .reply(
-      403,
-      {message: 'Rate limit exceeded'},
+      429,
+      {message: 'Too many requests'},
       {
-        'x-ratelimit-remaining': '0',
-        'x-ratelimit-reset': `${Math.floor(Date.now() / 1000) + 5}`
+        'retry-after': '3'
       }
     )
     .get('/rate_limit')
@@ -52,10 +51,11 @@ export function setupRateLimitMock(): void {
     })
     .get('/rate_limit')
     .reply(
-      429,
-      {message: 'Too many requests'},
+      403,
+      {message: 'Rate limit exceeded'},
       {
-        'retry-after': '3'
+        'x-ratelimit-remaining': '0',
+        'x-ratelimit-reset': `${Math.floor(Date.now() / 1000) + 5}`
       }
     )
     .get('/rate_limit')
