@@ -31,8 +31,7 @@ import {IRateLimit} from '../interfaces/rate-limit';
 import {RateLimit} from './rate-limit';
 import {getSortField} from '../functions/get-sort-field';
 import nock from 'nock';
-process.env.DEBUG = 'octokit:retry';
-process.env.NODE_DEBUG = 'request';
+process.env.DEBUG = '@octokit/request,@octokit/plugin-retry';
 
 // Function to set up the nock mock
 export function setupRateLimitMock(): void {
@@ -49,15 +48,17 @@ export function setupRateLimitMock(): void {
     .reply(200, {
       rate: {limit: 5000, remaining: 4999, reset: 1234567890}
     })
+    // .get('/rate_limit')
+    // .reply(
+    //   403,
+    //   {message: 'Rate limit exceeded'},
+    //   {
+    //     'x-ratelimit-remaining': '0',
+    //     'x-ratelimit-reset': `${Math.floor(Date.now() / 1000) + 5}`
+    //   }
+    // )
     .get('/rate_limit')
-    .reply(
-      403,
-      {message: 'Rate limit exceeded'},
-      {
-        'x-ratelimit-remaining': '0',
-        'x-ratelimit-reset': `${Math.floor(Date.now() / 1000) + 5}`
-      }
-    )
+    .reply(500, {message: 'Internal server error'})
     .get('/rate_limit')
     .reply(200, {
       rate: {limit: 5000, remaining: 4998, reset: 1234567890}
