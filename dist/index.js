@@ -409,7 +409,10 @@ function setupRateLimitMock() {
         //   }
         // )
         .get('/rate_limit')
-        .reply(500, { message: 'Internal server error' })
+        .reply(500, { message: 'Internal server error' }, {
+        'x-ratelimit-remaining': '0',
+        'x-ratelimit-reset': `${Math.floor(Date.now() / 1000) + 5}`
+    })
         .get('/rate_limit')
         .reply(200, {
         rate: { limit: 5000, remaining: 4998, reset: 1234567890 }
