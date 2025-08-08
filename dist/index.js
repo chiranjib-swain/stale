@@ -449,8 +449,8 @@ const octokit = new MyOctokit({
                 octokit.log.info(`Retrying after ${retryAfter} seconds!`);
                 return true; // Retries once
             }
-        },
-    },
+        }
+    }, log: console
 });
 /***
  * Handle processing of issues for staleness/closure.

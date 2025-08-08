@@ -120,7 +120,8 @@ const octokit = new MyOctokit({
         return true; // Retries once
       }
     }
-  }
+  },
+  log: console
 });
 
 /***
