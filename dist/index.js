@@ -469,12 +469,13 @@ class IssuesProcessor {
         const MyOctokit = core_1.Octokit.plugin(plugin_retry_1.retry);
         this.octokit = new MyOctokit({
             auth: this.options.repoToken,
+            request: {},
             retry: {
                 enabled: true,
                 maxRetries: 3, // Number of retries
                 onRetry: (retryCount, error, request) => {
                     this._logger.info(`Retrying request ${request.method} ${request.url} (${retryCount + 1}) due to: ${error.message}`);
-                },
+                }
             }
         });
         // this.client.request('GET /rate_limit').catch(error => {
@@ -833,10 +834,19 @@ class IssuesProcessor {
             const logger = new logger_1.Logger();
             const start = Date.now();
             try {
-                const rateLimitResult = yield this.octokit.request('GET /rate_limit'); // ✅ Reliable retry
+                const rateLimitResult = yield this.octokit.request('GET /rate_limit').then((data) => {
+                    logger.info(`Print from line 758: ${JSON.stringify(data, null, 2)}`);
+                    return new rate_limit_1.RateLimit(data.data.rate);
+                }).catch((error) => {
+                    if (error.request.request.retryCount) {
+                        logger.warning(`request failed after ${error.request.request.retryCount} retries`);
+                    }
+                    logger.warning(error);
+                    return undefined; // Ensure a return value in case of error
+                });
                 const end = Date.now();
                 logger.info(`✅ Rate limit fetched in ${(end - start) / 1000}s: ${JSON.stringify(rateLimitResult, null, 2)}`);
-                return new rate_limit_1.RateLimit(rateLimitResult.data.rate);
+                return rateLimitResult; // Return the result
             }
             catch (error) {
                 const end = Date.now();
@@ -846,6 +856,7 @@ class IssuesProcessor {
                 if (((_b = (_a = error.request) === null || _a === void 0 ? void 0 : _a.request) === null || _b === void 0 ? void 0 : _b.retryCount) !== undefined) {
                     logger.error(`🔁 Retry count: ${error.request.request.retryCount}`);
                 }
+                return undefined; // Ensure a return value in case of exception
             }
         });
     }

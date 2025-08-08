@@ -149,6 +149,7 @@ export class IssuesProcessor {
     const MyOctokit = Octokit.plugin(retry);
     this.octokit = new MyOctokit({
       auth: this.options.repoToken,
+      request: {},
       retry: {
         enabled: true,
         maxRetries: 3, // Number of retries
@@ -749,7 +750,21 @@ export class IssuesProcessor {
     const start = Date.now();
 
     try {
-      const rateLimitResult = await this.octokit.request('GET /rate_limit'); // ✅ Reliable retry
+      const rateLimitResult = await this.octokit
+        .request('GET /rate_limit')
+        .then((data: any) => {
+          logger.info(`Print from line 758: ${JSON.stringify(data, null, 2)}`);
+          return new RateLimit(data.data.rate);
+        })
+        .catch(error => {
+          if (error.request.request.retryCount) {
+            logger.warning(
+              `request failed after ${error.request.request.retryCount} retries`
+            );
+          }
+          logger.warning(error);
+          return undefined; // Ensure a return value in case of error
+        });
 
       const end = Date.now();
       logger.info(
@@ -759,8 +774,7 @@ export class IssuesProcessor {
           2
         )}`
       );
-
-      return new RateLimit(rateLimitResult.data.rate);
+      return rateLimitResult; // Return the result
     } catch (error: any) {
       const end = Date.now();
       logger.info(
@@ -771,6 +785,7 @@ export class IssuesProcessor {
       if (error.request?.request?.retryCount !== undefined) {
         logger.error(`🔁 Retry count: ${error.request.request.retryCount}`);
       }
+      return undefined; // Ensure a return value in case of exception
     }
   }
 
