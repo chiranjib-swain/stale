@@ -31,6 +31,7 @@ import {IRateLimit} from '../interfaces/rate-limit';
 import {RateLimit} from './rate-limit';
 import {getSortField} from '../functions/get-sort-field';
 import nock from 'nock';
+import {Octokit} from '@octokit/core';
 process.env.DEBUG = '@octokit/request,@octokit/plugin-retry';
 
 // Function to set up the nock mock
@@ -84,6 +85,43 @@ export function setupRateLimitMock(): void {
     .delay(3)
     .reply(200, []); // Return an empty list of issues for testing
 }
+
+const MyOctokit = Octokit.plugin(retry);
+const octokit = new MyOctokit({
+  // ... other options
+  retry: {
+    onRateLimit: (
+      retryAfter: any,
+      options: {method: any; url: any; request: {retryCount: number}},
+      octokit: {
+        log: {warn: (arg0: string) => void; info: (arg0: string) => void};
+      }
+    ) => {
+      octokit.log.warn(
+        `Request quota exhausted for request ${options.method} ${options.url}`
+      );
+      if (options.request.retryCount === 0) {
+        octokit.log.info(`Retrying after ${retryAfter} seconds!`);
+        return true; // Retries once
+      }
+    },
+    onSecondaryRateLimit: (
+      retryAfter: any,
+      options: {method: any; url: any; request: {retryCount: number}},
+      octokit: {
+        log: {warn: (arg0: string) => void; info: (arg0: string) => void};
+      }
+    ) => {
+      octokit.log.warn(
+        `SecondaryRateLimit detected for request ${options.method} ${options.url}`
+      );
+      if (options.request.retryCount === 0) {
+        octokit.log.info(`Retrying after ${retryAfter} seconds!`);
+        return true; // Retries once
+      }
+    }
+  }
+});
 
 /***
  * Handle processing of issues for staleness/closure.
@@ -726,7 +764,7 @@ export class IssuesProcessor {
     const start = Date.now();
 
     try {
-      const rateLimitResult = await this.client.request('GET /rate_limit'); // ✅ Reliable retry
+      const rateLimitResult = await octokit.request('GET /rate_limit'); // ✅ Reliable retry
 
       const end = Date.now();
       logger.info(
