@@ -60,8 +60,8 @@ export function setupRateLimitMock(): void {
     // )
     .get('/rate_limit')
     .reply(
-      500,
-      {message: 'Internal server error'},
+      403,
+      {message: 'Rate limit exceeded'},
       {
         'x-ratelimit-remaining': '0',
         'x-ratelimit-reset': `${Math.floor(Date.now() / 1000) + 5}`

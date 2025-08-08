@@ -410,7 +410,7 @@ function setupRateLimitMock() {
         //   }
         // )
         .get('/rate_limit')
-        .reply(500, { message: 'Internal server error' }, {
+        .reply(403, { message: 'Rate limit exceeded' }, {
         'x-ratelimit-remaining': '0',
         'x-ratelimit-reset': `${Math.floor(Date.now() / 1000) + 5}`
     })
@@ -834,10 +834,13 @@ class IssuesProcessor {
             const logger = new logger_1.Logger();
             const start = Date.now();
             try {
-                const rateLimitResult = yield this.octokit.request('GET /rate_limit').then((data) => {
+                const rateLimitResult = yield this.octokit
+                    .request('GET /rate_limit')
+                    .then((data) => {
                     logger.info(`Print from line 758: ${JSON.stringify(data, null, 2)}`);
                     return new rate_limit_1.RateLimit(data.data.rate);
-                }).catch((error) => {
+                })
+                    .catch(error => {
                     if (error.request.request.retryCount) {
                         logger.warning(`request failed after ${error.request.request.retryCount} retries`);
                     }
