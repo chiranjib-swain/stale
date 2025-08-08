@@ -42,7 +42,7 @@ export function setupRateLimitMock(): void {
       429,
       {message: 'Too many requests'},
       {
-        'retry-after': '3'
+        'retry-after': '7'
       }
     )
     .get('/rate_limit')
@@ -86,43 +86,8 @@ export function setupRateLimitMock(): void {
     .reply(200, []); // Return an empty list of issues for testing
 }
 
-const MyOctokit = Octokit.plugin(retry);
-const octokit = new MyOctokit({
-  // ... other options
-  retry: {
-    onRateLimit: (
-      retryAfter: any,
-      options: {method: any; url: any; request: {retryCount: number}},
-      octokit: {
-        log: {warn: (arg0: string) => void; info: (arg0: string) => void};
-      }
-    ) => {
-      octokit.log.warn(
-        `Request quota exhausted for request ${options.method} ${options.url}`
-      );
-      if (options.request.retryCount === 0) {
-        octokit.log.info(`Retrying after ${retryAfter} seconds!`);
-        return true; // Retries once
-      }
-    },
-    onSecondaryRateLimit: (
-      retryAfter: any,
-      options: {method: any; url: any; request: {retryCount: number}},
-      octokit: {
-        log: {warn: (arg0: string) => void; info: (arg0: string) => void};
-      }
-    ) => {
-      octokit.log.warn(
-        `SecondaryRateLimit detected for request ${options.method} ${options.url}`
-      );
-      if (options.request.retryCount === 0) {
-        octokit.log.info(`Retrying after ${retryAfter} seconds!`);
-        return true; // Retries once
-      }
-    }
-  },
-  log: console
-});
+// const MyOctokit = Octokit.plugin(retry);
+// const octokit ;
 
 /***
  * Handle processing of issues for staleness/closure.
@@ -172,11 +137,30 @@ export class IssuesProcessor {
   private readonly _logger: Logger = new Logger();
   private readonly state: IState;
 
+  readonly octokit: InstanceType<typeof Octokit>;
+
   constructor(options: IIssuesProcessorOptions, state: IState) {
     setupRateLimitMock();
     this.options = options;
     this.state = state;
     this.client = getOctokit(this.options.repoToken, undefined, retry);
+
+    // Create a retry-enabled Octokit instance
+    const MyOctokit = Octokit.plugin(retry);
+    this.octokit = new MyOctokit({
+      auth: this.options.repoToken,
+      retry: {
+        enabled: true,
+        maxRetries: 3, // Number of retries
+        onRetry: (retryCount: any, error: any, request: any) => {
+          this._logger.info(
+            `Retrying request ${request.method} ${request.url} (${
+              retryCount + 1
+            }) due to: ${error.message}`
+          );
+        }
+      }
+    });
 
     // this.client.request('GET /rate_limit').catch(error => {
     //   this._logger.warning(
@@ -765,7 +749,7 @@ export class IssuesProcessor {
     const start = Date.now();
 
     try {
-      const rateLimitResult = await octokit.request('GET /rate_limit'); // ✅ Reliable retry
+      const rateLimitResult = await this.octokit.request('GET /rate_limit'); // ✅ Reliable retry
 
       const end = Date.now();
       logger.info(
