@@ -34,7 +34,10 @@ const checkIfCacheExists = async (cacheKey: string): Promise<boolean> => {
   const client = getOctokitClient();
   try {
     const issueResult = await client.request(
-      `/repos/${context.repo.owner}/${context.repo.repo}/actions/caches`
+      `/repos/${context.repo.owner}/${context.repo.repo}/actions/caches`,
+      {
+        direction: 'asc'
+      }
     );
     const caches: Array<{key?: string}> =
       issueResult.data['actions_caches'] || [];
