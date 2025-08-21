@@ -1621,8 +1621,9 @@ const checkIfCacheExists = (cacheKey) => __awaiter(void 0, void 0, void 0, funct
     const client = getOctokitClient();
     try {
         const issueResult = yield client.request(`/repos/${github_1.context.repo.owner}/${github_1.context.repo.repo}/actions/caches`, {
-            direction: 'asc',
+            key: cacheKey
         });
+        core.debug(`Cache check response: ${JSON.stringify(issueResult.data)}`);
         const caches = issueResult.data['actions_caches'] || [];
         return Boolean(caches.find(cache => cache['key'] === cacheKey));
     }

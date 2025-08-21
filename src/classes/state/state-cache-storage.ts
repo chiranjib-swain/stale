@@ -36,9 +36,10 @@ const checkIfCacheExists = async (cacheKey: string): Promise<boolean> => {
     const issueResult = await client.request(
       `/repos/${context.repo.owner}/${context.repo.repo}/actions/caches`,
       {
-        direction: 'asc'
+        key: cacheKey
       }
     );
+    core.debug(`Cache check response: ${JSON.stringify(issueResult.data)}`);
     const caches: Array<{key?: string}> =
       issueResult.data['actions_caches'] || [];
     return Boolean(caches.find(cache => cache['key'] === cacheKey));
