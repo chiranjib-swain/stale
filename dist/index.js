@@ -278,6 +278,7 @@ class Issue {
         this._options = options;
         this.title = issue.title;
         this.number = issue.number;
+        this.type = issue.type ? { name: issue.type.name } : undefined; // Extract the type name
         this.created_at = issue.created_at;
         this.updated_at = issue.updated_at;
         this.draft = Boolean(issue.draft);
