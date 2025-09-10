@@ -410,7 +410,9 @@ class IssuesProcessor {
         this.addedLabelIssues = [];
         this.addedCloseCommentIssues = [];
         this._logger = new logger_1.Logger();
-        this.options = options;
+        // this.options = options;
+        this.options = Object.assign(Object.assign({}, options), { onlyIssueTypes: core.getInput('only-issue-types') // Fetch the value from the YAML file
+         });
         this.state = state;
         this.client = (0, github_1.getOctokit)(this.options.repoToken, undefined, plugin_retry_1.retry);
         this.operations = new stale_operations_1.StaleOperations(this.options);
@@ -679,16 +681,29 @@ class IssuesProcessor {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 this.operations.consumeOperation();
+                // Log the API call parameters
+                core.info(`Fetching issues with the following parameters:`);
+                core.info(`Owner: ${github_1.context.repo.owner}`);
+                core.info(`Repo: ${github_1.context.repo.repo}`);
+                core.info(`State: open`);
+                core.info(`Type: ${this.options.onlyIssueTypes}`);
+                core.info(`Page: ${page}`);
                 const issueResult = yield this.client.rest.issues.listForRepo({
                     owner: github_1.context.repo.owner,
                     repo: github_1.context.repo.repo,
                     state: 'open',
+                    type: this.options.onlyIssueTypes,
                     per_page: 100,
                     direction: this.options.ascending ? 'asc' : 'desc',
                     sort: (0, get_sort_field_1.getSortField)(this.options.sortBy),
                     page
                 });
                 (_a = this.statistics) === null || _a === void 0 ? void 0 : _a.incrementFetchedItemsCount(issueResult.data.length);
+                // Log the response details
+                core.info(`Fetched ${issueResult.data.length} issue(s) from the API.`);
+                issueResult.data.forEach(issue => {
+                    core.info(`Issue: ${JSON.stringify(issue, null, 2)}`); // Pretty-print the entire issue object
+                });
                 return issueResult.data.map((issue) => new issue_1.Issue(this.options, issue));
             }
             catch (error) {

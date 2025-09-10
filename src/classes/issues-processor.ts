@@ -80,7 +80,11 @@ export class IssuesProcessor {
   private readonly state: IState;
 
   constructor(options: IIssuesProcessorOptions, state: IState) {
-    this.options = options;
+    // this.options = options;
+    this.options = {
+      ...options,
+      onlyIssueTypes: core.getInput('only-issue-types') // Fetch the value from the YAML file
+    };
     this.state = state;
     this.client = getOctokit(this.options.repoToken, undefined, retry);
     this.operations = new StaleOperations(this.options);
@@ -566,16 +570,32 @@ export class IssuesProcessor {
   async getIssues(page: number): Promise<Issue[]> {
     try {
       this.operations.consumeOperation();
+
+      // Log the API call parameters
+      core.info(`Fetching issues with the following parameters:`);
+      core.info(`Owner: ${context.repo.owner}`);
+      core.info(`Repo: ${context.repo.repo}`);
+      core.info(`State: open`);
+      core.info(`Type: ${this.options.onlyIssueTypes}`);
+      core.info(`Page: ${page}`);
+
       const issueResult = await this.client.rest.issues.listForRepo({
         owner: context.repo.owner,
         repo: context.repo.repo,
         state: 'open',
+        type: this.options.onlyIssueTypes,
         per_page: 100,
         direction: this.options.ascending ? 'asc' : 'desc',
         sort: getSortField(this.options.sortBy),
         page
       });
       this.statistics?.incrementFetchedItemsCount(issueResult.data.length);
+
+      // Log the response details
+      core.info(`Fetched ${issueResult.data.length} issue(s) from the API.`);
+      issueResult.data.forEach(issue => {
+        core.info(`Issue: ${JSON.stringify(issue, null, 2)}`); // Pretty-print the entire issue object
+      });
 
       return issueResult.data.map(
         (issue): Issue =>
