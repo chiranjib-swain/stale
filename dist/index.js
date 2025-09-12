@@ -412,8 +412,7 @@ class IssuesProcessor {
         this.addedCloseCommentIssues = [];
         this._logger = new logger_1.Logger();
         // this.options = options;
-        this.options = Object.assign(Object.assign({}, options), { onlyIssueTypes: core.getInput('only-issue-types') // Fetch the value from the YAML file
-         });
+        this.options = Object.assign(Object.assign({}, options), { onlyIssueTypes: options.onlyIssueTypes || core.getInput('only-issue-types') });
         this.state = state;
         this.client = (0, github_1.getOctokit)(this.options.repoToken, undefined, plugin_retry_1.retry);
         this.operations = new stale_operations_1.StaleOperations(this.options);
@@ -427,7 +426,7 @@ class IssuesProcessor {
         }
     }
     processIssues(page = 1) {
-        var _a, _b;
+        var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {
             // get the next batch of issues
             const issues = yield this.getIssues(page);
@@ -449,6 +448,12 @@ class IssuesProcessor {
                     break;
                 }
                 const issueLogger = new issue_logger_1.IssueLogger(issue);
+                // Apply the `onlyIssueTypes` filter as a fallback
+                if (this.options.onlyIssueTypes &&
+                    ((_b = issue.type) === null || _b === void 0 ? void 0 : _b.name) !== this.options.onlyIssueTypes) {
+                    issueLogger.info(`Skipping this issue because its type (${(_c = issue.type) === null || _c === void 0 ? void 0 : _c.name}) does not match the specified type (${this.options.onlyIssueTypes})`);
+                    continue; // Skip issues that do not match the specified type
+                }
                 if (this.state.isIssueProcessed(issue)) {
                     issueLogger.info('           $$type skipped due being processed during the previous run');
                     continue;
@@ -461,7 +466,7 @@ class IssuesProcessor {
             if (!this.operations.hasRemainingOperations()) {
                 this._logger.warning(logger_service_1.LoggerService.yellowBright(`No more operations left! Exiting...`));
                 this._logger.warning(`${logger_service_1.LoggerService.yellowBright('If you think that not enough issues were processed you could try to increase the quantity related to the ')} ${this._logger.createOptionLink(option_1.Option.OperationsPerRun)} ${logger_service_1.LoggerService.yellowBright(' option which is currently set to ')} ${logger_service_1.LoggerService.cyan(this.options.operationsPerRun)}`);
-                (_b = this.statistics) === null || _b === void 0 ? void 0 : _b.setOperationsCount(this.operations.getConsumedOperationsCount()).logStats();
+                (_d = this.statistics) === null || _d === void 0 ? void 0 : _d.setOperationsCount(this.operations.getConsumedOperationsCount()).logStats();
                 return 0;
             }
             this._logger.info(`${logger_service_1.LoggerService.green('Batch ')} ${logger_service_1.LoggerService.cyan(`#${page}`)} ${logger_service_1.LoggerService.green(' processed.')}`);
@@ -2241,6 +2246,7 @@ var Option;
     Option["IgnorePrUpdates"] = "ignore-pr-updates";
     Option["ExemptDraftPr"] = "exempt-draft-pr";
     Option["CloseIssueReason"] = "close-issue-reason";
+    Option["OnlyIssueTypes"] = "only-issue-types";
 })(Option || (exports.Option = Option = {}));
 
 
@@ -2606,7 +2612,8 @@ function _getAndValidateArgs() {
         ignorePrUpdates: _toOptionalBoolean('ignore-pr-updates'),
         exemptDraftPr: core.getInput('exempt-draft-pr') === 'true',
         closeIssueReason: core.getInput('close-issue-reason'),
-        includeOnlyAssigned: core.getInput('include-only-assigned') === 'true'
+        includeOnlyAssigned: core.getInput('include-only-assigned') === 'true',
+        onlyIssueTypes: core.getInput('only-issue-types') || undefined
     };
     for (const numberInput of ['days-before-stale']) {
         if (isNaN(parseFloat(core.getInput(numberInput)))) {

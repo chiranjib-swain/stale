@@ -208,6 +208,10 @@ inputs:
     description: 'Only the issues or the pull requests with an assignee will be marked as stale automatically.'
     default: 'false'
     required: false
+  only-issue-types:
+    description: 'Filter issues by their type (e.g., Bug, Feature, Question). Use "*" for any type or "none" for issues without a type.'
+    required: false
+    default: ''
 outputs:
   closed-issues-prs:
     description: 'List of all closed issues and pull requests.'

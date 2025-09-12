@@ -99,7 +99,8 @@ Every argument is optional.
 | [ignore-pr-updates](#ignore-pr-updates)                             | Override [ignore-updates](#ignore-updates) for PRs only                     |                       |
 | [include-only-assigned](#include-only-assigned)                     | Process only assigned issues                                                | `false`               |
 | [sort-by](#sort-by)                                   | What to sort issues and PRs by                                                      | `created`             |
-
+| [only-issue-types](#only-issue-types)                 | Only issues with a matching type are processed as 
+stale/closed                                            | `undefined`
 ### List of output options
 
 | Output            | Description                                 |
@@ -554,6 +555,21 @@ Default value: `false`
 Useful to sort the issues and PRs by the specified field. It accepts `created`, `updated`, `comments`.
 
 Default value: `created`
+
+#### only-issue-types
+
+Filters issues based on their type (e.g., `Bug`, `Feature`, `Question`). Only issues of the specified type will be processed.
+
+**Special Values**:
+- `*`: Matches issues with any type.
+- `none`: Matches issues without any type.
+
+Default value: `undefined` (all issue types are processed).
+
+Notes:
+
+This option is only available for organization repositories.
+The `type` filter is single-select, meaning only one issue type can be specified at a time.
 
 
 ### Usage

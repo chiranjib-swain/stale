@@ -83,7 +83,8 @@ export class IssuesProcessor {
     // this.options = options;
     this.options = {
       ...options,
-      onlyIssueTypes: core.getInput('only-issue-types') // Fetch the value from the YAML file
+      onlyIssueTypes:
+        options.onlyIssueTypes || core.getInput('only-issue-types')
     };
     this.state = state;
     this.client = getOctokit(this.options.repoToken, undefined, retry);
@@ -154,6 +155,18 @@ export class IssuesProcessor {
       }
 
       const issueLogger: IssueLogger = new IssueLogger(issue);
+
+      // Apply the `onlyIssueTypes` filter as a fallback
+      if (
+        this.options.onlyIssueTypes &&
+        issue.type?.name !== this.options.onlyIssueTypes
+      ) {
+        issueLogger.info(
+          `Skipping this issue because its type (${issue.type?.name}) does not match the specified type (${this.options.onlyIssueTypes})`
+        );
+        continue; // Skip issues that do not match the specified type
+      }
+
       if (this.state.isIssueProcessed(issue)) {
         issueLogger.info(
           '           $$type skipped due being processed during the previous run'
