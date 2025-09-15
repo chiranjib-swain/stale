@@ -450,7 +450,9 @@ class IssuesProcessor {
                 const issueLogger = new issue_logger_1.IssueLogger(issue);
                 // Apply the `onlyIssueTypes` filter as a fallback
                 if (this.options.onlyIssueTypes) {
-                    const onlyIssueTypes = this.options.onlyIssueTypes.split(',').map(type => type.trim());
+                    const onlyIssueTypes = this.options.onlyIssueTypes
+                        .split(',')
+                        .map(type => type.trim());
                     // Handle special cases
                     if (onlyIssueTypes.includes('*')) {
                         // '*' means process all issues, so skip filtering
@@ -710,13 +712,12 @@ class IssuesProcessor {
                 core.info(`State: open`);
                 core.info(`Type: ${this.options.onlyIssueTypes}`);
                 core.info(`Page: ${page}`);
-                const issueResult = yield this.client.rest.issues.listForRepo(Object.assign(Object.assign({ owner: github_1.context.repo.owner, repo: github_1.context.repo.repo, state: 'open' }, (this.options.onlyIssueTypes ? { type: this.options.onlyIssueTypes } : {})), { per_page: 100, direction: this.options.ascending ? 'asc' : 'desc', sort: (0, get_sort_field_1.getSortField)(this.options.sortBy), page }));
+                const issueResult = yield this.client.rest.issues.listForRepo(Object.assign(Object.assign({ owner: github_1.context.repo.owner, repo: github_1.context.repo.repo, state: 'open' }, (this.options.onlyIssueTypes
+                    ? { type: this.options.onlyIssueTypes }
+                    : {})), { per_page: 100, direction: this.options.ascending ? 'asc' : 'desc', sort: (0, get_sort_field_1.getSortField)(this.options.sortBy), page }));
                 (_a = this.statistics) === null || _a === void 0 ? void 0 : _a.incrementFetchedItemsCount(issueResult.data.length);
                 // Log the response details
                 core.info(`Fetched ${issueResult.data.length} issue(s) from the API.`);
-                issueResult.data.forEach(issue => {
-                    core.info(`Issue: ${JSON.stringify(issue, null, 2)}`); // Pretty-print the entire issue object
-                });
                 return issueResult.data.map((issue) => new issue_1.Issue(this.options, issue));
             }
             catch (error) {

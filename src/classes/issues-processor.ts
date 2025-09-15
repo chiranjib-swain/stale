@@ -629,9 +629,6 @@ export class IssuesProcessor {
 
       // Log the response details
       core.info(`Fetched ${issueResult.data.length} issue(s) from the API.`);
-      issueResult.data.forEach(issue => {
-        core.info(`Issue: ${JSON.stringify(issue, null, 2)}`); // Pretty-print the entire issue object
-      });
 
       return issueResult.data.map(
         (issue): Issue =>
