@@ -104,4 +104,235 @@ describe('only-issue-types option (single type)', () => {
       'A feature'
     ]); // All issues should be processed
   });
+
+  test('should process issues of multiple specified types', async () => {
+    const opts: IIssuesProcessorOptions = {
+      ...DefaultProcessorOptions,
+      onlyIssueTypes: 'bug,feature' // Multiple types
+    };
+    const TestIssueList: Issue[] = [
+      generateIssue(
+        opts,
+        1,
+        'A bug',
+        '2020-01-01T17:00:00Z',
+        '2020-01-01T17:00:00Z',
+        false,
+        false,
+        [],
+        false,
+        false,
+        undefined,
+        [],
+        {name: 'bug'}
+      ),
+      generateIssue(
+        opts,
+        2,
+        'A feature',
+        '2020-01-01T17:00:00Z',
+        '2020-01-01T17:00:00Z',
+        false,
+        false,
+        [],
+        false,
+        false,
+        undefined,
+        [],
+        {name: 'feature'}
+      ),
+      generateIssue(
+        opts,
+        3,
+        'A question',
+        '2020-01-01T17:00:00Z',
+        '2020-01-01T17:00:00Z',
+        false,
+        false,
+        [],
+        false,
+        false,
+        undefined,
+        [],
+        {name: 'question'}
+      )
+    ];
+    const processor = new IssuesProcessorMock(
+      opts,
+      alwaysFalseStateMock,
+      async p => (p === 1 ? TestIssueList : []),
+      async () => [],
+      async () => new Date().toDateString()
+    );
+    await processor.processIssues(1);
+    expect(processor.staleIssues.map(i => i.title)).toEqual([
+      'A bug',
+      'A feature'
+    ]); // Only the bug and feature issues should be processed
+  });
+
+  test('should process all issues when onlyIssueTypes is "*"', async () => {
+    const opts: IIssuesProcessorOptions = {
+      ...DefaultProcessorOptions,
+      onlyIssueTypes: '*' // Wildcard for all types
+    };
+    const TestIssueList: Issue[] = [
+      generateIssue(
+        opts,
+        1,
+        'A bug',
+        '2020-01-01T17:00:00Z',
+        '2020-01-01T17:00:00Z',
+        false,
+        false,
+        [],
+        false,
+        false,
+        undefined,
+        [],
+        {name: 'bug'}
+      ),
+      generateIssue(
+        opts,
+        2,
+        'A feature',
+        '2020-01-01T17:00:00Z',
+        '2020-01-01T17:00:00Z',
+        false,
+        false,
+        [],
+        false,
+        false,
+        undefined,
+        [],
+        {name: 'feature'}
+      ),
+      generateIssue(
+        opts,
+        3,
+        'A question',
+        '2020-01-01T17:00:00Z',
+        '2020-01-01T17:00:00Z',
+        false,
+        false,
+        [],
+        false,
+        false,
+        undefined,
+        [],
+        {name: 'question'}
+      )
+    ];
+    const processor = new IssuesProcessorMock(
+      opts,
+      alwaysFalseStateMock,
+      async p => (p === 1 ? TestIssueList : []),
+      async () => [],
+      async () => new Date().toDateString()
+    );
+    await processor.processIssues(1);
+    expect(processor.staleIssues.map(i => i.title)).toEqual([
+      'A bug',
+      'A feature',
+      'A question'
+    ]); // All issues should be processed
+  });
+
+  test('should process issues without a type when onlyIssueTypes is "none"', async () => {
+    const opts: IIssuesProcessorOptions = {
+      ...DefaultProcessorOptions,
+      onlyIssueTypes: 'none' // No type specified
+    };
+    const TestIssueList: Issue[] = [
+      generateIssue(
+        opts,
+        1,
+        'An issue with no type',
+        '2020-01-01T17:00:00Z',
+        '2020-01-01T17:00:00Z',
+        false,
+        false,
+        [],
+        false,
+        false,
+        undefined,
+        [],
+        undefined // No type
+      ),
+      generateIssue(
+        opts,
+        2,
+        'A bug',
+        '2020-01-01T17:00:00Z',
+        '2020-01-01T17:00:00Z',
+        false,
+        false,
+        [],
+        false,
+        false,
+        undefined,
+        [],
+        {name: 'bug'}
+      )
+    ];
+    const processor = new IssuesProcessorMock(
+      opts,
+      alwaysFalseStateMock,
+      async p => (p === 1 ? TestIssueList : []),
+      async () => [],
+      async () => new Date().toDateString()
+    );
+    await processor.processIssues(1);
+    expect(processor.staleIssues.map(i => i.title)).toEqual([
+      'An issue with no type'
+    ]); // Only the issue with no type should be processed
+  });
+
+  test('should handle invalid onlyIssueTypes gracefully', async () => {
+    const opts: IIssuesProcessorOptions = {
+      ...DefaultProcessorOptions,
+      onlyIssueTypes: 'invalid-type' // Invalid type
+    };
+    const TestIssueList: Issue[] = [
+      generateIssue(
+        opts,
+        1,
+        'A bug',
+        '2020-01-01T17:00:00Z',
+        '2020-01-01T17:00:00Z',
+        false,
+        false,
+        [],
+        false,
+        false,
+        undefined,
+        [],
+        {name: 'bug'}
+      ),
+      generateIssue(
+        opts,
+        2,
+        'A feature',
+        '2020-01-01T17:00:00Z',
+        '2020-01-01T17:00:00Z',
+        false,
+        false,
+        [],
+        false,
+        false,
+        undefined,
+        [],
+        {name: 'feature'}
+      )
+    ];
+    const processor = new IssuesProcessorMock(
+      opts,
+      alwaysFalseStateMock,
+      async p => (p === 1 ? TestIssueList : []),
+      async () => [],
+      async () => new Date().toDateString()
+    );
+    await processor.processIssues(1);
+    expect(processor.staleIssues).toHaveLength(0); // No issues should be processed
+  });
 });

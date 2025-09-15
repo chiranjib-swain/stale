@@ -426,7 +426,7 @@ class IssuesProcessor {
         }
     }
     processIssues(page = 1) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e, _f;
         return __awaiter(this, void 0, void 0, function* () {
             // get the next batch of issues
             const issues = yield this.getIssues(page);
@@ -449,10 +449,26 @@ class IssuesProcessor {
                 }
                 const issueLogger = new issue_logger_1.IssueLogger(issue);
                 // Apply the `onlyIssueTypes` filter as a fallback
-                if (this.options.onlyIssueTypes &&
-                    ((_b = issue.type) === null || _b === void 0 ? void 0 : _b.name) !== this.options.onlyIssueTypes) {
-                    issueLogger.info(`Skipping this issue because its type (${(_c = issue.type) === null || _c === void 0 ? void 0 : _c.name}) does not match the specified type (${this.options.onlyIssueTypes})`);
-                    continue; // Skip issues that do not match the specified type
+                if (this.options.onlyIssueTypes) {
+                    const onlyIssueTypes = this.options.onlyIssueTypes.split(',').map(type => type.trim());
+                    // Handle special cases
+                    if (onlyIssueTypes.includes('*')) {
+                        // '*' means process all issues, so skip filtering
+                    }
+                    else if (onlyIssueTypes.includes('none')) {
+                        // 'none' means process only issues without a type
+                        if ((_b = issue.type) === null || _b === void 0 ? void 0 : _b.name) {
+                            issueLogger.info(`Skipping this issue because it has a type (${(_c = issue.type) === null || _c === void 0 ? void 0 : _c.name}) and 'none' was specified`);
+                            continue;
+                        }
+                    }
+                    else {
+                        // Check if the issue's type matches any of the specified types
+                        if (!onlyIssueTypes.includes(((_d = issue.type) === null || _d === void 0 ? void 0 : _d.name) || '')) {
+                            issueLogger.info(`Skipping this issue because its type (${(_e = issue.type) === null || _e === void 0 ? void 0 : _e.name}) does not match the specified types (${onlyIssueTypes.join(', ')})`);
+                            continue;
+                        }
+                    }
                 }
                 if (this.state.isIssueProcessed(issue)) {
                     issueLogger.info('           $$type skipped due being processed during the previous run');
@@ -466,7 +482,7 @@ class IssuesProcessor {
             if (!this.operations.hasRemainingOperations()) {
                 this._logger.warning(logger_service_1.LoggerService.yellowBright(`No more operations left! Exiting...`));
                 this._logger.warning(`${logger_service_1.LoggerService.yellowBright('If you think that not enough issues were processed you could try to increase the quantity related to the ')} ${this._logger.createOptionLink(option_1.Option.OperationsPerRun)} ${logger_service_1.LoggerService.yellowBright(' option which is currently set to ')} ${logger_service_1.LoggerService.cyan(this.options.operationsPerRun)}`);
-                (_d = this.statistics) === null || _d === void 0 ? void 0 : _d.setOperationsCount(this.operations.getConsumedOperationsCount()).logStats();
+                (_f = this.statistics) === null || _f === void 0 ? void 0 : _f.setOperationsCount(this.operations.getConsumedOperationsCount()).logStats();
                 return 0;
             }
             this._logger.info(`${logger_service_1.LoggerService.green('Batch ')} ${logger_service_1.LoggerService.cyan(`#${page}`)} ${logger_service_1.LoggerService.green(' processed.')}`);
@@ -694,16 +710,7 @@ class IssuesProcessor {
                 core.info(`State: open`);
                 core.info(`Type: ${this.options.onlyIssueTypes}`);
                 core.info(`Page: ${page}`);
-                const issueResult = yield this.client.rest.issues.listForRepo({
-                    owner: github_1.context.repo.owner,
-                    repo: github_1.context.repo.repo,
-                    state: 'open',
-                    type: this.options.onlyIssueTypes,
-                    per_page: 100,
-                    direction: this.options.ascending ? 'asc' : 'desc',
-                    sort: (0, get_sort_field_1.getSortField)(this.options.sortBy),
-                    page
-                });
+                const issueResult = yield this.client.rest.issues.listForRepo(Object.assign(Object.assign({ owner: github_1.context.repo.owner, repo: github_1.context.repo.repo, state: 'open' }, (this.options.onlyIssueTypes ? { type: this.options.onlyIssueTypes } : {})), { per_page: 100, direction: this.options.ascending ? 'asc' : 'desc', sort: (0, get_sort_field_1.getSortField)(this.options.sortBy), page }));
                 (_a = this.statistics) === null || _a === void 0 ? void 0 : _a.incrementFetchedItemsCount(issueResult.data.length);
                 // Log the response details
                 core.info(`Fetched ${issueResult.data.length} issue(s) from the API.`);

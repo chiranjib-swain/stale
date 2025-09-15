@@ -157,14 +157,35 @@ export class IssuesProcessor {
       const issueLogger: IssueLogger = new IssueLogger(issue);
 
       // Apply the `onlyIssueTypes` filter as a fallback
-      if (
-        this.options.onlyIssueTypes &&
-        issue.type?.name !== this.options.onlyIssueTypes
-      ) {
-        issueLogger.info(
-          `Skipping this issue because its type (${issue.type?.name}) does not match the specified type (${this.options.onlyIssueTypes})`
-        );
-        continue; // Skip issues that do not match the specified type
+      if (this.options.onlyIssueTypes) {
+        const onlyIssueTypes = this.options.onlyIssueTypes
+          .split(',')
+          .map(type => type.trim());
+
+        // Handle special cases
+        if (onlyIssueTypes.includes('*')) {
+          // '*' means process all issues, so skip filtering
+        } else if (onlyIssueTypes.includes('none')) {
+          // 'none' means process only issues without a type
+          if (issue.type?.name) {
+            issueLogger.info(
+              `Skipping this issue because it has a type (${issue.type?.name}) and 'none' was specified`
+            );
+            continue;
+          }
+        } else {
+          // Check if the issue's type matches any of the specified types
+          if (!onlyIssueTypes.includes(issue.type?.name || '')) {
+            issueLogger.info(
+              `Skipping this issue because its type (${
+                issue.type?.name
+              }) does not match the specified types (${onlyIssueTypes.join(
+                ', '
+              )})`
+            );
+            continue;
+          }
+        }
       }
 
       if (this.state.isIssueProcessed(issue)) {
@@ -596,7 +617,9 @@ export class IssuesProcessor {
         owner: context.repo.owner,
         repo: context.repo.repo,
         state: 'open',
-        type: this.options.onlyIssueTypes,
+        ...(this.options.onlyIssueTypes
+          ? {type: this.options.onlyIssueTypes}
+          : {}),
         per_page: 100,
         direction: this.options.ascending ? 'asc' : 'desc',
         sort: getSortField(this.options.sortBy),
