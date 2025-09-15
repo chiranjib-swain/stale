@@ -175,7 +175,11 @@ export class IssuesProcessor {
           }
         } else {
           // Check if the issue's type matches any of the specified types
-          if (!onlyIssueTypes.includes(issue.type?.name || '')) {
+          if (
+            !onlyIssueTypes
+              .map(type => type.toLowerCase())
+              .includes((issue.type?.name || '').toLowerCase())
+          ) {
             issueLogger.info(
               `Skipping this issue because its type (${
                 issue.type?.name

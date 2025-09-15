@@ -466,7 +466,7 @@ class IssuesProcessor {
                     }
                     else {
                         // Check if the issue's type matches any of the specified types
-                        if (!onlyIssueTypes.includes(((_d = issue.type) === null || _d === void 0 ? void 0 : _d.name) || '')) {
+                        if (!onlyIssueTypes.map(type => type.toLowerCase()).includes((((_d = issue.type) === null || _d === void 0 ? void 0 : _d.name) || '').toLowerCase())) {
                             issueLogger.info(`Skipping this issue because its type (${(_e = issue.type) === null || _e === void 0 ? void 0 : _e.name}) does not match the specified types (${onlyIssueTypes.join(', ')})`);
                             continue;
                         }

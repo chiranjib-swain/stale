@@ -9,7 +9,7 @@ describe('only-issue-types option (single type)', () => {
   test('should only process issues with the specified type', async () => {
     const opts: IIssuesProcessorOptions = {
       ...DefaultProcessorOptions,
-      onlyIssueTypes: 'bug' // Single type
+      onlyIssueTypes: 'Bug' // Single type
     };
     const TestIssueList: Issue[] = [
       generateIssue(
@@ -25,7 +25,7 @@ describe('only-issue-types option (single type)', () => {
         false,
         undefined,
         [],
-        {name: 'bug'} // Matches the onlyIssueTypes value
+        {name: 'Bug'} // Matches the onlyIssueTypes value
       ),
       generateIssue(
         opts,
@@ -40,7 +40,7 @@ describe('only-issue-types option (single type)', () => {
         false,
         undefined,
         [],
-        {name: 'feature'} // Does not match the onlyIssueTypes value
+        {name: 'Feature'} // Does not match the onlyIssueTypes value
       )
     ];
     const processor = new IssuesProcessorMock(
@@ -73,7 +73,7 @@ describe('only-issue-types option (single type)', () => {
         false,
         undefined,
         [],
-        {name: 'bug'}
+        {name: 'Bug'}
       ),
       generateIssue(
         opts,
@@ -88,7 +88,7 @@ describe('only-issue-types option (single type)', () => {
         false,
         undefined,
         [],
-        {name: 'feature'}
+        {name: 'Feature'}
       )
     ];
     const processor = new IssuesProcessorMock(
@@ -124,7 +124,7 @@ describe('only-issue-types option (single type)', () => {
         false,
         undefined,
         [],
-        {name: 'bug'}
+        {name: 'Bug'}
       ),
       generateIssue(
         opts,
@@ -139,7 +139,7 @@ describe('only-issue-types option (single type)', () => {
         false,
         undefined,
         [],
-        {name: 'feature'}
+        {name: 'Feature'}
       ),
       generateIssue(
         opts,
@@ -154,7 +154,7 @@ describe('only-issue-types option (single type)', () => {
         false,
         undefined,
         [],
-        {name: 'question'}
+        {name: 'Question'}
       )
     ];
     const processor = new IssuesProcessorMock(
@@ -171,7 +171,7 @@ describe('only-issue-types option (single type)', () => {
     ]); // Only the bug and feature issues should be processed
   });
 
-  test('should process all issues when onlyIssueTypes is "*"', async () => {
+  test('should process issues with any type  when onlyIssueTypes is "*"', async () => {
     const opts: IIssuesProcessorOptions = {
       ...DefaultProcessorOptions,
       onlyIssueTypes: '*' // Wildcard for all types
@@ -190,7 +190,7 @@ describe('only-issue-types option (single type)', () => {
         false,
         undefined,
         [],
-        {name: 'bug'}
+        {name: 'Bug'}
       ),
       generateIssue(
         opts,
@@ -205,7 +205,7 @@ describe('only-issue-types option (single type)', () => {
         false,
         undefined,
         [],
-        {name: 'feature'}
+        {name: 'Feature'}
       ),
       generateIssue(
         opts,
@@ -220,7 +220,7 @@ describe('only-issue-types option (single type)', () => {
         false,
         undefined,
         [],
-        {name: 'question'}
+        {name: 'Question'}
       )
     ];
     const processor = new IssuesProcessorMock(
@@ -272,7 +272,7 @@ describe('only-issue-types option (single type)', () => {
         false,
         undefined,
         [],
-        {name: 'bug'}
+        {name: 'Bug'}
       )
     ];
     const processor = new IssuesProcessorMock(
@@ -307,7 +307,7 @@ describe('only-issue-types option (single type)', () => {
         false,
         undefined,
         [],
-        {name: 'bug'}
+        {name: 'Bug'}
       ),
       generateIssue(
         opts,
@@ -322,7 +322,7 @@ describe('only-issue-types option (single type)', () => {
         false,
         undefined,
         [],
-        {name: 'feature'}
+        {name: 'Feature'}
       )
     ];
     const processor = new IssuesProcessorMock(
