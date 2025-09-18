@@ -20,7 +20,7 @@ const mkTempDir = (): string => {
 const unlinkSafely = (filePath: string) => {
   try {
     fs.unlinkSync(filePath);
-  } catch (foo) {
+  } catch (_foo) {
     /* ignore */
   }
 };
