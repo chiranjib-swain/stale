@@ -1,5 +1,4 @@
-// jest.config.js (ESM)
-export default {
+module.exports = {
   clearMocks: true,
   moduleFileExtensions: ['js', 'ts'],
   testEnvironment: 'node',

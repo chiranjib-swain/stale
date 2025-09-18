@@ -1,7 +1,6 @@
 {
   "name": "stale-action",
   "version": "10.0.0",
-  "type": "module",
   "private": true,
   "description": "Marks old issues and PRs as stale",
   "main": "lib/main.js",
@@ -13,7 +12,7 @@
     "lint:fix": "eslint \"**/*.ts\" --fix",
     "lint:all": "npm run format-check && npm run lint",
     "lint:all:fix": "npm run format && npm run lint:fix",
-    "test": "jest --config ./jest.config.js",
+    "test": "jest --config ./jest.config.cjs",
     "test:only-errors": "jest --reporters jest-silent-reporter --silent",
     "test:watch": "jest --watch  --expand",
     "all": "npm run format && npm run lint && npm run build && npm test",
