@@ -9,6 +9,8 @@ allowed:
   - mit
   - cc0-1.0
   - unlicense
+  - 0bsd   # added this for tslib
 
 reviewed:
   npm:
+     - sax@1.4.1   # reviewed manually
