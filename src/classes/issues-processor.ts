@@ -80,10 +80,11 @@ export class IssuesProcessor {
   private readonly state: IState;
 
   constructor(options: IIssuesProcessorOptions, state: IState) {
-    this.options = {
-      ...options,
-      onlyIssueTypes: core.getInput('only-issue-types') // Fetch the value from the YAML file
-    };
+    this.options = options;
+    // this.options = {
+    //   ...options,
+    //   onlyIssueTypes: core.getInput('only-issue-types') // Fetch the value from the YAML file
+    // };
     this.state = state;
     this.client = getOctokit(this.options.repoToken, undefined, retry);
     this.operations = new StaleOperations(this.options);

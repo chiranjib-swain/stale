@@ -417,8 +417,11 @@ class IssuesProcessor {
         this.addedLabelIssues = [];
         this.addedCloseCommentIssues = [];
         this._logger = new logger_1.Logger();
-        this.options = Object.assign(Object.assign({}, options), { onlyIssueTypes: core.getInput('only-issue-types') // Fetch the value from the YAML file
-         });
+        this.options = options;
+        // this.options = {
+        //   ...options,
+        //   onlyIssueTypes: core.getInput('only-issue-types') // Fetch the value from the YAML file
+        // };
         this.state = state;
         this.client = (0, github_1.getOctokit)(this.options.repoToken, undefined, plugin_retry_1.retry);
         this.operations = new stale_operations_1.StaleOperations(this.options);
@@ -2612,7 +2615,8 @@ function _getAndValidateArgs() {
         ignorePrUpdates: _toOptionalBoolean('ignore-pr-updates'),
         exemptDraftPr: core.getInput('exempt-draft-pr') === 'true',
         closeIssueReason: core.getInput('close-issue-reason'),
-        includeOnlyAssigned: core.getInput('include-only-assigned') === 'true'
+        includeOnlyAssigned: core.getInput('include-only-assigned') === 'true',
+        onlyIssueTypes: core.getInput('only-issue-types') || undefined
     };
     for (const numberInput of ['days-before-stale']) {
         if (isNaN(parseFloat(core.getInput(numberInput)))) {
