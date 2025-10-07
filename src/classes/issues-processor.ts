@@ -80,7 +80,10 @@ export class IssuesProcessor {
   private readonly state: IState;
 
   constructor(options: IIssuesProcessorOptions, state: IState) {
-    this.options = options;
+    this.options = {
+      ...options,
+      onlyIssueTypes: core.getInput('only-issue-types') // Fetch the value from the YAML file
+    };
     this.state = state;
     this.client = getOctokit(this.options.repoToken, undefined, retry);
     this.operations = new StaleOperations(this.options);
@@ -253,6 +256,7 @@ export class IssuesProcessor {
     }
 
     issueLogger.info(JSON.stringify(this.options));
+    issueLogger.info(`onlyIssueTypes: ${this.options.onlyIssueTypes}`);
 
     if (this.options.onlyIssueTypes) {
       const allowedTypes = this.options.onlyIssueTypes

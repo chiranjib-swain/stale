@@ -417,7 +417,8 @@ class IssuesProcessor {
         this.addedLabelIssues = [];
         this.addedCloseCommentIssues = [];
         this._logger = new logger_1.Logger();
-        this.options = options;
+        this.options = Object.assign(Object.assign({}, options), { onlyIssueTypes: core.getInput('only-issue-types') // Fetch the value from the YAML file
+         });
         this.state = state;
         this.client = (0, github_1.getOctokit)(this.options.repoToken, undefined, plugin_retry_1.retry);
         this.operations = new stale_operations_1.StaleOperations(this.options);
@@ -514,6 +515,7 @@ class IssuesProcessor {
                 return; // If the issue has an 'include-only-assigned' option set, process only issues with nonempty assignees list
             }
             issueLogger.info(JSON.stringify(this.options));
+            issueLogger.info(`onlyIssueTypes: ${this.options.onlyIssueTypes}`);
             if (this.options.onlyIssueTypes) {
                 const allowedTypes = this.options.onlyIssueTypes
                     .split(',')
