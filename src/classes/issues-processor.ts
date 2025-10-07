@@ -255,7 +255,6 @@ export class IssuesProcessor {
       return; // If the issue has an 'include-only-assigned' option set, process only issues with nonempty assignees list
     }
 
-    issueLogger.info(JSON.stringify(this.options));
     issueLogger.info(`onlyIssueTypes: ${this.options.onlyIssueTypes}`);
 
     if (this.options.onlyIssueTypes) {
