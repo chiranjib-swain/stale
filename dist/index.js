@@ -411,8 +411,12 @@ class IssuesProcessor {
         this.addedLabelIssues = [];
         this.addedCloseCommentIssues = [];
         this._logger = new logger_1.Logger();
-        // this.options = options;
-        this.options = Object.assign(Object.assign({}, options), { onlyIssueTypes: options.onlyIssueTypes || core.getInput('only-issue-types') });
+        this.options = options;
+        // this.options = {
+        //   ...options,
+        //   onlyIssueTypes:
+        //     options.onlyIssueTypes || core.getInput('only-issue-types')
+        // };
         this.state = state;
         this.client = (0, github_1.getOctokit)(this.options.repoToken, undefined, plugin_retry_1.retry);
         this.operations = new stale_operations_1.StaleOperations(this.options);
@@ -450,25 +454,28 @@ class IssuesProcessor {
                 const issueLogger = new issue_logger_1.IssueLogger(issue);
                 // Apply the `onlyIssueTypes` filter as a fallback
                 if (this.options.onlyIssueTypes) {
-                    const onlyIssueTypes = this.options.onlyIssueTypes
-                        .split(',')
-                        .map(type => type.trim());
+                    const onlyIssueType = this.options.onlyIssueTypes.trim().toLowerCase();
+                    issueLogger.info(`Applying the 'onlyIssueTypes' filter...(${onlyIssueType})`);
                     // Handle special cases
-                    if (onlyIssueTypes.includes('*')) {
+                    if (onlyIssueType === '*') {
                         // '*' means process all issues, so skip filtering
+                        issueLogger.info(`Processing all issues as '*' was specified.`);
                     }
-                    else if (onlyIssueTypes.includes('none')) {
+                    else if (onlyIssueType === 'none') {
                         // 'none' means process only issues without a type
                         if ((_b = issue.type) === null || _b === void 0 ? void 0 : _b.name) {
                             issueLogger.info(`Skipping this issue because it has a type (${(_c = issue.type) === null || _c === void 0 ? void 0 : _c.name}) and 'none' was specified`);
-                            continue;
+                            IssuesProcessor._endIssueProcessing(issue);
+                            return 0;
                         }
                     }
                     else {
-                        // Check if the issue's type matches any of the specified types
-                        if (!onlyIssueTypes.map(type => type.toLowerCase()).includes((((_d = issue.type) === null || _d === void 0 ? void 0 : _d.name) || '').toLowerCase())) {
-                            issueLogger.info(`Skipping this issue because its type (${(_e = issue.type) === null || _e === void 0 ? void 0 : _e.name}) does not match the specified types (${onlyIssueTypes.join(', ')})`);
-                            continue;
+                        // Check if the issue's type matches the specified type
+                        const issueType = (((_d = issue.type) === null || _d === void 0 ? void 0 : _d.name) || '').toLowerCase();
+                        if (issueType !== onlyIssueType) {
+                            issueLogger.info(`Skipping this issue because its type ('${(_e = issue.type) === null || _e === void 0 ? void 0 : _e.name}') does not match the specified type ('${onlyIssueType}')`);
+                            IssuesProcessor._endIssueProcessing(issue);
+                            return 0;
                         }
                     }
                 }

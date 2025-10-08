@@ -80,12 +80,12 @@ export class IssuesProcessor {
   private readonly state: IState;
 
   constructor(options: IIssuesProcessorOptions, state: IState) {
-    // this.options = options;
-    this.options = {
-      ...options,
-      onlyIssueTypes:
-        options.onlyIssueTypes || core.getInput('only-issue-types')
-    };
+    this.options = options;
+    // this.options = {
+    //   ...options,
+    //   onlyIssueTypes:
+    //     options.onlyIssueTypes || core.getInput('only-issue-types')
+    // };
     this.state = state;
     this.client = getOctokit(this.options.repoToken, undefined, retry);
     this.operations = new StaleOperations(this.options);
@@ -158,36 +158,34 @@ export class IssuesProcessor {
 
       // Apply the `onlyIssueTypes` filter as a fallback
       if (this.options.onlyIssueTypes) {
-        const onlyIssueTypes = this.options.onlyIssueTypes
-          .split(',')
-          .map(type => type.trim());
+        const onlyIssueType = this.options.onlyIssueTypes.trim().toLowerCase();
+        issueLogger.info(
+          `Applying the 'onlyIssueTypes' filter...(${onlyIssueType})`
+        );
 
         // Handle special cases
-        if (onlyIssueTypes.includes('*')) {
+        if (onlyIssueType === '*') {
           // '*' means process all issues, so skip filtering
-        } else if (onlyIssueTypes.includes('none')) {
+          issueLogger.info(`Processing all issues as '*' was specified.`);
+        } else if (onlyIssueType === 'none') {
           // 'none' means process only issues without a type
           if (issue.type?.name) {
             issueLogger.info(
               `Skipping this issue because it has a type (${issue.type?.name}) and 'none' was specified`
             );
-            continue;
+            IssuesProcessor._endIssueProcessing(issue);
+            return 0;
           }
         } else {
-          // Check if the issue's type matches any of the specified types
-          if (
-            !onlyIssueTypes
-              .map(type => type.toLowerCase())
-              .includes((issue.type?.name || '').toLowerCase())
-          ) {
+          // Check if the issue's type matches the specified type
+          const issueType = (issue.type?.name || '').toLowerCase();
+
+          if (issueType !== onlyIssueType) {
             issueLogger.info(
-              `Skipping this issue because its type (${
-                issue.type?.name
-              }) does not match the specified types (${onlyIssueTypes.join(
-                ', '
-              )})`
+              `Skipping this issue because its type ('${issue.type?.name}') does not match the specified type ('${onlyIssueType}')`
             );
-            continue;
+            IssuesProcessor._endIssueProcessing(issue);
+            return 0;
           }
         }
       }
