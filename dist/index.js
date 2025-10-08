@@ -1628,7 +1628,7 @@ const unlinkSafely = (filePath) => {
     try {
         fs_1.default.unlinkSync(filePath);
     }
-    catch (foo) {
+    catch (_foo) {
         /* ignore */
     }
 };

@@ -12,12 +12,12 @@ const stateStorage: IStateStorage = {
   restore(): Promise<string> {
     return Promise.resolve('');
   },
-  save(serializedState: string): Promise<void> {
+  save(_serializedState: string): Promise<void> {
     return Promise.resolve();
   }
 };
 
-const getProcessedIssuesIDs = (state: IState): Set<IssueID> =>
+const _getProcessedIssuesIDs = (state: IState): Set<IssueID> =>
   (state as unknown as {processedIssuesIDs: Set<IssueID>}).processedIssuesIDs;
 
 describe('state', (): void => {
