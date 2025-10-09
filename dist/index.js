@@ -412,11 +412,6 @@ class IssuesProcessor {
         this.addedCloseCommentIssues = [];
         this._logger = new logger_1.Logger();
         this.options = options;
-        // this.options = {
-        //   ...options,
-        //   onlyIssueTypes:
-        //     options.onlyIssueTypes || core.getInput('only-issue-types')
-        // };
         this.state = state;
         this.client = (0, github_1.getOctokit)(this.options.repoToken, undefined, plugin_retry_1.retry);
         this.operations = new stale_operations_1.StaleOperations(this.options);
@@ -441,7 +436,11 @@ class IssuesProcessor {
                 return this.operations.getRemainingOperationsCount();
             }
             else {
-                this._logger.info(`${logger_service_1.LoggerService.yellow('Processing the batch of issues ')} ${logger_service_1.LoggerService.cyan(`#${page}`)} ${logger_service_1.LoggerService.yellow(' containing ')} ${logger_service_1.LoggerService.cyan(issues.length)} ${logger_service_1.LoggerService.yellow(` issue${issues.length > 1 ? 's' : ''}...`)}`);
+                let logMessage = `${logger_service_1.LoggerService.yellow('Processing the batch of issues ')} ${logger_service_1.LoggerService.cyan(`#${page}`)} ${logger_service_1.LoggerService.yellow(' containing ')} ${logger_service_1.LoggerService.cyan(issues.length)} ${logger_service_1.LoggerService.yellow(` issue${issues.length > 1 ? 's' : ''}...`)}`;
+                if (this.options.onlyIssueTypes) {
+                    logMessage += ` ${logger_service_1.LoggerService.yellow(`(Filtered by only-issue-types: ${this.options.onlyIssueTypes})`)}`;
+                }
+                this._logger.info(logMessage);
             }
             const labelsToRemoveWhenStale = (0, words_to_list_1.wordsToList)(this.options.labelsToRemoveWhenStale);
             const labelsToAddWhenUnstale = (0, words_to_list_1.wordsToList)(this.options.labelsToAddWhenUnstale);
@@ -455,7 +454,6 @@ class IssuesProcessor {
                 // Apply the `onlyIssueTypes` filter as a fallback
                 if (this.options.onlyIssueTypes) {
                     const onlyIssueType = this.options.onlyIssueTypes.trim().toLowerCase();
-                    issueLogger.info(`Applying the 'onlyIssueTypes' filter...(${onlyIssueType})`);
                     // Handle special cases
                     if (onlyIssueType === '*') {
                         // '*' means process all issues, so skip filtering
@@ -712,13 +710,6 @@ class IssuesProcessor {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 this.operations.consumeOperation();
-                // Log the API call parameters
-                core.info(`Fetching issues with the following parameters:`);
-                core.info(`Owner: ${github_1.context.repo.owner}`);
-                core.info(`Repo: ${github_1.context.repo.repo}`);
-                core.info(`State: open`);
-                core.info(`Type: ${this.options.onlyIssueTypes}`);
-                core.info(`Page: ${page}`);
                 const issueResult = yield this.client.rest.issues.listForRepo(Object.assign(Object.assign({ owner: github_1.context.repo.owner, repo: github_1.context.repo.repo, state: 'open' }, (this.options.onlyIssueTypes
                     ? { type: this.options.onlyIssueTypes }
                     : {})), { per_page: 100, direction: this.options.ascending ? 'asc' : 'desc', sort: (0, get_sort_field_1.getSortField)(this.options.sortBy), page }));

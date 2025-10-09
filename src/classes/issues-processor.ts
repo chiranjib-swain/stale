@@ -81,11 +81,6 @@ export class IssuesProcessor {
 
   constructor(options: IIssuesProcessorOptions, state: IState) {
     this.options = options;
-    // this.options = {
-    //   ...options,
-    //   onlyIssueTypes:
-    //     options.onlyIssueTypes || core.getInput('only-issue-types')
-    // };
     this.state = state;
     this.client = getOctokit(this.options.repoToken, undefined, retry);
     this.operations = new StaleOperations(this.options);
@@ -126,15 +121,21 @@ export class IssuesProcessor {
 
       return this.operations.getRemainingOperationsCount();
     } else {
-      this._logger.info(
-        `${LoggerService.yellow(
-          'Processing the batch of issues '
-        )} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(
-          ' containing '
-        )} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(
-          ` issue${issues.length > 1 ? 's' : ''}...`
-        )}`
-      );
+      let logMessage = `${LoggerService.yellow(
+        'Processing the batch of issues '
+      )} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(
+        ' containing '
+      )} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(
+        ` issue${issues.length > 1 ? 's' : ''}...`
+      )}`;
+
+      if (this.options.onlyIssueTypes) {
+        logMessage += ` ${LoggerService.yellow(
+          `(Filtered by only-issue-types: ${this.options.onlyIssueTypes})`
+        )}`;
+      }
+
+      this._logger.info(logMessage);
     }
 
     const labelsToRemoveWhenStale: string[] = wordsToList(
@@ -159,9 +160,6 @@ export class IssuesProcessor {
       // Apply the `onlyIssueTypes` filter as a fallback
       if (this.options.onlyIssueTypes) {
         const onlyIssueType = this.options.onlyIssueTypes.trim().toLowerCase();
-        issueLogger.info(
-          `Applying the 'onlyIssueTypes' filter...(${onlyIssueType})`
-        );
 
         // Handle special cases
         if (onlyIssueType === '*') {
@@ -606,15 +604,6 @@ export class IssuesProcessor {
   async getIssues(page: number): Promise<Issue[]> {
     try {
       this.operations.consumeOperation();
-
-      // Log the API call parameters
-      core.info(`Fetching issues with the following parameters:`);
-      core.info(`Owner: ${context.repo.owner}`);
-      core.info(`Repo: ${context.repo.repo}`);
-      core.info(`State: open`);
-      core.info(`Type: ${this.options.onlyIssueTypes}`);
-      core.info(`Page: ${page}`);
-
       const issueResult = await this.client.rest.issues.listForRepo({
         owner: context.repo.owner,
         repo: context.repo.repo,
