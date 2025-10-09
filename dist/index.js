@@ -278,6 +278,7 @@ class Issue {
         this._options = options;
         this.title = issue.title;
         this.number = issue.number;
+        this.type = issue.type ? { name: issue.type.name } : undefined; // Extract the type name
         this.created_at = issue.created_at;
         this.updated_at = issue.updated_at;
         this.draft = Boolean(issue.draft);
@@ -289,13 +290,6 @@ class Issue {
         this.assignees = issue.assignees || [];
         this.isStale = (0, is_labeled_1.isLabeled)(this, this.staleLabel);
         this.markedStaleThisRun = false;
-        if (typeof issue.type === 'object' &&
-            issue.type !== null) {
-            this.issue_type = issue.type.name;
-        }
-        else {
-            this.issue_type = undefined;
-        }
     }
     get isPullRequest() {
         return (0, is_pull_request_1.isPullRequest)(this);
@@ -431,7 +425,7 @@ class IssuesProcessor {
         }
     }
     processIssues(page = 1) {
-        var _a, _b;
+        var _a, _b, _c, _d, _e, _f;
         return __awaiter(this, void 0, void 0, function* () {
             // get the next batch of issues
             const issues = yield this.getIssues(page);
@@ -442,7 +436,11 @@ class IssuesProcessor {
                 return this.operations.getRemainingOperationsCount();
             }
             else {
-                this._logger.info(`${logger_service_1.LoggerService.yellow('Processing the batch of issues ')} ${logger_service_1.LoggerService.cyan(`#${page}`)} ${logger_service_1.LoggerService.yellow(' containing ')} ${logger_service_1.LoggerService.cyan(issues.length)} ${logger_service_1.LoggerService.yellow(` issue${issues.length > 1 ? 's' : ''}...`)}`);
+                let logMessage = `${logger_service_1.LoggerService.yellow('Processing the batch of issues ')} ${logger_service_1.LoggerService.cyan(`#${page}`)} ${logger_service_1.LoggerService.yellow(' containing ')} ${logger_service_1.LoggerService.cyan(issues.length)} ${logger_service_1.LoggerService.yellow(` issue${issues.length > 1 ? 's' : ''}...`)}`;
+                if (this.options.onlyIssueTypes) {
+                    logMessage += ` ${logger_service_1.LoggerService.yellow(`(Filtered by only-issue-types: ${this.options.onlyIssueTypes})`)}`;
+                }
+                this._logger.info(logMessage);
             }
             const labelsToRemoveWhenStale = (0, words_to_list_1.wordsToList)(this.options.labelsToRemoveWhenStale);
             const labelsToAddWhenUnstale = (0, words_to_list_1.wordsToList)(this.options.labelsToAddWhenUnstale);
@@ -453,6 +451,32 @@ class IssuesProcessor {
                     break;
                 }
                 const issueLogger = new issue_logger_1.IssueLogger(issue);
+                // Apply the `onlyIssueTypes` filter as a fallback
+                if (this.options.onlyIssueTypes) {
+                    const onlyIssueType = this.options.onlyIssueTypes.trim().toLowerCase();
+                    // Handle special cases
+                    if (onlyIssueType === '*') {
+                        // '*' means process all issues, so skip filtering
+                        issueLogger.info(`Processing all issues as '*' was specified.`);
+                    }
+                    else if (onlyIssueType === 'none') {
+                        // 'none' means process only issues without a type
+                        if ((_b = issue.type) === null || _b === void 0 ? void 0 : _b.name) {
+                            issueLogger.info(`Skipping this issue because it has a type (${(_c = issue.type) === null || _c === void 0 ? void 0 : _c.name}) and 'none' was specified`);
+                            IssuesProcessor._endIssueProcessing(issue);
+                            return 0;
+                        }
+                    }
+                    else {
+                        // Check if the issue's type matches the specified type
+                        const issueType = (((_d = issue.type) === null || _d === void 0 ? void 0 : _d.name) || '').toLowerCase();
+                        if (issueType !== onlyIssueType) {
+                            issueLogger.info(`Skipping this issue because its type ('${(_e = issue.type) === null || _e === void 0 ? void 0 : _e.name}') does not match the specified type ('${onlyIssueType}')`);
+                            IssuesProcessor._endIssueProcessing(issue);
+                            return 0;
+                        }
+                    }
+                }
                 if (this.state.isIssueProcessed(issue)) {
                     issueLogger.info('           $$type skipped due being processed during the previous run');
                     continue;
@@ -465,7 +489,7 @@ class IssuesProcessor {
             if (!this.operations.hasRemainingOperations()) {
                 this._logger.warning(logger_service_1.LoggerService.yellowBright(`No more operations left! Exiting...`));
                 this._logger.warning(`${logger_service_1.LoggerService.yellowBright('If you think that not enough issues were processed you could try to increase the quantity related to the ')} ${this._logger.createOptionLink(option_1.Option.OperationsPerRun)} ${logger_service_1.LoggerService.yellowBright(' option which is currently set to ')} ${logger_service_1.LoggerService.cyan(this.options.operationsPerRun)}`);
-                (_b = this.statistics) === null || _b === void 0 ? void 0 : _b.setOperationsCount(this.operations.getConsumedOperationsCount()).logStats();
+                (_f = this.statistics) === null || _f === void 0 ? void 0 : _f.setOperationsCount(this.operations.getConsumedOperationsCount()).logStats();
                 return 0;
             }
             this._logger.info(`${logger_service_1.LoggerService.green('Batch ')} ${logger_service_1.LoggerService.cyan(`#${page}`)} ${logger_service_1.LoggerService.green(' processed.')}`);
@@ -512,18 +536,6 @@ class IssuesProcessor {
                 issueLogger.info(`Skipping this $$type because its assignees list is empty`);
                 IssuesProcessor._endIssueProcessing(issue);
                 return; // If the issue has an 'include-only-assigned' option set, process only issues with nonempty assignees list
-            }
-            if (this.options.onlyIssueTypes) {
-                const allowedTypes = this.options.onlyIssueTypes
-                    .split(',')
-                    .map(t => t.trim().toLowerCase())
-                    .filter(Boolean);
-                const issueType = (issue.issue_type || '').toLowerCase();
-                if (!allowedTypes.includes(issueType)) {
-                    issueLogger.info(`Skipping this $$type because its type ('${issue.issue_type}') is not in onlyIssueTypes (${allowedTypes.join(', ')})`);
-                    IssuesProcessor._endIssueProcessing(issue);
-                    return;
-                }
             }
             const onlyLabels = (0, words_to_list_1.wordsToList)(this._getOnlyLabels(issue));
             if (onlyLabels.length > 0) {
@@ -698,16 +710,12 @@ class IssuesProcessor {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 this.operations.consumeOperation();
-                const issueResult = yield this.client.rest.issues.listForRepo({
-                    owner: github_1.context.repo.owner,
-                    repo: github_1.context.repo.repo,
-                    state: 'open',
-                    per_page: 100,
-                    direction: this.options.ascending ? 'asc' : 'desc',
-                    sort: (0, get_sort_field_1.getSortField)(this.options.sortBy),
-                    page
-                });
+                const issueResult = yield this.client.rest.issues.listForRepo(Object.assign(Object.assign({ owner: github_1.context.repo.owner, repo: github_1.context.repo.repo, state: 'open' }, (this.options.onlyIssueTypes
+                    ? { type: this.options.onlyIssueTypes }
+                    : {})), { per_page: 100, direction: this.options.ascending ? 'asc' : 'desc', sort: (0, get_sort_field_1.getSortField)(this.options.sortBy), page }));
                 (_a = this.statistics) === null || _a === void 0 ? void 0 : _a.incrementFetchedItemsCount(issueResult.data.length);
+                // Log the response details
+                core.info(`Fetched ${issueResult.data.length} issue(s) from the API.`);
                 return issueResult.data.map((issue) => new issue_1.Issue(this.options, issue));
             }
             catch (error) {
@@ -2610,7 +2618,8 @@ function _getAndValidateArgs() {
         ignorePrUpdates: _toOptionalBoolean('ignore-pr-updates'),
         exemptDraftPr: core.getInput('exempt-draft-pr') === 'true',
         closeIssueReason: core.getInput('close-issue-reason'),
-        includeOnlyAssigned: core.getInput('include-only-assigned') === 'true'
+        includeOnlyAssigned: core.getInput('include-only-assigned') === 'true',
+        onlyIssueTypes: core.getInput('only-issue-types') || undefined
     };
     for (const numberInput of ['days-before-stale']) {
         if (isNaN(parseFloat(core.getInput(numberInput)))) {

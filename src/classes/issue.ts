@@ -1,7 +1,8 @@
 import {isLabeled} from '../functions/is-labeled';
 import {isPullRequest} from '../functions/is-pull-request';
 import {Assignee} from '../interfaces/assignee';
-import {IIssue, OctokitIssue} from '../interfaces/issue';
+import {ExtendedOctokitIssue} from '../interfaces/extended-octokit-issue';
+import {IIssue} from '../interfaces/issue';
 import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options';
 import {ILabel} from '../interfaces/label';
 import {IMilestone} from '../interfaces/milestone';
@@ -11,6 +12,7 @@ import {Operations} from './operations';
 export class Issue implements IIssue {
   readonly title: string;
   readonly number: number;
+  readonly type?: {name: string}; // Add the type property
   created_at: IsoDateString;
   updated_at: IsoDateString;
   readonly draft: boolean;
@@ -24,15 +26,15 @@ export class Issue implements IIssue {
   markedStaleThisRun: boolean;
   operations = new Operations();
   private readonly _options: IIssuesProcessorOptions;
-  readonly issue_type?: string;
 
   constructor(
     options: Readonly<IIssuesProcessorOptions>,
-    issue: Readonly<OctokitIssue> | Readonly<IIssue>
+    issue: Readonly<ExtendedOctokitIssue> | Readonly<IIssue>
   ) {
     this._options = options;
     this.title = issue.title;
     this.number = issue.number;
+    this.type = issue.type ? {name: issue.type.name} : undefined; // Extract the type name
     this.created_at = issue.created_at;
     this.updated_at = issue.updated_at;
     this.draft = Boolean(issue.draft);
@@ -44,15 +46,6 @@ export class Issue implements IIssue {
     this.assignees = issue.assignees || [];
     this.isStale = isLabeled(this, this.staleLabel);
     this.markedStaleThisRun = false;
-
-    if (
-      typeof (issue as any).type === 'object' &&
-      (issue as any).type !== null
-    ) {
-      this.issue_type = (issue as any).type.name;
-    } else {
-      this.issue_type = undefined;
-    }
   }
 
   get isPullRequest(): boolean {
