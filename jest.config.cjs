@@ -7,5 +7,9 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest'
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!node-fetch|@actions|@octokit)' // Add node-fetch here
+  ],
+  setupFiles: ['<rootDir>/__tests__/setup-tests.ts'], // Add this line
   verbose: true
 };

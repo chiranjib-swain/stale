@@ -74,10 +74,11 @@ export default [
     },
   },
   {
-    files: ["**/*{test,spec}.ts"],
+    files: ["**/*{test,spec}.ts","**/setup-tests.ts"],
     languageOptions: {
       globals: {
         ...jestPlugin.environments.globals.globals, // 👈 inject Jest globals
+        jest:true,
       },
     },
     rules: {
