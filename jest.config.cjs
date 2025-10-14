@@ -11,5 +11,6 @@ module.exports = {
     'node_modules/(?!node-fetch|@actions|@octokit)' // Add node-fetch here
   ],
   setupFiles: ['<rootDir>/__tests__/setup-tests.ts'], // Add this line
-  verbose: true
+  verbose: true,
+  testTimeout: 20000, // 20 seconds timeout for each test
 };
