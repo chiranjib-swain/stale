@@ -4,7 +4,7 @@ import {IsoDateString} from '../src/types/iso-date-string';
 import {IssuesProcessorMock} from './classes/issues-processor-mock';
 import {DefaultProcessorOptions} from './constants/default-processor-options';
 import {generateIssue} from './functions/generate-issue';
-import {alwaysFalseStateMock, StateMock} from './classes/state-mock';
+import {alwaysFalseStateMock} from './classes/state-mock';
 
 describe('operations-per-run option', (): void => {
   let sut: SUT;
