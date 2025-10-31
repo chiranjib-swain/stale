@@ -1616,13 +1616,16 @@ const getOctokitClient = () => {
     return (0, github_1.getOctokit)(token, undefined, plugin_retry_1.retry);
 };
 const checkIfCacheExists = (cacheKey) => __awaiter(void 0, void 0, void 0, function* () {
+    core.debug(`check if cache "${cacheKey}" exists`);
     const client = getOctokitClient();
     try {
         const cachesResult = yield client.rest.actions.getActionsCacheList({
             owner: github_1.context.repo.owner,
             repo: github_1.context.repo.repo,
-            key: cacheKey, // prefix matching
+            key: cacheKey // prefix matching
         });
+        core.debug(`Caches found 41: ${JSON.stringify(cachesResult)}`);
+        core.debug(`Caches found 42: ${JSON.stringify(cachesResult.data)}`);
         const caches = cachesResult.data['actions_caches'] || [];
         return caches.some(cache => cache['key'] === cacheKey);
     }
@@ -1638,7 +1641,7 @@ const resetCacheWithOctokit = (cacheKey) => __awaiter(void 0, void 0, void 0, fu
         yield client.rest.actions.deleteActionsCacheByKey({
             owner: github_1.context.repo.owner,
             repo: github_1.context.repo.repo,
-            key: cacheKey,
+            key: cacheKey
         });
     }
     catch (error) {
@@ -1658,6 +1661,7 @@ class StateCacheStorage {
             fs_1.default.writeFileSync(filePath, serializedState);
             try {
                 const cacheExists = yield checkIfCacheExists(CACHE_KEY);
+                core.info(`Cache exists 85: ${cacheExists}`);
                 if (cacheExists) {
                     yield resetCacheWithOctokit(CACHE_KEY);
                 }
@@ -1666,7 +1670,9 @@ class StateCacheStorage {
                     core.info(`the state will be removed`);
                     return;
                 }
+                core.debug(`Attempting to save cache with key: ${CACHE_KEY}`);
                 yield cache.saveCache([path_1.default.dirname(filePath)], CACHE_KEY);
+                core.debug(`Cache saved successfully with key: ${CACHE_KEY}`);
             }
             catch (error) {
                 core.warning(`Saving the state was not successful due to "${error.message || 'unknown reason'}"`);

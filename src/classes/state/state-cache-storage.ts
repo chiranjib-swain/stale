@@ -31,6 +31,8 @@ const getOctokitClient = () => {
 };
 
 const checkIfCacheExists = async (cacheKey: string): Promise<boolean> => {
+  core.debug(`check if cache "${cacheKey}" exists`);
+
   const client = getOctokitClient();
   try {
     const cachesResult = await client.rest.actions.getActionsCacheList({
@@ -38,6 +40,10 @@ const checkIfCacheExists = async (cacheKey: string): Promise<boolean> => {
       repo: context.repo.repo,
       key: cacheKey // prefix matching
     });
+
+    core.debug(`Caches found 41: ${JSON.stringify(cachesResult)}`);
+    core.debug(`Caches found 42: ${JSON.stringify(cachesResult.data)}`);
+
     const caches: Array<{key?: string}> =
       cachesResult.data['actions_caches'] || [];
     return caches.some(cache => cache['key'] === cacheKey);
@@ -75,6 +81,7 @@ export class StateCacheStorage implements IStateStorage {
 
     try {
       const cacheExists = await checkIfCacheExists(CACHE_KEY);
+      core.info(`Cache exists 85: ${cacheExists}`);
       if (cacheExists) {
         await resetCacheWithOctokit(CACHE_KEY);
       }
@@ -84,8 +91,9 @@ export class StateCacheStorage implements IStateStorage {
         core.info(`the state will be removed`);
         return;
       }
-
+      core.debug(`Attempting to save cache with key: ${CACHE_KEY}`);
       await cache.saveCache([path.dirname(filePath)], CACHE_KEY);
+      core.debug(`Cache saved successfully with key: ${CACHE_KEY}`);
     } catch (error) {
       core.warning(
         `Saving the state was not successful due to "${
