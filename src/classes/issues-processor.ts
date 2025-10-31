@@ -121,15 +121,21 @@ export class IssuesProcessor {
 
       return this.operations.getRemainingOperationsCount();
     } else {
-      this._logger.info(
-        `${LoggerService.yellow(
-          'Processing the batch of issues '
-        )} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(
-          ' containing '
-        )} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(
-          ` issue${issues.length > 1 ? 's' : ''}...`
-        )}`
-      );
+      let logMessage = `${LoggerService.yellow(
+        'Processing the batch of issues '
+      )} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(
+        ' containing '
+      )} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(
+        ` issue${issues.length > 1 ? 's' : ''}...`
+      )}`;
+
+      if (this.options.onlyIssueTypes) {
+        logMessage += ` ${LoggerService.yellow(
+          `(Filtered by only-issue-types: ${this.options.onlyIssueTypes})`
+        )}`;
+      }
+
+      this._logger.info(logMessage);
     }
 
     const labelsToRemoveWhenStale: string[] = wordsToList(
@@ -150,6 +156,38 @@ export class IssuesProcessor {
       }
 
       const issueLogger: IssueLogger = new IssueLogger(issue);
+
+      // Apply the `onlyIssueTypes` filter as a fallback
+      if (this.options.onlyIssueTypes) {
+        const onlyIssueType = this.options.onlyIssueTypes.trim().toLowerCase();
+
+        // Handle special cases
+        if (onlyIssueType === '*') {
+          // '*' means process all issues, so skip filtering
+          issueLogger.info(`Processing all issues as '*' was specified.`);
+        } else if (onlyIssueType === 'none') {
+          // 'none' means process only issues without a type
+          if (issue.type?.name) {
+            issueLogger.info(
+              `Skipping this issue because it has a type (${issue.type?.name}) and 'none' was specified`
+            );
+            IssuesProcessor._endIssueProcessing(issue);
+            return 0;
+          }
+        } else {
+          // Check if the issue's type matches the specified type
+          const issueType = (issue.type?.name || '').toLowerCase();
+
+          if (issueType !== onlyIssueType) {
+            issueLogger.info(
+              `Skipping this issue because its type ('${issue.type?.name}') does not match the specified type ('${onlyIssueType}')`
+            );
+            IssuesProcessor._endIssueProcessing(issue);
+            return 0;
+          }
+        }
+      }
+
       if (this.state.isIssueProcessed(issue)) {
         issueLogger.info(
           '           $$type skipped due being processed during the previous run'
@@ -250,23 +288,6 @@ export class IssuesProcessor {
       );
       IssuesProcessor._endIssueProcessing(issue);
       return; // If the issue has an 'include-only-assigned' option set, process only issues with nonempty assignees list
-    }
-
-    if (this.options.onlyIssueTypes) {
-      const allowedTypes = this.options.onlyIssueTypes
-        .split(',')
-        .map(t => t.trim().toLowerCase())
-        .filter(Boolean);
-      const issueType = (issue.issue_type || '').toLowerCase();
-      if (!allowedTypes.includes(issueType)) {
-        issueLogger.info(
-          `Skipping this $$type because its type ('${
-            issue.issue_type
-          }') is not in onlyIssueTypes (${allowedTypes.join(', ')})`
-        );
-        IssuesProcessor._endIssueProcessing(issue);
-        return;
-      }
     }
 
     const onlyLabels: string[] = wordsToList(this._getOnlyLabels(issue));
@@ -587,12 +608,18 @@ export class IssuesProcessor {
         owner: context.repo.owner,
         repo: context.repo.repo,
         state: 'open',
+        ...(this.options.onlyIssueTypes
+          ? {type: this.options.onlyIssueTypes}
+          : {}),
         per_page: 100,
         direction: this.options.ascending ? 'asc' : 'desc',
         sort: getSortField(this.options.sortBy),
         page
       });
       this.statistics?.incrementFetchedItemsCount(issueResult.data.length);
+
+      // Log the response details
+      core.info(`Fetched ${issueResult.data.length} issue(s) from the API.`);
 
       return issueResult.data.map(
         (issue): Issue =>
