@@ -36,7 +36,7 @@ const checkIfCacheExists = async (cacheKey: string): Promise<boolean> => {
     const cachesResult = await client.rest.actions.getActionsCacheList({
       owner: context.repo.owner,
       repo: context.repo.repo,
-      key: cacheKey, // prefix matching
+      key: cacheKey // prefix matching
     });
     const caches: Array<{key?: string}> =
       cachesResult.data['actions_caches'] || [];
@@ -53,7 +53,7 @@ const resetCacheWithOctokit = async (cacheKey: string): Promise<void> => {
     await client.rest.actions.deleteActionsCacheByKey({
       owner: context.repo.owner,
       repo: context.repo.repo,
-      key: cacheKey,
+      key: cacheKey
     });
   } catch (error) {
     if (error.status) {
