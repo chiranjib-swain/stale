@@ -91,26 +91,10 @@ export class StateCacheStorage implements IStateStorage {
         core.info(`the state will be removed`);
         return;
       }
-      let retries = 2;
-      while (retries > 0) {
-        try {
-          core.debug(`Attempting to save cache with key: ${CACHE_KEY}`);
-          await cache.saveCache([path.dirname(filePath)], CACHE_KEY);
-          core.debug(`Cache saved successfully with key: ${CACHE_KEY}`);
-          break;
-        } catch (error) {
-          retries--;
-          core.warning(
-            `Retrying cache save (${2 - retries}/2): ${
-              error.message || 'unknown error'
-            }`
-          );
-          core.warning(`Saving cache failed Test: ${JSON.stringify(error)}`);
-          if (retries === 0) {
-            throw error;
-          }
-        }
-      }
+      core.debug(`Attempting to save cache with key1: ${CACHE_KEY}`);
+      core.debug(`File path to cache: ${filePath}`);
+      await cache.saveCache([path.dirname(filePath)], CACHE_KEY);
+      core.debug(`Cache saved successfully with key2: ${CACHE_KEY}`);
     } catch (error) {
       core.warning(
         `Saving the state was not successful due to "${
