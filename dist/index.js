@@ -1670,9 +1670,23 @@ class StateCacheStorage {
                     core.info(`the state will be removed`);
                     return;
                 }
-                core.debug(`Attempting to save cache with key: ${CACHE_KEY}`);
-                yield cache.saveCache([path_1.default.dirname(filePath)], CACHE_KEY);
-                core.debug(`Cache saved successfully with key: ${CACHE_KEY}`);
+                let retries = 2;
+                while (retries > 0) {
+                    try {
+                        core.debug(`Attempting to save cache with key: ${CACHE_KEY}`);
+                        yield cache.saveCache([path_1.default.dirname(filePath)], CACHE_KEY);
+                        core.debug(`Cache saved successfully with key: ${CACHE_KEY}`);
+                        break;
+                    }
+                    catch (error) {
+                        retries--;
+                        core.warning(`Retrying cache save (${2 - retries}/2): ${error.message || 'unknown error'}`);
+                        core.warning(`Saving cache failed Test: ${JSON.stringify(error)}`);
+                        if (retries === 0) {
+                            throw error;
+                        }
+                    }
+                }
             }
             catch (error) {
                 core.warning(`Saving the state was not successful due to "${error.message || 'unknown reason'}"`);
