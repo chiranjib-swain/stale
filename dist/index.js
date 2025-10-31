@@ -1637,11 +1637,19 @@ const getOctokitClient = () => {
     return (0, github_1.getOctokit)(token, undefined, plugin_retry_1.retry);
 };
 const checkIfCacheExists = (cacheKey) => __awaiter(void 0, void 0, void 0, function* () {
+    core.debug(`check if cache "${cacheKey}" exists`);
     const client = getOctokitClient();
     try {
-        const issueResult = yield client.request(`/repos/${github_1.context.repo.owner}/${github_1.context.repo.repo}/actions/caches`);
-        const caches = issueResult.data['actions_caches'] || [];
-        return Boolean(caches.find(cache => cache['key'] === cacheKey));
+        const cachesResult = yield client.rest.actions.getActionsCacheList({
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
+            key: cacheKey, // prefix matching
+        });
+        core.debug(`Caches found 41: ${JSON.stringify(cachesResult)}`);
+        core.debug(`Caches found 42: ${JSON.stringify(cachesResult.data)}`);
+        const caches = cachesResult.data['actions_caches'] || [];
+        core.debug(`Caches found 44: ${JSON.stringify(caches)}`);
+        return caches.some(cache => cache['key'] === cacheKey);
     }
     catch (error) {
         core.debug(`Error checking if cache exist: ${error.message}`);
@@ -1652,8 +1660,11 @@ const resetCacheWithOctokit = (cacheKey) => __awaiter(void 0, void 0, void 0, fu
     const client = getOctokitClient();
     core.debug(`remove cache "${cacheKey}"`);
     try {
-        // TODO: replace with client.rest.
-        yield client.request(`DELETE /repos/${github_1.context.repo.owner}/${github_1.context.repo.repo}/actions/caches?key=${cacheKey}`);
+        yield client.rest.actions.deleteActionsCacheByKey({
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
+            key: cacheKey,
+        });
     }
     catch (error) {
         if (error.status) {
@@ -1672,15 +1683,19 @@ class StateCacheStorage {
             fs_1.default.writeFileSync(filePath, serializedState);
             try {
                 const cacheExists = yield checkIfCacheExists(CACHE_KEY);
+                core.info(`Cache exists 84: ${cacheExists}`);
                 if (cacheExists) {
                     yield resetCacheWithOctokit(CACHE_KEY);
                 }
                 const fileSize = fs_1.default.statSync(filePath).size;
+                core.info(`State file size 90: ${fileSize} bytes`);
                 if (fileSize === 0) {
                     core.info(`the state will be removed`);
                     return;
                 }
+                core.debug(`Attempting to save cache with key: ${CACHE_KEY}`);
                 yield cache.saveCache([path_1.default.dirname(filePath)], CACHE_KEY);
+                core.debug(`Cache saved successfully with key: ${CACHE_KEY}`);
             }
             catch (error) {
                 core.warning(`Saving the state was not successful due to "${error.message || 'unknown reason'}"`);
