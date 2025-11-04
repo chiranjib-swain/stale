@@ -36,7 +36,7 @@ const checkIfCacheExists = async (cacheKey: string): Promise<boolean> => {
     const cachesResult = await client.rest.actions.getActionsCacheList({
       owner: context.repo.owner,
       repo: context.repo.repo,
-      key: cacheKey // prefix matching
+      key: cacheKey // API uses prefix matching, then filtered to exact match below
     });
 
     const caches: Array<{key?: string}> =
