@@ -43,7 +43,7 @@ const checkIfCacheExists = async (cacheKey: string): Promise<boolean> => {
       cachesResult.data['actions_caches'] || [];
     return caches.some(cache => cache['key'] === cacheKey);
   } catch (error) {
-    core.debug(`Error checking if cache exist: ${error.message}`);
+    core.debug(`Error checking if cache exists: ${error.message}`);
   }
   return false;
 };

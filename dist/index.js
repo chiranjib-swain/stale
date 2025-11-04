@@ -1642,13 +1642,13 @@ const checkIfCacheExists = (cacheKey) => __awaiter(void 0, void 0, void 0, funct
         const cachesResult = yield client.rest.actions.getActionsCacheList({
             owner: github_1.context.repo.owner,
             repo: github_1.context.repo.repo,
-            key: cacheKey // prefix matching
+            key: cacheKey // API uses prefix matching, then filtered to exact match below
         });
         const caches = cachesResult.data['actions_caches'] || [];
         return caches.some(cache => cache['key'] === cacheKey);
     }
     catch (error) {
-        core.debug(`Error checking if cache exist: ${error.message}`);
+        core.debug(`Error checking if cache exists: ${error.message}`);
     }
     return false;
 });
