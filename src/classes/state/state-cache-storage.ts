@@ -3,13 +3,24 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import * as core from '@actions/core';
-import {context, getOctokit} from '@actions/github';
-import {retry as octokitRetry} from '@octokit/plugin-retry';
+import {context} from '@actions/github';
+// import {retry as octokitRetry} from '@octokit/plugin-retry';
 import * as cache from '@actions/cache';
+
+import {Octokit} from '@octokit/core';
+import {retry as octokitRetry} from '@octokit/plugin-retry';
+import {restEndpointMethods} from '@octokit/plugin-rest-endpoint-methods';
+import {paginateRest} from '@octokit/plugin-paginate-rest';
 
 const CACHE_KEY = '_state';
 const STATE_FILE = 'state.txt';
 const STALE_DIR = '56acbeaa-1fef-4c79-8f84-7565e560fb03';
+
+const MyOctokit = Octokit.plugin(
+  octokitRetry,
+  restEndpointMethods,
+  paginateRest
+);
 
 const mkTempDir = (): string => {
   const tmpDir = path.join(os.tmpdir(), STALE_DIR);
@@ -27,7 +38,7 @@ const unlinkSafely = (filePath: string) => {
 
 const getOctokitClient = () => {
   const token = core.getInput('repo-token');
-  return getOctokit(token, undefined, octokitRetry);
+  return new MyOctokit({auth: token});
 };
 
 const checkIfCacheExists = async (cacheKey: string): Promise<boolean> => {
