@@ -18,7 +18,7 @@ The configuration must be on the default branch and the default values will:
 - Close the stale issues and pull requests after 7 days of inactivity
 - If an update/comment occur on stale issues or pull requests, the stale label will be removed and the timer will restart
 
-## **Recommended permissions**
+## Recommended permissions
 
 For the execution of this action, it must be able to fetch all issues and pull requests from your repository. This retrieval is performed using the [`listForRepo` endpoint](https://docs.github.com/en/rest/issues/issues?apiVersion=2022-11-28#list-repository-issues), which returns both **issues and pull requests**.
 Because GitHub models every pull request as an issue, this endpoint requires **Issues: read** permission—even if your workflow configuration only targets pull requests.
