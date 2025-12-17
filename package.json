@@ -70,6 +70,6 @@
   },
   "overrides": {
     "whatwg-url": "15.1.0",
-     "@octokit/request": "10.0.7"
+    "node-fetch": "3.3.2"
   }
 }
