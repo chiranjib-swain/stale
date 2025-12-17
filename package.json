@@ -69,7 +69,6 @@
     "typescript": "^5.2.2"
   },
   "overrides": {
-    "whatwg-url": "15.1.0",
     "node-fetch": "3.3.2"
   }
 }
