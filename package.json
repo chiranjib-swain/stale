@@ -68,7 +68,7 @@
     "ts-jest": "^29.2.5",
     "typescript": "^5.2.2"
   },
-  "overrides": {
-    "node-fetch": "3.3.2"
-  }
+ "overrides": {
+  "node-fetch": "npm:node-fetch-commonjs@^3.3.2"
+}
 }
