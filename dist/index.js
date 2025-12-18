@@ -1646,7 +1646,9 @@ const getOctokitClient = () => {
 const checkIfCacheExists = (cacheKey) => __awaiter(void 0, void 0, void 0, function* () {
     const client = getOctokitClient();
     try {
-        const issueResult = yield client.request(`/repos/${github_1.context.repo.owner}/${github_1.context.repo.repo}/actions/caches`);
+        const issueResult = yield client.request(`/repos/${github_1.context.repo.owner}/${github_1.context.repo.repo}/actions/caches`, {
+            key: cacheKey
+        });
         const caches = issueResult.data['actions_caches'] || [];
         return Boolean(caches.find(cache => cache['key'] === cacheKey));
     }
