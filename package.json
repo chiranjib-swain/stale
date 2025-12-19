@@ -69,6 +69,6 @@
     "typescript": "^5.2.2"
   },
  "overrides": {
-  "node-fetch": "npm:node-fetch-commonjs@^3.3.2"
+    "@octokit/request": "10.0.7"
 }
 }
