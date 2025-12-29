@@ -776,6 +776,7 @@ class IssuesProcessor {
         });
     }
     getRateLimit() {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const logger = new logger_1.Logger();
             try {
@@ -783,7 +784,13 @@ class IssuesProcessor {
                 return new rate_limit_1.RateLimit(rateLimitResult.data.rate);
             }
             catch (error) {
-                logger.error(`Error when getting rateLimit: ${error.message}`);
+                const status = error === null || error === void 0 ? void 0 : error.status;
+                const message = (_a = error === null || error === void 0 ? void 0 : error.message) !== null && _a !== void 0 ? _a : String(error);
+                if (status === 404 && message.includes('Rate limiting is not enabled')) {
+                    logger.warning('Rate limiting is not enabled on this instance. Proceeding without rate limit checks.');
+                    return undefined;
+                }
+                logger.error(`Error when getting rateLimit: ${message}`);
             }
         });
     }
@@ -2677,7 +2684,8 @@ function _getAndValidateArgs() {
         ignorePrUpdates: _toOptionalBoolean('ignore-pr-updates'),
         exemptDraftPr: core.getInput('exempt-draft-pr') === 'true',
         closeIssueReason: core.getInput('close-issue-reason'),
-        includeOnlyAssigned: core.getInput('include-only-assigned') === 'true'
+        includeOnlyAssigned: core.getInput('include-only-assigned') === 'true',
+        onlyIssueTypes: core.getInput('only-issue-types')
     };
     for (const numberInput of ['days-before-stale']) {
         if (isNaN(parseFloat(core.getInput(numberInput)))) {
