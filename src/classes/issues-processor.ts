@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
-import {context, getOctokit} from '@actions/github';
-import {GitHub} from '@actions/github/lib/utils';
+import {context} from '@actions/github';
+// import {GitHub} from '@actions/github/lib/utils';
 import {Option} from '../enums/option';
 import {getHumanizedDate} from '../functions/dates/get-humanized-date';
 import {isDateMoreRecentThan} from '../functions/dates/is-date-more-recent-than';
@@ -30,17 +30,31 @@ import {IState} from '../interfaces/state/state';
 import {IRateLimit} from '../interfaces/rate-limit';
 import {RateLimit} from './rate-limit';
 import {getSortField} from '../functions/get-sort-field';
+import {Octokit} from '@octokit/core';
+import {restEndpointMethods} from '@octokit/plugin-rest-endpoint-methods';
+import {paginateRest} from '@octokit/plugin-paginate-rest';
 
 /***
  * Handle processing of issues for staleness/closure.
  */
+
+type StateReason =
+  | 'completed'
+  | 'reopened'
+  | 'not_planned'
+  | 'duplicate'
+  | null
+  | undefined;
+
+// create a combined Octokit class with retry + rest endpoint methods
+const MyOctokit = Octokit.plugin(retry, restEndpointMethods, paginateRest);
+type MyOctokitInstance = InstanceType<typeof MyOctokit>;
 
 export class IssuesProcessor {
   private static _updatedSince(timestamp: string, num_days: number): boolean {
     const daysInMillis = 1000 * 60 * 60 * 24 * num_days;
     const millisSinceLastUpdated =
       new Date().getTime() - new Date(timestamp).getTime();
-
     return millisSinceLastUpdated <= daysInMillis;
   }
 
@@ -67,7 +81,7 @@ export class IssuesProcessor {
   }
 
   readonly operations: StaleOperations;
-  readonly client: InstanceType<typeof GitHub>;
+  readonly client: MyOctokitInstance;
   readonly options: IIssuesProcessorOptions;
   readonly staleIssues: Issue[] = [];
   readonly closedIssues: Issue[] = [];
@@ -82,7 +96,10 @@ export class IssuesProcessor {
   constructor(options: IIssuesProcessorOptions, state: IState) {
     this.options = options;
     this.state = state;
-    this.client = getOctokit(this.options.repoToken, undefined, retry);
+    this.client = new MyOctokit({
+      auth: this.options.repoToken
+    }) as MyOctokitInstance;
+
     this.operations = new StaleOperations(this.options);
 
     this._logger.info(
@@ -960,12 +977,15 @@ export class IssuesProcessor {
       this.statistics?.incrementClosedItemsCount(issue);
 
       if (!this.options.debugOnly) {
+        const stateReason = this._normalizeStateReason(
+          this.options.closeIssueReason
+        );
         await this.client.rest.issues.update({
           owner: context.repo.owner,
           repo: context.repo.repo,
           issue_number: issue.number,
           state: 'closed',
-          state_reason: this.options.closeIssueReason || undefined
+          state_reason: stateReason
         });
       }
     } catch (error) {
@@ -1315,5 +1335,20 @@ export class IssuesProcessor {
     }
 
     return Option.RemoveStaleWhenUpdated;
+  }
+
+  private _normalizeStateReason(reason: string | undefined): StateReason {
+    if (!reason) return undefined;
+
+    const r = reason.trim().toLowerCase();
+
+    // map human-friendly inputs to API values, if needed:
+    if (r === 'not planned' || r === 'not_planned') return 'not_planned';
+    if (r === 'completed') return 'completed';
+    if (r === 'reopened') return 'reopened';
+    if (r === 'duplicate') return 'duplicate';
+
+    // fallback: unknown string => undefined (don't send invalid value)
+    return undefined;
   }
 }
