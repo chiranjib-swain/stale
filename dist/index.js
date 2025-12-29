@@ -776,8 +776,8 @@ class IssuesProcessor {
         });
     }
     getRateLimit() {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             const logger = new logger_1.Logger();
             try {
                 const rateLimitResult = yield this.client.rest.rateLimit.get();
