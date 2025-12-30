@@ -1719,7 +1719,7 @@ test('git branch is deleted when option is enabled', async () => {
   expect(processor.removedLabelIssues).toHaveLength(0);
   expect(processor.staleIssues).toHaveLength(0);
   expect(processor.deletedBranchIssues).toHaveLength(1);
-},10000);
+}, 10000);
 
 test('git branch is not deleted when issue is not pull request', async () => {
   const opts = {...DefaultProcessorOptions, deleteBranch: true};
