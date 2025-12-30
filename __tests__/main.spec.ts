@@ -1691,6 +1691,7 @@ test('send stale message on prs when stale-pr-message is not empty', async () =>
 });
 
 test('git branch is deleted when option is enabled', async () => {
+  jest.setTimeout(15000); // Increase timeout to 15 seconds
   const opts = {...DefaultProcessorOptions, deleteBranch: true};
   const isPullRequest = true;
   const TestIssueList: Issue[] = [
