@@ -69,6 +69,7 @@
     "typescript": "^5.2.2"
   },
   "overrides": {
-    "node-fetch": "3.3.2"
+    "uri-js": "npm:uri-js-replace@^1.0.1",
+    "node-fetch": "^3.3.2"
   } 
 }
