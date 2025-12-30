@@ -5,7 +5,10 @@ module.exports = {
   testMatch: ['**/*.test.ts', '**/*.spec.ts'],
   testRunner: 'jest-circus/runner',
   transform: {
-    '^.+\\.ts$': 'ts-jest'
+    '^.+\\.ts$': 'ts-jest',
+  },
+  moduleNameMapper: {
+    '^node-fetch$': '__mocks__/node-fetch.js',
   },
   verbose: true
 };
