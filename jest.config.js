@@ -7,5 +7,8 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest'
   },
+  moduleNameMapper: {
+    '^node-fetch$': '__mocks__/node-fetch.js'
+  },
   verbose: true
 };
