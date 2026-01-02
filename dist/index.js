@@ -394,10 +394,10 @@ const get_sort_field_1 = __nccwpck_require__(79551);
  * Handle processing of issues for staleness/closure.
  */
 class IssuesProcessor {
-    static _updatedSince(timestamp, num_days) {
-        const daysInMillis = 1000 * 60 * 60 * 24 * num_days;
+    static _updatedSince(timestamp, num_hours) {
+        const hoursInMillis = 1000 * 60 * 60 * num_hours; // Convert hours to milliseconds
         const millisSinceLastUpdated = new Date().getTime() - new Date(timestamp).getTime();
-        return millisSinceLastUpdated <= daysInMillis;
+        return millisSinceLastUpdated <= hoursInMillis;
     }
     static _endIssueProcessing(issue) {
         const consumedOperationsCount = issue.operations.getConsumedOperationsCount();
