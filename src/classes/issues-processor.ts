@@ -965,11 +965,12 @@ export class IssuesProcessor {
           repo: context.repo.repo,
           issue_number: issue.number,
           state: 'closed',
-          state_reason: (['completed', 'reopened', 'not_planned'].includes(
-            this.options.closeIssueReason
-          )
-            ? this.options.closeIssueReason
-            : undefined) as 'completed' | 'reopened' | 'not_planned' | undefined
+          state_reason: this.options.closeIssueReason as
+            | 'completed'
+            | 'reopened'
+            | 'not_planned'
+            | null
+            | undefined
         });
       }
     } catch (error) {
