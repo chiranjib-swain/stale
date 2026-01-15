@@ -956,7 +956,7 @@ class IssuesProcessor {
                         repo: github_1.context.repo.repo,
                         issue_number: issue.number,
                         state: 'closed',
-                        state_reason: this.options.closeIssueReason
+                        state_reason: (this.options.closeIssueReason || undefined)
                     });
                 }
             }

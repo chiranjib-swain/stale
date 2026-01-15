@@ -965,7 +965,7 @@ export class IssuesProcessor {
           repo: context.repo.repo,
           issue_number: issue.number,
           state: 'closed',
-          state_reason: this.options.closeIssueReason as
+          state_reason: (this.options.closeIssueReason || undefined) as
             | 'completed'
             | 'reopened'
             | 'not_planned'
