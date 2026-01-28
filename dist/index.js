@@ -143,6 +143,273 @@ exports.Assignees = Assignees;
 
 /***/ }),
 
+/***/ 989:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BranchProcessor = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const github_1 = __nccwpck_require__(5438);
+const logger_1 = __nccwpck_require__(6212);
+const logger_service_1 = __nccwpck_require__(1973);
+class BranchProcessor {
+    constructor(client, options, operations) {
+        this.logger = new logger_1.Logger();
+        this.deletedBranchesCount = 0;
+        this.client = client;
+        this.options = options;
+        this.operations = operations;
+    }
+    processBranches() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.options.staleBranches) {
+                this.logger.info('Branch cleanup is disabled. Skipping branch processing.');
+                return [];
+            }
+            this.logger.info(logger_service_1.LoggerService.yellow('Starting stale branch cleanup...'));
+            const deletedBranches = [];
+            try {
+                // Get default branch
+                const defaultBranch = yield this._getDefaultBranch();
+                this.logger.info(`Default branch: ${logger_service_1.LoggerService.cyan(defaultBranch)}`);
+                // List all branches
+                const branches = yield this._listBranches();
+                this.logger.info(`Found ${logger_service_1.LoggerService.cyan(branches.length)} total branches`);
+                // Filter out default branch
+                const nonDefaultBranches = branches.filter(b => b.name !== defaultBranch);
+                this.logger.info(`Scanning ${logger_service_1.LoggerService.cyan(nonDefaultBranches.length)} non-default branches`);
+                // Process each branch
+                for (const branch of nonDefaultBranches) {
+                    if (this.deletedBranchesCount >= this.options.maxBranchDeletionsPerRun) {
+                        this.logger.warning(`Reached maximum branch deletions per run (${this.options.maxBranchDeletionsPerRun}). Stopping.`);
+                        break;
+                    }
+                    if (this.operations.hasRemainingOperations() === false) {
+                        this.logger.warning('Reached operations limit. Stopping branch processing.');
+                        break;
+                    }
+                    const result = yield this._processBranch(branch);
+                    if (result.deleted) {
+                        deletedBranches.push(result.name);
+                        this.deletedBranchesCount++;
+                    }
+                }
+                this.logger.info(logger_service_1.LoggerService.green(`Branch cleanup complete. Deleted ${this.deletedBranchesCount} branches.`));
+            }
+            catch (error) {
+                this.logger.error(`Error during branch processing: ${error.message}`);
+                core.error(error);
+            }
+            return deletedBranches;
+        });
+    }
+    _processBranch(branch) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.logger.info(`\nProcessing branch: ${logger_service_1.LoggerService.cyan(branch.name)}`);
+            // Check if protected and should be exempted
+            if (branch.protected && this.options.exemptProtectedBranches) {
+                this.logger.info(`├── Skipping: branch is protected`);
+                return { name: branch.name, deleted: false, reason: 'protected' };
+            }
+            // Check exempt patterns
+            if (this._isExemptBranch(branch.name)) {
+                this.logger.info(`├── Skipping: branch matches exempt pattern`);
+                return { name: branch.name, deleted: false, reason: 'exempt pattern' };
+            }
+            // Check staleness
+            const isStale = this._isBranchStale(branch);
+            if (!isStale) {
+                this.logger.info(`├── Skipping: branch is not stale (last commit: ${branch.commit.date.toISOString()})`);
+                return { name: branch.name, deleted: false, reason: 'not stale' };
+            }
+            this.logger.info(`├── Branch is stale (last commit: ${logger_service_1.LoggerService.cyan(branch.commit.date.toISOString())})`);
+            // Check for open PR
+            this.operations.consumeOperation();
+            const hasOpenPR = yield this._hasOpenPullRequest(branch.name);
+            if (hasOpenPR) {
+                this.logger.info(`└── Skipping: branch has an open pull request`);
+                return { name: branch.name, deleted: false, reason: 'has open PR' };
+            }
+            // Delete branch
+            if (this.options.deleteStaleBranches &&
+                !this.options.dryRun &&
+                !this.options.debugOnly) {
+                this.logger.info(`└── Deleting stale branch: ${logger_service_1.LoggerService.cyan(branch.name)}`);
+                yield this._deleteBranch(branch.name);
+                return { name: branch.name, deleted: true };
+            }
+            else {
+                const mode = this.options.dryRun || this.options.debugOnly
+                    ? 'DRY-RUN'
+                    : 'WOULD DELETE';
+                this.logger.info(`└── ${logger_service_1.LoggerService.yellow(`[${mode}]`)} Would delete branch: ${logger_service_1.LoggerService.cyan(branch.name)}`);
+                return { name: branch.name, deleted: false, reason: 'dry-run or disabled' };
+            }
+        });
+    }
+    _getDefaultBranch() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.operations.consumeOperation();
+            const { data: repo } = yield this.client.rest.repos.get({
+                owner: github_1.context.repo.owner,
+                repo: github_1.context.repo.repo
+            });
+            return repo.default_branch;
+        });
+    }
+    _listBranches() {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            const branches = [];
+            const perPage = 100;
+            let page = 1;
+            let hasMore = true;
+            while (hasMore) {
+                this.operations.consumeOperation();
+                const { data } = yield this.client.rest.repos.listBranches({
+                    owner: github_1.context.repo.owner,
+                    repo: github_1.context.repo.repo,
+                    per_page: perPage,
+                    page
+                });
+                for (const branch of data) {
+                    // Get commit details to fetch timestamp
+                    this.operations.consumeOperation();
+                    const { data: commit } = yield this.client.rest.repos.getCommit({
+                        owner: github_1.context.repo.owner,
+                        repo: github_1.context.repo.repo,
+                        ref: branch.commit.sha
+                    });
+                    branches.push({
+                        name: branch.name,
+                        commit: {
+                            sha: branch.commit.sha,
+                            date: new Date(((_a = commit.commit.committer) === null || _a === void 0 ? void 0 : _a.date) ||
+                                ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.date) ||
+                                new Date())
+                        },
+                        protected: branch.protected
+                    });
+                }
+                hasMore = data.length === perPage;
+                page++;
+            }
+            return branches;
+        });
+    }
+    _isBranchStale(branch) {
+        const now = new Date();
+        const daysSinceLastCommit = (now.getTime() - branch.commit.date.getTime()) / (1000 * 60 * 60 * 24);
+        return daysSinceLastCommit > this.options.staleBranchDays;
+    }
+    _isExemptBranch(branchName) {
+        if (!this.options.exemptBranches) {
+            return false;
+        }
+        const exemptPatterns = this.options.exemptBranches
+            .split(',')
+            .map(p => p.trim())
+            .filter(Boolean);
+        for (const pattern of exemptPatterns) {
+            if (this._matchesPattern(branchName, pattern)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    _matchesPattern(branchName, pattern) {
+        // Exact match
+        if (branchName === pattern) {
+            return true;
+        }
+        // Glob pattern matching (simple implementation)
+        // Convert glob pattern to regex
+        // First escape special regex characters except for wildcards
+        const regexPattern = pattern
+            .replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape all special chars including backslash
+            .replace(/\*/g, '.*') // Convert * to .*
+            .replace(/\?/g, '.'); // Convert ? to .
+        const regex = new RegExp(`^${regexPattern}$`);
+        return regex.test(branchName);
+    }
+    _hasOpenPullRequest(branchName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { data: pulls } = yield this.client.rest.pulls.list({
+                    owner: github_1.context.repo.owner,
+                    repo: github_1.context.repo.repo,
+                    state: 'open',
+                    head: `${github_1.context.repo.owner}:${branchName}`,
+                    per_page: 1
+                });
+                return pulls.length > 0;
+            }
+            catch (error) {
+                this.logger.warning(`Error checking for open PRs: ${error.message}`);
+                return true; // Err on the side of caution
+            }
+        });
+    }
+    _deleteBranch(branchName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                this.operations.consumeOperation();
+                yield this.client.rest.git.deleteRef({
+                    owner: github_1.context.repo.owner,
+                    repo: github_1.context.repo.repo,
+                    ref: `heads/${branchName}`
+                });
+                this.logger.info(`Successfully deleted branch: ${logger_service_1.LoggerService.cyan(branchName)}`);
+            }
+            catch (error) {
+                this.logger.error(`Error deleting branch ${logger_service_1.LoggerService.cyan(branchName)}: ${error.message}`);
+                throw error;
+            }
+        });
+    }
+    getDeletedBranchesCount() {
+        return this.deletedBranchesCount;
+    }
+}
+exports.BranchProcessor = BranchProcessor;
+
+
+/***/ }),
+
 /***/ 854:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -390,6 +657,7 @@ const logger_service_1 = __nccwpck_require__(1973);
 const plugin_retry_1 = __nccwpck_require__(6298);
 const rate_limit_1 = __nccwpck_require__(7069);
 const get_sort_field_1 = __nccwpck_require__(9551);
+const branch_processor_1 = __nccwpck_require__(989);
 /***
  * Handle processing of issues for staleness/closure.
  */
@@ -416,6 +684,7 @@ class IssuesProcessor {
         this.removedLabelIssues = [];
         this.addedLabelIssues = [];
         this.addedCloseCommentIssues = [];
+        this.deletedBranches = [];
         this._logger = new logger_1.Logger();
         this.options = options;
         this.state = state;
@@ -437,6 +706,12 @@ class IssuesProcessor {
             const issues = yield this.getIssues(page);
             if (issues.length <= 0) {
                 this._logger.info(logger_service_1.LoggerService.green(`No more issues found to process. Exiting...`));
+                // Process stale branches after all issues are processed (only on first page when no issues found)
+                if (page === 1 &&
+                    this.options.staleBranches &&
+                    this.operations.hasRemainingOperations()) {
+                    yield this._processStaleBranches();
+                }
                 (_a = this.statistics) === null || _a === void 0 ? void 0 : _a.setOperationsCount(this.operations.getConsumedOperationsCount()).logStats();
                 this.state.reset();
                 return this.operations.getRemainingOperationsCount();
@@ -1189,6 +1464,25 @@ class IssuesProcessor {
             return option_1.Option.RemoveIssueStaleWhenUpdated;
         }
         return option_1.Option.RemoveStaleWhenUpdated;
+    }
+    _processStaleBranches() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const branchProcessor = new branch_processor_1.BranchProcessor(this.client, this.options, this.operations);
+                const deletedBranches = yield branchProcessor.processBranches();
+                this.deletedBranches.push(...deletedBranches);
+                if (this.statistics) {
+                    const deletedCount = branchProcessor.getDeletedBranchesCount();
+                    for (let i = 0; i < deletedCount; i++) {
+                        this.statistics.incrementDeletedBranchesCount();
+                    }
+                }
+            }
+            catch (error) {
+                this._logger.error(`Error processing stale branches: ${error.message}`);
+                core.error(error);
+            }
+        });
     }
 }
 exports.IssuesProcessor = IssuesProcessor;
@@ -2259,6 +2553,13 @@ var Option;
     Option["ExemptDraftPr"] = "exempt-draft-pr";
     Option["CloseIssueReason"] = "close-issue-reason";
     Option["OnlyIssueTypes"] = "only-issue-types";
+    Option["StaleBranches"] = "stale-branches";
+    Option["StaleBranchDays"] = "stale-branch-days";
+    Option["DeleteStaleBranches"] = "delete-stale-branches";
+    Option["ExemptBranches"] = "exempt-branches";
+    Option["ExemptProtectedBranches"] = "exempt-protected-branches";
+    Option["MaxBranchDeletionsPerRun"] = "max-branch-deletions-per-run";
+    Option["DryRun"] = "dry-run";
 })(Option || (exports.Option = Option = {}));
 
 
@@ -2559,7 +2860,7 @@ function _run() {
                 core.info(`Github API rate remaining: ${rateLimitAtEnd.remaining}; reset at: ${rateLimitAtEnd.reset}`);
             }
             yield state.persist();
-            yield processOutput(issueProcessor.staleIssues, issueProcessor.closedIssues);
+            yield processOutput(issueProcessor.staleIssues, issueProcessor.closedIssues, issueProcessor.deletedBranches);
         }
         catch (error) {
             core.error(error);
@@ -2625,7 +2926,14 @@ function _getAndValidateArgs() {
         exemptDraftPr: core.getInput('exempt-draft-pr') === 'true',
         closeIssueReason: core.getInput('close-issue-reason'),
         includeOnlyAssigned: core.getInput('include-only-assigned') === 'true',
-        onlyIssueTypes: core.getInput('only-issue-types')
+        onlyIssueTypes: core.getInput('only-issue-types'),
+        staleBranches: core.getInput('stale-branches') === 'true',
+        staleBranchDays: parseInt(core.getInput('stale-branch-days')),
+        deleteStaleBranches: core.getInput('delete-stale-branches') === 'true',
+        exemptBranches: core.getInput('exempt-branches'),
+        exemptProtectedBranches: core.getInput('exempt-protected-branches') !== 'false',
+        maxBranchDeletionsPerRun: parseInt(core.getInput('max-branch-deletions-per-run')),
+        dryRun: core.getInput('dry-run') === 'true'
     };
     for (const numberInput of ['days-before-stale']) {
         if (isNaN(parseFloat(core.getInput(numberInput)))) {
@@ -2634,7 +2942,12 @@ function _getAndValidateArgs() {
             throw new Error(errorMessage);
         }
     }
-    for (const numberInput of ['days-before-close', 'operations-per-run']) {
+    for (const numberInput of [
+        'days-before-close',
+        'operations-per-run',
+        'stale-branch-days',
+        'max-branch-deletions-per-run'
+    ]) {
         if (isNaN(parseInt(core.getInput(numberInput)))) {
             const errorMessage = `Option "${numberInput}" did not parse to a valid integer`;
             core.setFailed(errorMessage);
@@ -2659,10 +2972,11 @@ function _getAndValidateArgs() {
     }
     return args;
 }
-function processOutput(staledIssues, closedIssues) {
+function processOutput(staledIssues, closedIssues, deletedBranches) {
     return __awaiter(this, void 0, void 0, function* () {
         core.setOutput('staled-issues-prs', JSON.stringify(staledIssues));
         core.setOutput('closed-issues-prs', JSON.stringify(closedIssues));
+        core.setOutput('deleted-branches', JSON.stringify(deletedBranches));
     });
 }
 /**

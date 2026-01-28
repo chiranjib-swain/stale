@@ -27,9 +27,9 @@ This can be achieved with the following [configuration in the action](https://do
 ```yaml
 permissions:
   actions: write
-  contents: write # only for delete-branch option
+  contents: write # required for delete-branch and stale branch cleanup options
   issues: write
-  pull-requests: write
+  pull-requests: write # required for stale branch cleanup to check for open PRs
 ```
 
 You can find more information about the required permissions under the corresponding options that you wish to use.
@@ -107,6 +107,13 @@ Every argument is optional.
 | [include-only-assigned](#include-only-assigned)                     | Process only assigned issues                                                | `false`               |
 | [sort-by](#sort-by)                                                 | What to sort issues and PRs by                                              | `created`             |
 | [only-issue-types](#only-issue-types)                               | Only issues with a matching type are processed as stale/closed.             |                       |
+| [stale-branches](#stale-branches)                                   | Enable scanning and cleanup of stale branches                               | `false`               |
+| [stale-branch-days](#stale-branch-days)                             | Days since last commit to consider a branch stale                           | `30`                  |
+| [delete-stale-branches](#delete-stale-branches)                     | Actually delete stale branches (vs. dry-run)                                | `false`               |
+| [exempt-branches](#exempt-branches)                                 | Branch names/patterns to never delete                                       |                       |
+| [exempt-protected-branches](#exempt-protected-branches)             | Exempt protected branches from deletion                                     | `true`                |
+| [max-branch-deletions-per-run](#max-branch-deletions-per-run)       | Max branches to delete per run                                              | `10`                  |
+| [dry-run](#dry-run)                                                 | Run without performing destructive operations                               | `false`               |
 
 ### List of output options
 
@@ -114,6 +121,7 @@ Every argument is optional.
 | ----------------- | ------------------------------------------- |
 | staled-issues-prs | List of all staled issues and pull requests |
 | closed-issues-prs | List of all closed issues and pull requests |
+| deleted-branches  | List of all deleted stale branches          |
 
 ### Detailed options
 
@@ -571,6 +579,81 @@ If unset (or an empty string), this option will not alter the stale workflow.
 
 Default value: unset
 
+#### stale-branches
+
+⚠️ **IMPORTANT**: This is a destructive feature. Branches are permanently deleted and cannot be recovered.
+
+Enable scanning and cleanup of stale branches. When enabled, the action will:
+1. List all branches in the repository (excluding the default branch)
+2. Check the last commit date on each branch HEAD
+3. Identify branches as stale if they haven't been updated in `stale-branch-days`
+4. Skip branches that are protected (if `exempt-protected-branches` is true)
+5. Skip branches matching patterns in `exempt-branches`
+6. Skip branches that have open pull requests
+7. Delete branches if `delete-stale-branches` is true and not in dry-run mode
+
+This feature runs after all issue/PR processing is complete.
+
+**Required permissions**: When this feature is enabled with `delete-stale-branches: true`, the workflow needs:
+```yaml
+permissions:
+  contents: write      # Required to delete branches
+  pull-requests: read  # Required to check for open PRs
+```
+
+Default value: `false`
+
+#### stale-branch-days
+
+The number of days since the last commit on a branch to consider it stale. Only applies when `stale-branches` is enabled.
+
+The staleness is determined by the timestamp of the HEAD commit on the branch, not the branch creation date.
+
+Default value: `30`
+
+#### delete-stale-branches
+
+Actually delete stale branches. If `false`, the action will only report which branches would be deleted (dry-run mode for branch deletion).
+
+**⚠️ This must be explicitly set to `true` to enable branch deletion.**
+
+Default value: `false`
+
+#### exempt-branches
+
+A comma-separated list of branch names or glob patterns to never delete.
+
+Examples:
+- `main,master,develop` - Exact branch names
+- `release/*,hotfix/*` - Glob patterns
+- `main,release/*,feature/important` - Mix of exact names and patterns
+
+The default branch and protected branches (when `exempt-protected-branches` is true) are automatically exempted regardless of this setting.
+
+Default value: unset
+
+#### exempt-protected-branches
+
+If `true`, all protected branches will be automatically exempted from deletion, regardless of their staleness.
+
+Default value: `true`
+
+#### max-branch-deletions-per-run
+
+Maximum number of branches to delete in a single run. This is a safety mechanism to prevent accidental mass deletion.
+
+If more stale branches are found than this limit, only the first N branches (up to the limit) will be deleted, and the rest will be processed in subsequent runs.
+
+Default value: `10`
+
+#### dry-run
+
+Run the entire action in dry-run mode without performing any destructive operations (including branch deletions, closing issues/PRs, etc.).
+
+When enabled, the action will log what actions it would take but will not actually perform them.
+
+Default value: `false`
+
 ### Usage
 
 See also [action.yml](./action.yml) for a comprehensive list of all the options.
@@ -785,6 +868,69 @@ jobs:
       - uses: actions/stale@v10
         with:
           exempt-all-pr-assignees: true
+```
+
+Enable stale branch cleanup:
+
+```yaml
+name: 'Clean up stale branches'
+on:
+  schedule:
+    - cron: '30 1 * * *'  # Run daily
+
+permissions:
+  contents: write      # Required to delete branches
+  pull-requests: read  # Required to check for open PRs
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v10
+        with:
+          # Enable branch cleanup
+          stale-branches: true
+          stale-branch-days: 60
+          delete-stale-branches: true
+          
+          # Protect important branches
+          exempt-branches: 'main,master,develop,staging,release/*,hotfix/*'
+          exempt-protected-branches: true
+          
+          # Safety limits
+          max-branch-deletions-per-run: 5
+          
+          # Also configure stale issues/PRs as usual
+          stale-issue-message: 'This issue is stale'
+          days-before-stale: 60
+```
+
+Dry-run mode for branch cleanup (test before enabling):
+
+```yaml
+name: 'Test stale branch cleanup'
+on:
+  workflow_dispatch:  # Manual trigger for testing
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v10
+        with:
+          # Enable branch scanning but don't delete
+          stale-branches: true
+          stale-branch-days: 30
+          delete-stale-branches: false  # Dry-run: only report
+          
+          exempt-branches: 'main,develop,release/*'
+          
+          # Or use the global dry-run flag
+          # dry-run: true
 ```
 
 ### Debugging

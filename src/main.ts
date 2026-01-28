@@ -46,7 +46,8 @@ async function _run(): Promise<void> {
 
     await processOutput(
       issueProcessor.staleIssues,
-      issueProcessor.closedIssues
+      issueProcessor.closedIssues,
+      issueProcessor.deletedBranches
     );
   } catch (error) {
     core.error(error);
@@ -125,7 +126,17 @@ function _getAndValidateArgs(): IIssuesProcessorOptions {
     exemptDraftPr: core.getInput('exempt-draft-pr') === 'true',
     closeIssueReason: core.getInput('close-issue-reason'),
     includeOnlyAssigned: core.getInput('include-only-assigned') === 'true',
-    onlyIssueTypes: core.getInput('only-issue-types')
+    onlyIssueTypes: core.getInput('only-issue-types'),
+    staleBranches: core.getInput('stale-branches') === 'true',
+    staleBranchDays: parseInt(core.getInput('stale-branch-days')),
+    deleteStaleBranches: core.getInput('delete-stale-branches') === 'true',
+    exemptBranches: core.getInput('exempt-branches'),
+    exemptProtectedBranches:
+      core.getInput('exempt-protected-branches') !== 'false',
+    maxBranchDeletionsPerRun: parseInt(
+      core.getInput('max-branch-deletions-per-run')
+    ),
+    dryRun: core.getInput('dry-run') === 'true'
   };
 
   for (const numberInput of ['days-before-stale']) {
@@ -136,7 +147,12 @@ function _getAndValidateArgs(): IIssuesProcessorOptions {
     }
   }
 
-  for (const numberInput of ['days-before-close', 'operations-per-run']) {
+  for (const numberInput of [
+    'days-before-close',
+    'operations-per-run',
+    'stale-branch-days',
+    'max-branch-deletions-per-run'
+  ]) {
     if (isNaN(parseInt(core.getInput(numberInput)))) {
       const errorMessage = `Option "${numberInput}" did not parse to a valid integer`;
       core.setFailed(errorMessage);
@@ -169,10 +185,12 @@ function _getAndValidateArgs(): IIssuesProcessorOptions {
 
 async function processOutput(
   staledIssues: Issue[],
-  closedIssues: Issue[]
+  closedIssues: Issue[],
+  deletedBranches: string[]
 ): Promise<void> {
   core.setOutput('staled-issues-prs', JSON.stringify(staledIssues));
   core.setOutput('closed-issues-prs', JSON.stringify(closedIssues));
+  core.setOutput('deleted-branches', JSON.stringify(deletedBranches));
 }
 
 /**

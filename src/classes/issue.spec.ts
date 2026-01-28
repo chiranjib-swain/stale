@@ -65,7 +65,14 @@ describe('Issue', (): void => {
       ignorePrUpdates: undefined,
       exemptDraftPr: false,
       closeIssueReason: '',
-      includeOnlyAssigned: false
+      includeOnlyAssigned: false,
+      staleBranches: false,
+      staleBranchDays: 30,
+      deleteStaleBranches: false,
+      exemptBranches: '',
+      exemptProtectedBranches: true,
+      maxBranchDeletionsPerRun: 10,
+      dryRun: false
     };
     issueInterface = {
       title: 'dummy-title',
