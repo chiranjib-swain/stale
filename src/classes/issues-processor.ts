@@ -117,7 +117,11 @@ export class IssuesProcessor {
       );
 
       // Process stale branches after all issues are processed (only on first page when no issues found)
-      if (page === 1 && this.options.staleBranches && this.operations.hasRemainingOperations()) {
+      if (
+        page === 1 &&
+        this.options.staleBranches &&
+        this.operations.hasRemainingOperations()
+      ) {
         await this._processStaleBranches();
       }
 

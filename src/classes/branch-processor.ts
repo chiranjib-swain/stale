@@ -40,12 +40,14 @@ export class BranchProcessor {
 
   async processBranches(): Promise<string[]> {
     if (!this.options.staleBranches) {
-      this.logger.info('Branch cleanup is disabled. Skipping branch processing.');
+      this.logger.info(
+        'Branch cleanup is disabled. Skipping branch processing.'
+      );
       return [];
     }
 
     this.logger.info(LoggerService.yellow('Starting stale branch cleanup...'));
-    
+
     const deletedBranches: string[] = [];
 
     try {
@@ -55,15 +57,23 @@ export class BranchProcessor {
 
       // List all branches
       const branches = await this._listBranches();
-      this.logger.info(`Found ${LoggerService.cyan(branches.length)} total branches`);
+      this.logger.info(
+        `Found ${LoggerService.cyan(branches.length)} total branches`
+      );
 
       // Filter out default branch
       const nonDefaultBranches = branches.filter(b => b.name !== defaultBranch);
-      this.logger.info(`Scanning ${LoggerService.cyan(nonDefaultBranches.length)} non-default branches`);
+      this.logger.info(
+        `Scanning ${LoggerService.cyan(
+          nonDefaultBranches.length
+        )} non-default branches`
+      );
 
       // Process each branch
       for (const branch of nonDefaultBranches) {
-        if (this.deletedBranchesCount >= this.options.maxBranchDeletionsPerRun) {
+        if (
+          this.deletedBranchesCount >= this.options.maxBranchDeletionsPerRun
+        ) {
           this.logger.warning(
             `Reached maximum branch deletions per run (${this.options.maxBranchDeletionsPerRun}). Stopping.`
           );
@@ -71,7 +81,9 @@ export class BranchProcessor {
         }
 
         if (this.operations.hasRemainingOperations() === false) {
-          this.logger.warning('Reached operations limit. Stopping branch processing.');
+          this.logger.warning(
+            'Reached operations limit. Stopping branch processing.'
+          );
           break;
         }
 
@@ -95,7 +107,9 @@ export class BranchProcessor {
     return deletedBranches;
   }
 
-  private async _processBranch(branch: IBranchInfo): Promise<IBranchDeletionResult> {
+  private async _processBranch(
+    branch: IBranchInfo
+  ): Promise<IBranchDeletionResult> {
     this.logger.info(`\nProcessing branch: ${LoggerService.cyan(branch.name)}`);
 
     // Check if protected and should be exempted
@@ -134,16 +148,25 @@ export class BranchProcessor {
     }
 
     // Delete branch
-    if (this.options.deleteStaleBranches && !this.options.dryRun && !this.options.debugOnly) {
-      this.logger.info(`└── Deleting stale branch: ${LoggerService.cyan(branch.name)}`);
+    if (
+      this.options.deleteStaleBranches &&
+      !this.options.dryRun &&
+      !this.options.debugOnly
+    ) {
+      this.logger.info(
+        `└── Deleting stale branch: ${LoggerService.cyan(branch.name)}`
+      );
       await this._deleteBranch(branch.name);
       return {name: branch.name, deleted: true};
     } else {
-      const mode = this.options.dryRun || this.options.debugOnly ? 'DRY-RUN' : 'WOULD DELETE';
+      const mode =
+        this.options.dryRun || this.options.debugOnly
+          ? 'DRY-RUN'
+          : 'WOULD DELETE';
       this.logger.info(
-        `└── ${LoggerService.yellow(`[${mode}]`)} Would delete branch: ${LoggerService.cyan(
-          branch.name
-        )}`
+        `└── ${LoggerService.yellow(
+          `[${mode}]`
+        )} Would delete branch: ${LoggerService.cyan(branch.name)}`
       );
       return {name: branch.name, deleted: false, reason: 'dry-run or disabled'};
     }
@@ -186,7 +209,11 @@ export class BranchProcessor {
           name: branch.name,
           commit: {
             sha: branch.commit.sha,
-            date: new Date(commit.commit.committer?.date || commit.commit.author?.date || new Date())
+            date: new Date(
+              commit.commit.committer?.date ||
+                commit.commit.author?.date ||
+                new Date()
+            )
           },
           protected: branch.protected
         });
@@ -237,7 +264,7 @@ export class BranchProcessor {
       .replace(/\./g, '\\.')
       .replace(/\*/g, '.*')
       .replace(/\?/g, '.');
-    
+
     const regex = new RegExp(`^${regexPattern}$`);
     return regex.test(branchName);
   }
@@ -267,10 +294,14 @@ export class BranchProcessor {
         repo: context.repo.repo,
         ref: `heads/${branchName}`
       });
-      this.logger.info(`Successfully deleted branch: ${LoggerService.cyan(branchName)}`);
+      this.logger.info(
+        `Successfully deleted branch: ${LoggerService.cyan(branchName)}`
+      );
     } catch (error) {
       this.logger.error(
-        `Error deleting branch ${LoggerService.cyan(branchName)}: ${error.message}`
+        `Error deleting branch ${LoggerService.cyan(branchName)}: ${
+          error.message
+        }`
       );
       throw error;
     }

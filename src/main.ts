@@ -131,8 +131,11 @@ function _getAndValidateArgs(): IIssuesProcessorOptions {
     staleBranchDays: parseInt(core.getInput('stale-branch-days')),
     deleteStaleBranches: core.getInput('delete-stale-branches') === 'true',
     exemptBranches: core.getInput('exempt-branches'),
-    exemptProtectedBranches: core.getInput('exempt-protected-branches') !== 'false',
-    maxBranchDeletionsPerRun: parseInt(core.getInput('max-branch-deletions-per-run')),
+    exemptProtectedBranches:
+      core.getInput('exempt-protected-branches') !== 'false',
+    maxBranchDeletionsPerRun: parseInt(
+      core.getInput('max-branch-deletions-per-run')
+    ),
     dryRun: core.getInput('dry-run') === 'true'
   };
 
@@ -144,7 +147,12 @@ function _getAndValidateArgs(): IIssuesProcessorOptions {
     }
   }
 
-  for (const numberInput of ['days-before-close', 'operations-per-run', 'stale-branch-days', 'max-branch-deletions-per-run']) {
+  for (const numberInput of [
+    'days-before-close',
+    'operations-per-run',
+    'stale-branch-days',
+    'max-branch-deletions-per-run'
+  ]) {
     if (isNaN(parseInt(core.getInput(numberInput)))) {
       const errorMessage = `Option "${numberInput}" did not parse to a valid integer`;
       core.setFailed(errorMessage);
