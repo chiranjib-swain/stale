@@ -265,13 +265,17 @@ class BranchProcessor {
                 return { name: branch.name, deleted: false, reason: 'has open PR' };
             }
             // Delete branch
-            if (this.options.deleteStaleBranches && !this.options.dryRun && !this.options.debugOnly) {
+            if (this.options.deleteStaleBranches &&
+                !this.options.dryRun &&
+                !this.options.debugOnly) {
                 this.logger.info(`└── Deleting stale branch: ${logger_service_1.LoggerService.cyan(branch.name)}`);
                 yield this._deleteBranch(branch.name);
                 return { name: branch.name, deleted: true };
             }
             else {
-                const mode = this.options.dryRun || this.options.debugOnly ? 'DRY-RUN' : 'WOULD DELETE';
+                const mode = this.options.dryRun || this.options.debugOnly
+                    ? 'DRY-RUN'
+                    : 'WOULD DELETE';
                 this.logger.info(`└── ${logger_service_1.LoggerService.yellow(`[${mode}]`)} Would delete branch: ${logger_service_1.LoggerService.cyan(branch.name)}`);
                 return { name: branch.name, deleted: false, reason: 'dry-run or disabled' };
             }
@@ -314,7 +318,9 @@ class BranchProcessor {
                         name: branch.name,
                         commit: {
                             sha: branch.commit.sha,
-                            date: new Date(((_a = commit.commit.committer) === null || _a === void 0 ? void 0 : _a.date) || ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.date) || new Date())
+                            date: new Date(((_a = commit.commit.committer) === null || _a === void 0 ? void 0 : _a.date) ||
+                                ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.date) ||
+                                new Date())
                         },
                         protected: branch.protected
                     });
@@ -352,10 +358,11 @@ class BranchProcessor {
         }
         // Glob pattern matching (simple implementation)
         // Convert glob pattern to regex
+        // First escape special regex characters except for wildcards
         const regexPattern = pattern
-            .replace(/\./g, '\\.')
-            .replace(/\*/g, '.*')
-            .replace(/\?/g, '.');
+            .replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape all special chars including backslash
+            .replace(/\*/g, '.*') // Convert * to .*
+            .replace(/\?/g, '.'); // Convert ? to .
         const regex = new RegExp(`^${regexPattern}$`);
         return regex.test(branchName);
     }
@@ -700,7 +707,9 @@ class IssuesProcessor {
             if (issues.length <= 0) {
                 this._logger.info(logger_service_1.LoggerService.green(`No more issues found to process. Exiting...`));
                 // Process stale branches after all issues are processed (only on first page when no issues found)
-                if (page === 1 && this.options.staleBranches && this.operations.hasRemainingOperations()) {
+                if (page === 1 &&
+                    this.options.staleBranches &&
+                    this.operations.hasRemainingOperations()) {
                     yield this._processStaleBranches();
                 }
                 (_a = this.statistics) === null || _a === void 0 ? void 0 : _a.setOperationsCount(this.operations.getConsumedOperationsCount()).logStats();
@@ -2933,7 +2942,12 @@ function _getAndValidateArgs() {
             throw new Error(errorMessage);
         }
     }
-    for (const numberInput of ['days-before-close', 'operations-per-run', 'stale-branch-days', 'max-branch-deletions-per-run']) {
+    for (const numberInput of [
+        'days-before-close',
+        'operations-per-run',
+        'stale-branch-days',
+        'max-branch-deletions-per-run'
+    ]) {
         if (isNaN(parseInt(core.getInput(numberInput)))) {
             const errorMessage = `Option "${numberInput}" did not parse to a valid integer`;
             core.setFailed(errorMessage);
