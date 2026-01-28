@@ -50,5 +50,12 @@ export enum Option {
   IgnorePrUpdates = 'ignore-pr-updates',
   ExemptDraftPr = 'exempt-draft-pr',
   CloseIssueReason = 'close-issue-reason',
-  OnlyIssueTypes = 'only-issue-types'
+  OnlyIssueTypes = 'only-issue-types',
+  StaleBranches = 'stale-branches',
+  StaleBranchDays = 'stale-branch-days',
+  DeleteStaleBranches = 'delete-stale-branches',
+  ExemptBranches = 'exempt-branches',
+  ExemptProtectedBranches = 'exempt-protected-branches',
+  MaxBranchDeletionsPerRun = 'max-branch-deletions-per-run',
+  DryRun = 'dry-run'
 }

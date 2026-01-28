@@ -56,5 +56,12 @@ export const DefaultProcessorOptions: IIssuesProcessorOptions = Object.freeze({
   ignorePrUpdates: undefined,
   exemptDraftPr: false,
   closeIssueReason: 'not_planned',
-  includeOnlyAssigned: false
+  includeOnlyAssigned: false,
+  staleBranches: false,
+  staleBranchDays: 30,
+  deleteStaleBranches: false,
+  exemptBranches: '',
+  exemptProtectedBranches: true,
+  maxBranchDeletionsPerRun: 10,
+  dryRun: false
 });

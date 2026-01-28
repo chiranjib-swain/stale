@@ -30,6 +30,7 @@ import {IState} from '../interfaces/state/state';
 import {IRateLimit} from '../interfaces/rate-limit';
 import {RateLimit} from './rate-limit';
 import {getSortField} from '../functions/get-sort-field';
+import {BranchProcessor} from './branch-processor';
 
 /***
  * Handle processing of issues for staleness/closure.
@@ -75,6 +76,7 @@ export class IssuesProcessor {
   readonly removedLabelIssues: Issue[] = [];
   readonly addedLabelIssues: Issue[] = [];
   readonly addedCloseCommentIssues: Issue[] = [];
+  readonly deletedBranches: string[] = [];
   readonly statistics: Statistics | undefined;
   private readonly _logger: Logger = new Logger();
   private readonly state: IState;
@@ -113,6 +115,12 @@ export class IssuesProcessor {
       this._logger.info(
         LoggerService.green(`No more issues found to process. Exiting...`)
       );
+
+      // Process stale branches after all issues are processed (only on first page when no issues found)
+      if (page === 1 && this.options.staleBranches && this.operations.hasRemainingOperations()) {
+        await this._processStaleBranches();
+      }
+
       this.statistics
         ?.setOperationsCount(this.operations.getConsumedOperationsCount())
         .logStats();
@@ -1315,5 +1323,28 @@ export class IssuesProcessor {
     }
 
     return Option.RemoveStaleWhenUpdated;
+  }
+
+  private async _processStaleBranches(): Promise<void> {
+    try {
+      const branchProcessor = new BranchProcessor(
+        this.client,
+        this.options,
+        this.operations
+      );
+
+      const deletedBranches = await branchProcessor.processBranches();
+      this.deletedBranches.push(...deletedBranches);
+
+      if (this.statistics) {
+        const deletedCount = branchProcessor.getDeletedBranchesCount();
+        for (let i = 0; i < deletedCount; i++) {
+          this.statistics.incrementDeletedBranchesCount();
+        }
+      }
+    } catch (error) {
+      this._logger.error(`Error processing stale branches: ${error.message}`);
+      core.error(error);
+    }
   }
 }

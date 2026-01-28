@@ -56,4 +56,11 @@ export interface IIssuesProcessorOptions {
   closeIssueReason: string;
   includeOnlyAssigned: boolean;
   onlyIssueTypes?: string;
+  staleBranches: boolean;
+  staleBranchDays: number;
+  deleteStaleBranches: boolean;
+  exemptBranches: string;
+  exemptProtectedBranches: boolean;
+  maxBranchDeletionsPerRun: number;
+  dryRun: boolean;
 }

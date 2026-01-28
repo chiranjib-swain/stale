@@ -212,11 +212,41 @@ inputs:
     description: 'Only issues with a matching type are processed as stale/closed. Defaults to `[]` (disabled) and can be a comma-separated list of issue types.'
     default: ''
     required: false
+  stale-branches:
+    description: 'Enable scanning and cleanup of stale branches. Default to false.'
+    default: 'false'
+    required: false
+  stale-branch-days:
+    description: 'The number of days since the last commit on a branch to consider it stale. Only applies when stale-branches is enabled.'
+    default: '30'
+    required: false
+  delete-stale-branches:
+    description: 'Actually delete stale branches. If false, only reports stale candidates (dry-run mode for branch deletion). Default to false.'
+    default: 'false'
+    required: false
+  exempt-branches:
+    description: 'Comma-separated list of branch names or glob patterns to never delete (e.g., "main,master,develop,release/*"). Default branches and protected branches are automatically exempted.'
+    default: ''
+    required: false
+  exempt-protected-branches:
+    description: 'Exempt all protected branches from deletion. Default to true.'
+    default: 'true'
+    required: false
+  max-branch-deletions-per-run:
+    description: 'Maximum number of branches to delete per run to prevent accidental mass deletion.'
+    default: '10'
+    required: false
+  dry-run:
+    description: 'Run the action in dry-run mode without performing any destructive operations.'
+    default: 'false'
+    required: false
 outputs:
   closed-issues-prs:
     description: 'List of all closed issues and pull requests.'
   staled-issues-prs:
     description: 'List of all staled issues and pull requests.'
+  deleted-branches:
+    description: 'List of all deleted stale branches.'
 runs:
   using: 'node24'
   main: 'dist/index.js'
