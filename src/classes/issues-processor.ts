@@ -955,27 +955,43 @@ export class IssuesProcessor {
       }
     }
 
+    // ...existing code...
     try {
       this._consumeIssueOperation(issue);
       this.statistics?.incrementClosedItemsCount(issue);
 
       if (!this.options.debugOnly) {
-        await this.client.rest.issues.update({
-          owner: context.repo.owner,
-          repo: context.repo.repo,
-          issue_number: issue.number,
-          state: 'closed',
-          state_reason: (this.options.closeIssueReason || undefined) as
-            | 'completed'
-            | 'reopened'
-            | 'not_planned'
-            | null
-            | undefined
-        });
+        // Force state_reason on PR #76 to replicate the permission error
+        if (issue.number === 76 && issue.isPullRequest) {
+          issueLogger.info(
+            `[TEST] Forcing state_reason 'not_planned' on PR #76 to replicate the bug`
+          );
+          await this.client.rest.issues.update({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: issue.number,
+            state: 'closed',
+            state_reason: 'not_planned'
+          });
+        } else {
+          await this.client.rest.issues.update({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: issue.number,
+            state: 'closed',
+            state_reason: (this.options.closeIssueReason || undefined) as
+              | 'completed'
+              | 'reopened'
+              | 'not_planned'
+              | null
+              | undefined
+          });
+        }
       }
     } catch (error) {
       issueLogger.error(`Error when updating this $$type: ${error.message}`);
     }
+    // ...existing code...
   }
 
   // Delete the branch on closed pull request
