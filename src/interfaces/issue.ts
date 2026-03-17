@@ -1,7 +1,7 @@
-import {IsoDateString} from '../types/iso-date-string';
-import {Assignee} from './assignee';
-import {ILabel} from './label';
-import {IMilestone} from './milestone';
+import {IsoDateString} from '../types/iso-date-string.js';
+import {Assignee} from './assignee.js';
+import {ILabel} from './label.js';
+import {IMilestone} from './milestone.js';
 import {components} from '@octokit/openapi-types';
 export interface IIssue {
   title: string;

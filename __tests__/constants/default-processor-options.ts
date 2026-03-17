@@ -1,4 +1,4 @@
-import {IIssuesProcessorOptions} from '../../src/interfaces/issues-processor-options';
+import {IIssuesProcessorOptions} from '../../src/interfaces/issues-processor-options.js';
 
 // Default options for use in tests.
 // Mirrors the defaults defined in action.yml

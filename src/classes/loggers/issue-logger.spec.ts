@@ -1,7 +1,7 @@
-import {DefaultProcessorOptions} from '../../../__tests__/constants/default-processor-options';
-import {generateIIssue} from '../../../__tests__/functions/generate-iissue';
-import {Issue} from '../issue';
-import {IssueLogger} from './issue-logger';
+import {DefaultProcessorOptions} from '../../../__tests__/constants/default-processor-options.js';
+import {generateIIssue} from '../../../__tests__/functions/generate-iissue.js';
+import {Issue} from '../issue.js';
+import {IssueLogger} from './issue-logger.js';
 import * as core from '@actions/core';
 
 describe('IssueLogger', (): void => {

@@ -1,4 +1,7 @@
-import {isDateEqualTo, isDateMoreRecentThan} from './is-date-more-recent-than';
+import {
+  isDateEqualTo,
+  isDateMoreRecentThan
+} from './is-date-more-recent-than.js';
 
 describe('isDateMoreRecentThan()', (): void => {
   let date: Date;

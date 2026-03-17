@@ -1,7 +1,7 @@
-import {IssueID, State} from './state';
-import {IIssuesProcessorOptions} from '../../interfaces/issues-processor-options';
-import {IIssue} from '../../interfaces/issue';
-import {IState} from '../../interfaces/state/state';
+import {IssueID, State} from './state.js';
+import {IIssuesProcessorOptions} from '../../interfaces/issues-processor-options.js';
+import {IIssue} from '../../interfaces/issue.js';
+import {IState} from '../../interfaces/state/state.js';
 import * as core from '@actions/core';
 
 const mockStorage = {

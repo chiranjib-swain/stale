@@ -1,9 +1,9 @@
-import {Option} from '../enums/option';
-import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options';
-import {IPullRequest} from '../interfaces/pull-request';
-import {LoggerService} from '../services/logger.service';
-import {Issue} from './issue';
-import {IssueLogger} from './loggers/issue-logger';
+import {Option} from '../enums/option.js';
+import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options.js';
+import {IPullRequest} from '../interfaces/pull-request.js';
+import {LoggerService} from '../services/logger.service.js';
+import {Issue} from './issue.js';
+import {IssueLogger} from './loggers/issue-logger.js';
 
 export class ExemptDraftPullRequest {
   private readonly _options: IIssuesProcessorOptions;

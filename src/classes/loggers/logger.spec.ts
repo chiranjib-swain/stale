@@ -1,4 +1,4 @@
-import {Logger} from './logger';
+import {Logger} from './logger.js';
 import * as core from '@actions/core';
 
 describe('Logger', (): void => {

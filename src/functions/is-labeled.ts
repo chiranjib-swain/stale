@@ -1,6 +1,6 @@
-import {Issue} from '../classes/issue';
-import {ILabel} from '../interfaces/label';
-import {cleanLabel} from './clean-label';
+import {Issue} from '../classes/issue.js';
+import {ILabel} from '../interfaces/label.js';
+import {cleanLabel} from './clean-label.js';
 
 /**
  * @description

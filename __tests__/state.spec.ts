@@ -1,11 +1,11 @@
-import {IStateStorage} from '../src/interfaces/state/state-storage';
-import {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options';
-import {DefaultProcessorOptions} from './constants/default-processor-options';
-import {Issue} from '../src/classes/issue';
-import {generateIssue} from './functions/generate-issue';
-import {IssuesProcessorMock} from './classes/issues-processor-mock';
-import {IssueID, State} from '../src/classes/state/state';
-import {IState} from '../src/interfaces/state/state';
+import {IStateStorage} from '../src/interfaces/state/state-storage.js';
+import {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options.js';
+import {DefaultProcessorOptions} from './constants/default-processor-options.js';
+import {Issue} from '../src/classes/issue.js';
+import {generateIssue} from './functions/generate-issue.js';
+import {IssuesProcessorMock} from './classes/issues-processor-mock.js';
+import {IssueID, State} from '../src/classes/state/state.js';
+import {IState} from '../src/interfaces/state/state.js';
 import * as core from '@actions/core';
 
 const stateStorage: IStateStorage = {

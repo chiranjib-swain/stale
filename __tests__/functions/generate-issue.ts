@@ -1,7 +1,7 @@
-import {Issue} from '../../src/classes/issue';
-import {IUserAssignee} from '../../src/interfaces/assignee';
-import {IIssuesProcessorOptions} from '../../src/interfaces/issues-processor-options';
-import {IsoDateString} from '../../src/types/iso-date-string';
+import {Issue} from '../../src/classes/issue.js';
+import {IUserAssignee} from '../../src/interfaces/assignee.js';
+import {IIssuesProcessorOptions} from '../../src/interfaces/issues-processor-options.js';
+import {IsoDateString} from '../../src/types/iso-date-string.js';
 
 export function generateIssue(
   options: IIssuesProcessorOptions,

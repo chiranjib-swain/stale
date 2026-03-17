@@ -1,7 +1,7 @@
-import {IState} from '../interfaces/state/state';
-import {State} from '../classes/state/state';
-import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options';
-import {StateCacheStorage} from '../classes/state/state-cache-storage';
+import {IState} from '../interfaces/state/state.js';
+import {State} from '../classes/state/state.js';
+import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options.js';
+import {StateCacheStorage} from '../classes/state/state-cache-storage.js';
 
 export const getStateInstance = (options: IIssuesProcessorOptions): IState => {
   const storage = new StateCacheStorage();

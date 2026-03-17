@@ -1,4 +1,4 @@
-import {IRateLimit, OctokitRateLimit} from '../interfaces/rate-limit';
+import {IRateLimit, OctokitRateLimit} from '../interfaces/rate-limit.js';
 
 export class RateLimit implements IRateLimit {
   readonly limit: number;
