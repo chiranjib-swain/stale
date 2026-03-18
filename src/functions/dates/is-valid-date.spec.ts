@@ -1,4 +1,4 @@
-import {isValidDate} from './is-valid-date';
+import {isValidDate} from './is-valid-date.js';
 
 describe('isValidDate()', (): void => {
   let date: Date;

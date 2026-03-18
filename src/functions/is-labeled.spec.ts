@@ -1,5 +1,5 @@
-import {Issue} from '../classes/issue';
-import {isLabeled} from './is-labeled';
+import {Issue} from '../classes/issue.js';
+import {isLabeled} from './is-labeled.js';
 
 describe('isLabeled()', (): void => {
   let issue: Issue;

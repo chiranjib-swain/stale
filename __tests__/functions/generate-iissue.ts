@@ -1,4 +1,4 @@
-import {IIssue} from '../../src/interfaces/issue';
+import {IIssue} from '../../src/interfaces/issue.js';
 
 export function generateIIssue(
   partialIssue?: Readonly<Partial<IIssue>>

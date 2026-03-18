@@ -1,6 +1,6 @@
-import {Issue} from '../issue';
-import {Logger} from './logger';
-import {LoggerService} from '../../services/logger.service';
+import {Issue} from '../issue.js';
+import {Logger} from './logger.js';
+import {LoggerService} from '../../services/logger.service.js';
 
 /**
  * @description

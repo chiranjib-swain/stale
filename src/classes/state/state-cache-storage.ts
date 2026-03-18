@@ -1,4 +1,4 @@
-import {IStateStorage} from '../../interfaces/state/state-storage';
+import {IStateStorage} from '../../interfaces/state/state-storage.js';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';

@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import terminalLink from 'terminal-link';
-import {Option} from '../../enums/option';
-import {LoggerService} from '../../services/logger.service';
+import {Option} from '../../enums/option.js';
+import {LoggerService} from '../../services/logger.service.js';
 
 export class Logger {
   warning(...message: string[]): void {
