@@ -8,7 +8,14 @@ module.exports = {
   testMatch: ['**/*.test.ts', '**/*.spec.ts'],
   testRunner: 'jest-circus/runner',
   transform: {
-    '^.+\\.ts$': ['ts-jest', {tsconfig: 'tsconfig.spec.json'}]
+    '^.+\\.ts$': ['ts-jest', {tsconfig: 'tsconfig.spec.json'}],
+    '^.+\\.js$': [
+      'ts-jest',
+      {tsconfig: 'tsconfig.spec.json', diagnostics: false}
+    ]
   },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(@octokit|universal-user-agent|before-after-hook)/)'
+  ],
   verbose: true
 };

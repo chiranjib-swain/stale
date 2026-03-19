@@ -594,7 +594,7 @@ export class IssuesProcessor {
       this.statistics?.incrementFetchedItemsCount(issueResult.data.length);
 
       return issueResult.data.map(
-        (issue): Issue =>
+        (issue: OctokitIssue): Issue =>
           new Issue(this.options, issue as Readonly<OctokitIssue>)
       );
     } catch (error) {
