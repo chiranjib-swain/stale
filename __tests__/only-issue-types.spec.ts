@@ -74,6 +74,9 @@ describe('only-issue-types option', () => {
   });
   test('should process allowed issue types and skip PRs without logs', async () => {
     const infoSpy = jest.spyOn(core, 'info');
+    const groupSpy = jest.spyOn(core, 'group');
+    const warningSpy = jest.spyOn(core, 'warning');
+
     const opts: IIssuesProcessorOptions = {
       ...DefaultProcessorOptions,
       onlyIssueTypes: 'bug'
@@ -133,14 +136,22 @@ describe('only-issue-types option', () => {
       async () => new Date().toDateString()
     );
     await processor.processIssues(1);
+
     // Only the bug issue is processed
     expect(processor.staleIssues.map(i => i.title)).toEqual(['A bug issue']);
-    // PR is silently skipped — no logs should mention it
-    const allLogs = infoSpy.mock.calls
-      .map((c: string[]) => c.join(' '))
-      .join('\n');
-    expect(allLogs).not.toContain('pull request');
+
+    // PR is silently skipped — no logs should mention it across all logging methods
+    const infoLogs = infoSpy.mock.calls.map(c => c[0]).join('\n');
+    const warningLogs = warningSpy.mock.calls.map(c => c[0]).join('\n');
+    const groupLogs = groupSpy.mock.calls.map(c => c[0]).join('\n');
+    const allLogs = [infoLogs, warningLogs, groupLogs].join('\n');
+
+    // Case-insensitive regex handles variations and ANSI codes
+    expect(allLogs).not.toMatch(/pull request/i);
+
     infoSpy.mockRestore();
+    groupSpy.mockRestore();
+    warningSpy.mockRestore();
   });
 
   test('should process all issues and PRs if onlyIssueTypes is unset', async () => {
