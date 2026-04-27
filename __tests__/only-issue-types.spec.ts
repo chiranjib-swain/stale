@@ -136,7 +136,9 @@ describe('only-issue-types option', () => {
     // Only the bug issue is processed
     expect(processor.staleIssues.map(i => i.title)).toEqual(['A bug issue']);
     // PR is silently skipped — no logs should mention it
-    const allLogs = infoSpy.mock.calls.map((c: string[]) => c.join(' ')).join('\n');
+    const allLogs = infoSpy.mock.calls
+      .map((c: string[]) => c.join(' '))
+      .join('\n');
     expect(allLogs).not.toContain('pull request');
     infoSpy.mockRestore();
   });
