@@ -4,6 +4,7 @@ import {IssuesProcessorMock} from './classes/issues-processor-mock';
 import {DefaultProcessorOptions} from './constants/default-processor-options';
 import {generateIssue} from './functions/generate-issue';
 import {alwaysFalseStateMock} from './classes/state-mock';
+import * as core from '@actions/core';
 
 describe('only-issue-types option', () => {
   test('should only process issues with allowed type', async () => {
@@ -71,7 +72,8 @@ describe('only-issue-types option', () => {
       'A question'
     ]);
   });
-  test('should only process allowed issue types and skip PRs', async () => {
+  test('should process allowed issue types and skip PRs without logs', async () => {
+    const infoSpy = jest.spyOn(core, 'info');
     const opts: IIssuesProcessorOptions = {
       ...DefaultProcessorOptions,
       onlyIssueTypes: 'bug'
@@ -131,12 +133,15 @@ describe('only-issue-types option', () => {
       async () => new Date().toDateString()
     );
     await processor.processIssues(1);
-    // The bug issue is allowed by onlyIssueTypes, the feature issue is skipped,
-    // and the PR is skipped because onlyIssueTypes only filters issues (not PRs)
+    // Only the bug issue is processed
     expect(processor.staleIssues.map(i => i.title)).toEqual(['A bug issue']);
+    // PR is silently skipped — no logs should mention it
+    const allLogs = infoSpy.mock.calls.map((c: string[]) => c.join(' ')).join('\n');
+    expect(allLogs).not.toContain('pull request');
+    infoSpy.mockRestore();
   });
 
-  test('should process all issues if onlyIssueTypes is unset', async () => {
+  test('should process all issues and PRs if onlyIssueTypes is unset', async () => {
     const opts: IIssuesProcessorOptions = {
       ...DefaultProcessorOptions,
       onlyIssueTypes: ''
@@ -171,6 +176,21 @@ describe('only-issue-types option', () => {
         undefined,
         [],
         'feature'
+      ),
+      generateIssue(
+        opts,
+        3,
+        'A pull request',
+        '2020-01-01T17:00:00Z',
+        '2020-01-01T17:00:00Z',
+        false,
+        true,
+        [],
+        false,
+        false,
+        undefined,
+        [],
+        'feature'
       )
     ];
     const processor = new IssuesProcessorMock(
@@ -183,7 +203,8 @@ describe('only-issue-types option', () => {
     await processor.processIssues(1);
     expect(processor.staleIssues.map(i => i.title)).toEqual([
       'A bug',
-      'A feature'
+      'A feature',
+      'A pull request'
     ]);
   });
 });
