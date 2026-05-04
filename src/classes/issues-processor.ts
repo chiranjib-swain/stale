@@ -257,10 +257,6 @@ export class IssuesProcessor {
     }
 
     if (this.options.onlyIssueTypes) {
-      if (issue.isPullRequest) {
-        IssuesProcessor._endIssueProcessing(issue);
-        return;
-      }
       const allowedTypes = this.options.onlyIssueTypes
         .split(',')
         .map(t => t.trim().toLowerCase())
