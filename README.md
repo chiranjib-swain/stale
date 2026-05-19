@@ -569,8 +569,7 @@ A comma separated list of allowed issue types. Only issues with a matching type 
 
 If unset (or an empty string), this option will not alter the stale workflow.
 
-> [!NOTE]
-> This option applies to **Issues only**. Since Pull Requests do not have a `type` field in GitHub's data model, **all PRs will be skipped entirely** when this option is set.
+> **Note**: This option applies to **Issues only**. Since Pull Requests do not have a `type` field in GitHub's data model, **all PRs will be skipped entirely** when this option is set.
 
 Default value: unset
 
