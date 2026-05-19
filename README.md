@@ -106,7 +106,7 @@ Every argument is optional.
 | [ignore-pr-updates](#ignore-pr-updates)                             | Override [ignore-updates](#ignore-updates) for PRs only                     |                       |
 | [include-only-assigned](#include-only-assigned)                     | Process only assigned issues                                                | `false`               |
 | [sort-by](#sort-by)                                                 | What to sort issues and PRs by                                              | `created`             |
-| [only-issue-types](#only-issue-types)                               | Only issues with a matching type are processed as stale/closed.             |                       |
+| [only-issue-types](#only-issue-types)                               | Only issues with a matching type are processed as stale/closed. Issues only — all PRs are skipped when set. |                       |
 
 ### List of output options
 
@@ -568,6 +568,9 @@ Default value: `created`
 A comma separated list of allowed issue types. Only issues with a matching type will be processed (e.g.: `bug,question`).
 
 If unset (or an empty string), this option will not alter the stale workflow.
+
+> [!WARNING]
+> This option applies to **Issues only**. Since Pull Requests do not have a `type` field in GitHub's data model, **all PRs will be skipped entirely** when this option is set.
 
 Default value: unset
 
