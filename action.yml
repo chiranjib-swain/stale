@@ -105,11 +105,11 @@ inputs:
     default: ''
     required: false
   only-issue-labels:
-    description: 'Only issues with all of these labels are checked if stale. Defaults to `[]` (disabled) and can be a comma-separated list of labels. Override "only-labels" option regarding only the issues.'
+    description: 'Only issues with all of these labels are checked if stale. Defaults to `` (disabled) and can be a comma-separated list of labels. Override "only-labels" option regarding only the issues.'
     default: ''
     required: false
   only-pr-labels:
-    description: 'Only pull requests with all of these labels are checked if stale. Defaults to `[]` (disabled) and can be a comma-separated list of labels. Override "only-labels" option regarding only the pull requests.'
+    description: 'Only pull requests with all of these labels are checked if stale. Defaults to `` (disabled) and can be a comma-separated list of labels. Override "only-labels" option regarding only the pull requests.'
     default: ''
     required: false
   operations-per-run:
@@ -209,7 +209,7 @@ inputs:
     default: 'false'
     required: false
   only-issue-types:
-    description: 'Only issues with a matching type are processed as stale/closed. Since Pull Requests do not have a type in GitHub''s data model, all PRs will be skipped when this option is set. Defaults to `[]` (disabled) and can be a comma-separated list of issue types.'
+    description: 'Only issues with a matching type are processed as stale/closed. Since Pull Requests do not have a type in GitHub''s data model, all PRs will be skipped when this option is set. Defaults to `` (disabled) and can be a comma-separated list of issue types.'
     default: ''
     required: false
 outputs:
