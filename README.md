@@ -106,7 +106,7 @@ Every argument is optional.
 | [ignore-pr-updates](#ignore-pr-updates)                             | Override [ignore-updates](#ignore-updates) for PRs only                     |                       |
 | [include-only-assigned](#include-only-assigned)                     | Process only assigned issues                                                | `false`               |
 | [sort-by](#sort-by)                                                 | What to sort issues and PRs by                                              | `created`             |
-| [only-issue-types](#only-issue-types)                               | Only issues with a matching type are processed as stale/closed. Issues only — all PRs are skipped when set. |                       |
+| [only-issue-types](#only-issue-types)                               | Only issues with a matching type are processed as stale/closed. All PRs are skipped when this option is set. |                       |
 
 ### List of output options
 
