@@ -87,7 +87,7 @@ describe('State', () => {
     });
   });
   describe('persisting', () => {
-    it('[1,2,3] should be serialized and persisted as to "1|2|3|', async () => {
+    it('[1,2,3] should be serialized and persisted as "1|2|3|', async () => {
       const localStorage = {
         save: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
         async restore(): Promise<string> {

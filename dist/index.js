@@ -106024,7 +106024,7 @@ const unlinkSafely = (filePath) => {
     try {
         external_fs_namespaceObject.unlinkSync(filePath);
     }
-    catch (foo) {
+    catch {
         /* ignore */
     }
 };
