@@ -1,5 +1,5 @@
-import {Issue} from '../classes/issue';
-import {isPullRequest} from './is-pull-request';
+import {Issue} from '../classes/issue.js';
+import {isPullRequest} from './is-pull-request.js';
 
 describe('isPullRequest()', (): void => {
   let issue: Issue;

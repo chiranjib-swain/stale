@@ -3,6 +3,10 @@
 [![Basic validation](https://github.com/actions/stale/actions/workflows/basic-validation.yml/badge.svg?branch=main)](https://github.com/actions/stale/actions/workflows/basic-validation.yml)
 [![e2e tests](https://github.com/actions/stale/actions/workflows/e2e-tests.yml/badge.svg?branch=main)](https://github.com/actions/stale/actions/workflows/e2e-tests.yml)
 
+## Breaking changes in V11
+
+- **Migrated to ESM** to support the latest `@actions/*` package versions.
+
 ## Breaking changes in V10
 
 - Upgraded action from node20 to node 24

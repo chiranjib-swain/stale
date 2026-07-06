@@ -1,4 +1,4 @@
-import {Operations} from './operations';
+import {Operations} from './operations.js';
 
 describe('Operations', (): void => {
   let operations: Operations;

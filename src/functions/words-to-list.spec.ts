@@ -1,4 +1,4 @@
-import {wordsToList} from './words-to-list';
+import {wordsToList} from './words-to-list.js';
 
 describe('wordsToList()', (): void => {
   let words: string;

@@ -1,4 +1,4 @@
-import {getHumanizedDate} from './get-humanized-date';
+import {getHumanizedDate} from './get-humanized-date.js';
 
 describe('getHumanizedDate()', (): void => {
   let date: Date;

@@ -1,4 +1,4 @@
-import {shouldMarkWhenStale} from './should-mark-when-stale';
+import {shouldMarkWhenStale} from './should-mark-when-stale.js';
 
 describe('shouldMarkWhenStale()', (): void => {
   let daysBeforeStale: number;
