@@ -1,59 +1,62 @@
+// This is a reusable configuration file copied from https://github.com/actions/reusable-workflows/tree/main/reusable-configurations. Please don't make changes to this file as it's the subject of an automatic update.
 import js from '@eslint/js';
-import tseslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
-import eslintConfigPrettier from 'eslint-config-prettier';
-import globals from 'globals';
+import tsPlugin from '@typescript-eslint/eslint-plugin';
 import jest from 'eslint-plugin-jest';
 import n from 'eslint-plugin-n';
-
-const testFiles = ['**/*.{spec,test}.ts'];
+import prettier from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default [
   {
-    ignores: ['**/dist/**', '**/lib/**', '**/node_modules/**', '**/coverage/**']
+    ignores: ['**/*', '!src/**', '!__tests__/**']
   },
   js.configs.recommended,
   {
     files: ['**/*.ts'],
     languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
       parser: tsParser,
+      ecmaVersion: 2022,
+      sourceType: 'module',
       globals: {
-        ...globals.es2024,
-        ...globals.node
+        ...globals.node,
+        ...globals.es2015
       }
     },
     plugins: {
-      '@typescript-eslint': tseslint,
+      '@typescript-eslint': tsPlugin,
       n
     },
     rules: {
-      ...tseslint.configs.recommended.rules,
+      ...tsPlugin.configs.recommended.rules,
+      '@typescript-eslint/no-require-imports': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/ban-ts-comment': [
         'error',
         {
           'ts-ignore': 'allow-with-description'
         }
       ],
-      '@typescript-eslint/no-empty-function': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off',
-      '@typescript-eslint/no-require-imports': 'error',
-      'n/no-extraneous-import': 'error',
       'no-console': 'error',
-      'no-constant-condition': ['error', {checkLoops: false}],
-      'no-control-regex': 'off',
-      'prefer-const': ['error', {destructuring: 'all'}],
       yoda: 'error',
-      'no-undef': 'off'
+      'prefer-const': [
+        'error',
+        {
+          destructuring: 'all'
+        }
+      ],
+      'no-control-regex': 'off',
+      'no-constant-condition': ['error', {checkLoops: false}],
+      'no-undef': 'off',
+      'no-useless-assignment': 'off',
+      'n/no-extraneous-import': 'error'
     }
   },
   {
-    files: testFiles,
-    plugins: {
-      jest
-    },
+    files: ['**/*{test,spec}.ts'],
+    plugins: {jest},
     languageOptions: {
       globals: {
         ...globals.jest
@@ -62,10 +65,10 @@ export default [
     rules: {
       ...jest.configs['flat/recommended'].rules,
       '@typescript-eslint/no-unused-vars': 'off',
-      'jest/no-conditional-expect': 'off',
       'jest/no-standalone-expect': 'off',
+      'jest/no-conditional-expect': 'off',
       'no-console': 'off'
     }
   },
-  eslintConfigPrettier
+  prettier
 ];
