@@ -1,3 +1,4 @@
+import {beforeEach, describe, expect, it} from '@jest/globals';
 import {shouldMarkWhenStale} from './should-mark-when-stale.js';
 
 describe('shouldMarkWhenStale()', (): void => {

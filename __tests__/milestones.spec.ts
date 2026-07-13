@@ -1,3 +1,4 @@
+import {beforeEach, describe, expect, test} from '@jest/globals';
 import {Issue} from '../src/classes/issue.js';
 import {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options.js';
 import {IssuesProcessorMock} from './classes/issues-processor-mock.js';

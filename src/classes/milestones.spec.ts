@@ -1,3 +1,4 @@
+import {beforeEach, describe, expect, it} from '@jest/globals';
 import {DefaultProcessorOptions} from '../../__tests__/constants/default-processor-options.js';
 import {generateIIssue} from '../../__tests__/functions/generate-iissue.js';
 import {IIssue} from '../interfaces/issue.js';

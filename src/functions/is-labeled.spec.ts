@@ -1,3 +1,4 @@
+import {beforeEach, describe, expect, it} from '@jest/globals';
 import {Issue} from '../classes/issue.js';
 import {isLabeled} from './is-labeled.js';
 

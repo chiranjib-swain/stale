@@ -51855,7 +51855,9 @@ class IssuesProcessor {
             return issueResult.data.map((issue) => new Issue(this.options, issue));
         }
         catch (error) {
-            throw Error(`Getting issues was blocked by the error: ${error.message}`);
+            throw Error(`Getting issues was blocked by the error: ${error.message}`, {
+                cause: error
+            });
         }
     }
     // returns the creation date of a given label on an issue (or nothing if no label existed)

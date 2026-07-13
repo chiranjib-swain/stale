@@ -1,3 +1,4 @@
+import {beforeEach, describe, expect, it} from '@jest/globals';
 import {IUserAssignee} from '../interfaces/assignee.js';
 import {IIssue} from '../interfaces/issue.js';
 import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options.js';

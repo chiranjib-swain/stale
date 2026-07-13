@@ -1,4 +1,4 @@
-import {jest} from '@jest/globals';
+import {jest, afterEach, describe, expect, it} from '@jest/globals';
 import type {IIssue} from '../../interfaces/issue.js';
 import type {IIssuesProcessorOptions} from '../../interfaces/issues-processor-options.js';
 import type {IState} from '../../interfaces/state/state.js';

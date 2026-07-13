@@ -1,4 +1,4 @@
-import {jest} from '@jest/globals';
+import {jest, expect, it, test} from '@jest/globals';
 import * as github from '@actions/github';
 import {Issue} from '../src/classes/issue.js';
 import {IComment} from '../src/interfaces/comment.js';

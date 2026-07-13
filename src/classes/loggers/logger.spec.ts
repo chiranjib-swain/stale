@@ -1,4 +1,4 @@
-import {jest} from '@jest/globals';
+import {jest, beforeEach, describe, expect, it} from '@jest/globals';
 import type {Logger as LoggerType} from './logger.js';
 
 jest.unstable_mockModule('@actions/core', () => ({

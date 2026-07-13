@@ -1,10 +1,10 @@
-import {createDefaultEsmPreset} from 'ts-jest';
+import {createDefaultEsmPreset, type JestConfigWithTsJest} from 'ts-jest';
 
 const preset = createDefaultEsmPreset({
   tsconfig: './tsconfig.json'
 });
 
-export default {
+const config: JestConfigWithTsJest = {
   ...preset,
   clearMocks: true,
   moduleFileExtensions: ['js', 'mjs', 'cjs', 'ts', 'json', 'node'],
@@ -15,3 +15,5 @@ export default {
   testMatch: ['**/*.test.ts', '**/*.spec.ts'],
   verbose: true
 };
+
+export default config;

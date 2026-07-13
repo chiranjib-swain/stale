@@ -1,4 +1,4 @@
-import {jest} from '@jest/globals';
+import {jest, beforeEach, describe, expect, it} from '@jest/globals';
 import type {Issue as IssueType} from '../issue.js';
 import type {IssueLogger as IssueLoggerType} from './issue-logger.js';
 
