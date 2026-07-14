@@ -3,9 +3,9 @@
 [![Basic validation](https://github.com/actions/stale/actions/workflows/basic-validation.yml/badge.svg?branch=main)](https://github.com/actions/stale/actions/workflows/basic-validation.yml)
 [![e2e tests](https://github.com/actions/stale/actions/workflows/e2e-tests.yml/badge.svg?branch=main)](https://github.com/actions/stale/actions/workflows/e2e-tests.yml)
 
-## Breaking changes in V11
+## What's changed in V11
 
-- **Migrated to ESM** to support the latest `@actions/*` package versions.
+- **Migrated to ESM** internally to support the latest `@actions/*` package versions. No changes to action inputs, outputs, or behavior.
 
 ## Breaking changes in V10
 
