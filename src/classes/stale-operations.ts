@@ -1,5 +1,5 @@
-import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options';
-import {Operations} from './operations';
+import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options.js';
+import {Operations} from './operations.js';
 
 export class StaleOperations extends Operations {
   private readonly _options: IIssuesProcessorOptions;

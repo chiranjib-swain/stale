@@ -3,6 +3,6 @@ export function getSortField(sortOption: sortOptions): sortOptions {
   return sortOption === 'updated'
     ? 'updated'
     : sortOption === 'comments'
-    ? 'comments'
-    : 'created';
+      ? 'comments'
+      : 'created';
 }

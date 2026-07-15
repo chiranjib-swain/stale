@@ -1,10 +1,11 @@
-import {Issue} from '../src/classes/issue';
-import {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options';
-import {IsoDateString} from '../src/types/iso-date-string';
-import {IssuesProcessorMock} from './classes/issues-processor-mock';
-import {DefaultProcessorOptions} from './constants/default-processor-options';
-import {generateIssue} from './functions/generate-issue';
-import {alwaysFalseStateMock} from './classes/state-mock';
+import {beforeEach, describe, expect, it, test} from '@jest/globals';
+import {Issue} from '../src/classes/issue.js';
+import {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options.js';
+import {IsoDateString} from '../src/types/iso-date-string.js';
+import {IssuesProcessorMock} from './classes/issues-processor-mock.js';
+import {DefaultProcessorOptions} from './constants/default-processor-options.js';
+import {generateIssue} from './functions/generate-issue.js';
+import {alwaysFalseStateMock} from './classes/state-mock.js';
 
 describe('ignore-updates options', (): void => {
   let sut: SUT;

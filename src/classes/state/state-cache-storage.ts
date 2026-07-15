@@ -1,4 +1,4 @@
-import {IStateStorage} from '../../interfaces/state/state-storage';
+import {IStateStorage} from '../../interfaces/state/state-storage.js';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -20,7 +20,7 @@ const mkTempDir = (): string => {
 const unlinkSafely = (filePath: string) => {
   try {
     fs.unlinkSync(filePath);
-  } catch (foo) {
+  } catch {
     /* ignore */
   }
 };

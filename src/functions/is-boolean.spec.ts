@@ -1,4 +1,5 @@
-import {isBoolean} from './is-boolean';
+import {describe, expect, it} from '@jest/globals';
+import {isBoolean} from './is-boolean.js';
 
 describe('isBoolean()', (): void => {
   describe.each([0, 1, undefined, null, ''])(

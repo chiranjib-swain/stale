@@ -1,35 +1,34 @@
 import * as core from '@actions/core';
 import {context, getOctokit} from '@actions/github';
-import {GitHub} from '@actions/github/lib/utils';
-import {Option} from '../enums/option';
-import {getHumanizedDate} from '../functions/dates/get-humanized-date';
-import {isDateMoreRecentThan} from '../functions/dates/is-date-more-recent-than';
-import {isValidDate} from '../functions/dates/is-valid-date';
-import {isBoolean} from '../functions/is-boolean';
-import {isLabeled} from '../functions/is-labeled';
-import {cleanLabel} from '../functions/clean-label';
-import {shouldMarkWhenStale} from '../functions/should-mark-when-stale';
-import {wordsToList} from '../functions/words-to-list';
-import {IComment} from '../interfaces/comment';
-import {IIssueEvent} from '../interfaces/issue-event';
-import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options';
-import {IPullRequest} from '../interfaces/pull-request';
-import {Assignees} from './assignees';
-import {IgnoreUpdates} from './ignore-updates';
-import {ExemptDraftPullRequest} from './exempt-draft-pull-request';
-import {Issue} from './issue';
-import {IssueLogger} from './loggers/issue-logger';
-import {Logger} from './loggers/logger';
-import {Milestones} from './milestones';
-import {StaleOperations} from './stale-operations';
-import {Statistics} from './statistics';
-import {LoggerService} from '../services/logger.service';
-import {OctokitIssue} from '../interfaces/issue';
+import {Option} from '../enums/option.js';
+import {getHumanizedDate} from '../functions/dates/get-humanized-date.js';
+import {isDateMoreRecentThan} from '../functions/dates/is-date-more-recent-than.js';
+import {isValidDate} from '../functions/dates/is-valid-date.js';
+import {isBoolean} from '../functions/is-boolean.js';
+import {isLabeled} from '../functions/is-labeled.js';
+import {cleanLabel} from '../functions/clean-label.js';
+import {shouldMarkWhenStale} from '../functions/should-mark-when-stale.js';
+import {wordsToList} from '../functions/words-to-list.js';
+import {IComment} from '../interfaces/comment.js';
+import {IIssueEvent} from '../interfaces/issue-event.js';
+import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options.js';
+import {IPullRequest} from '../interfaces/pull-request.js';
+import {Assignees} from './assignees.js';
+import {IgnoreUpdates} from './ignore-updates.js';
+import {ExemptDraftPullRequest} from './exempt-draft-pull-request.js';
+import {Issue} from './issue.js';
+import {IssueLogger} from './loggers/issue-logger.js';
+import {Logger} from './loggers/logger.js';
+import {Milestones} from './milestones.js';
+import {StaleOperations} from './stale-operations.js';
+import {Statistics} from './statistics.js';
+import {LoggerService} from '../services/logger.service.js';
+import {OctokitIssue} from '../interfaces/issue.js';
 import {retry} from '@octokit/plugin-retry';
-import {IState} from '../interfaces/state/state';
-import {IRateLimit} from '../interfaces/rate-limit';
-import {RateLimit} from './rate-limit';
-import {getSortField} from '../functions/get-sort-field';
+import {IState} from '../interfaces/state/state.js';
+import {IRateLimit} from '../interfaces/rate-limit.js';
+import {RateLimit} from './rate-limit.js';
+import {getSortField} from '../functions/get-sort-field.js';
 
 /***
  * Handle processing of issues for staleness/closure.
@@ -67,7 +66,7 @@ export class IssuesProcessor {
   }
 
   readonly operations: StaleOperations;
-  readonly client: InstanceType<typeof GitHub>;
+  readonly client: ReturnType<typeof getOctokit>;
   readonly options: IIssuesProcessorOptions;
   readonly staleIssues: Issue[] = [];
   readonly closedIssues: Issue[] = [];
@@ -599,7 +598,9 @@ export class IssuesProcessor {
           new Issue(this.options, issue as Readonly<OctokitIssue>)
       );
     } catch (error) {
-      throw Error(`Getting issues was blocked by the error: ${error.message}`);
+      throw Error(`Getting issues was blocked by the error: ${error.message}`, {
+        cause: error
+      });
     }
   }
 
@@ -1032,11 +1033,7 @@ export class IssuesProcessor {
           issue_number: issue.number,
           state: 'closed',
           state_reason: (this.options.closeIssueReason || undefined) as
-            | 'completed'
-            | 'reopened'
-            | 'not_planned'
-            | null
-            | undefined
+            'completed' | 'reopened' | 'not_planned' | null | undefined
         });
       }
     } catch (error) {
@@ -1352,16 +1349,14 @@ export class IssuesProcessor {
   }
 
   private _getDaysBeforeIssueStaleUsedOptionName():
-    | Option.DaysBeforeStale
-    | Option.DaysBeforeIssueStale {
+    Option.DaysBeforeStale | Option.DaysBeforeIssueStale {
     return isNaN(this.options.daysBeforeIssueStale)
       ? Option.DaysBeforeStale
       : Option.DaysBeforeIssueStale;
   }
 
   private _getDaysBeforePrStaleUsedOptionName():
-    | Option.DaysBeforeStale
-    | Option.DaysBeforePrStale {
+    Option.DaysBeforeStale | Option.DaysBeforePrStale {
     return isNaN(this.options.daysBeforePrStale)
       ? Option.DaysBeforeStale
       : Option.DaysBeforePrStale;

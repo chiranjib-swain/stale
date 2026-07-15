@@ -1,4 +1,4 @@
-import {ILabel} from './label';
+import {ILabel} from './label.js';
 
 export interface IIssueEvent {
   created_at: string;

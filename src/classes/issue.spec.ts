@@ -1,9 +1,10 @@
-import {IUserAssignee} from '../interfaces/assignee';
-import {IIssue} from '../interfaces/issue';
-import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options';
-import {ILabel} from '../interfaces/label';
-import {IMilestone} from '../interfaces/milestone';
-import {Issue} from './issue';
+import {beforeEach, describe, expect, it} from '@jest/globals';
+import {IUserAssignee} from '../interfaces/assignee.js';
+import {IIssue} from '../interfaces/issue.js';
+import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options.js';
+import {ILabel} from '../interfaces/label.js';
+import {IMilestone} from '../interfaces/milestone.js';
+import {Issue} from './issue.js';
 
 describe('Issue', (): void => {
   let issue: Issue;

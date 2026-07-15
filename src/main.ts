@@ -1,9 +1,9 @@
 import * as core from '@actions/core';
-import {IssuesProcessor} from './classes/issues-processor';
-import {isValidDate} from './functions/dates/is-valid-date';
-import {IIssuesProcessorOptions} from './interfaces/issues-processor-options';
-import {Issue} from './classes/issue';
-import {getStateInstance} from './services/state.service';
+import {IssuesProcessor} from './classes/issues-processor.js';
+import {isValidDate} from './functions/dates/is-valid-date.js';
+import {IIssuesProcessorOptions} from './interfaces/issues-processor-options.js';
+import {Issue} from './classes/issue.js';
+import {getStateInstance} from './services/state.service.js';
 
 async function _run(): Promise<void> {
   try {
@@ -206,8 +206,8 @@ function _processParamtoString(
   return sortByValueInput === 'updated'
     ? 'updated'
     : sortByValueInput === 'comments'
-    ? 'comments'
-    : 'created';
+      ? 'comments'
+      : 'created';
 }
 
 void _run();

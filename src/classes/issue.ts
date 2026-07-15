@@ -1,12 +1,12 @@
-import {isLabeled} from '../functions/is-labeled';
-import {isPullRequest} from '../functions/is-pull-request';
-import {Assignee} from '../interfaces/assignee';
-import {IIssue, OctokitIssue} from '../interfaces/issue';
-import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options';
-import {ILabel} from '../interfaces/label';
-import {IMilestone} from '../interfaces/milestone';
-import {IsoDateString} from '../types/iso-date-string';
-import {Operations} from './operations';
+import {isLabeled} from '../functions/is-labeled.js';
+import {isPullRequest} from '../functions/is-pull-request.js';
+import {Assignee} from '../interfaces/assignee.js';
+import {IIssue, OctokitIssue} from '../interfaces/issue.js';
+import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options.js';
+import {ILabel} from '../interfaces/label.js';
+import {IMilestone} from '../interfaces/milestone.js';
+import {IsoDateString} from '../types/iso-date-string.js';
+import {Operations} from './operations.js';
 
 export class Issue implements IIssue {
   readonly title: string;
