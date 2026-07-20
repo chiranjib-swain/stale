@@ -45,6 +45,9 @@
     "@octokit/plugin-retry": "^8.1.0",
     "lodash.deburr": "^4.1.0"
   },
+  "overrides": {
+    "undici": "6.27.0"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@jest/globals": "^30.4.1",
