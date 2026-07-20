@@ -1,10 +1,10 @@
-import {Issue} from '../../src/classes/issue';
-import {IssuesProcessor} from '../../src/classes/issues-processor';
-import {IComment} from '../../src/interfaces/comment';
-import {IIssuesProcessorOptions} from '../../src/interfaces/issues-processor-options';
-import {IPullRequest} from '../../src/interfaces/pull-request';
-import {IState} from '../../src/interfaces/state/state';
-import {IIssueEvent} from '../../src/interfaces/issue-event';
+import {Issue} from '../../src/classes/issue.js';
+import {IssuesProcessor} from '../../src/classes/issues-processor.js';
+import {IComment} from '../../src/interfaces/comment.js';
+import {IIssuesProcessorOptions} from '../../src/interfaces/issues-processor-options.js';
+import {IPullRequest} from '../../src/interfaces/pull-request.js';
+import {IState} from '../../src/interfaces/state/state.js';
+import {IIssueEvent} from '../../src/interfaces/issue-event.js';
 
 export class IssuesProcessorMock extends IssuesProcessor {
   constructor(

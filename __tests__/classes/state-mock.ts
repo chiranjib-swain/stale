@@ -1,5 +1,5 @@
-import {IState} from '../../src/interfaces/state/state';
-import {IIssue} from '../../src/interfaces/issue';
+import {IState} from '../../src/interfaces/state/state.js';
+import {IIssue} from '../../src/interfaces/issue.js';
 
 export class StateMock implements IState {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

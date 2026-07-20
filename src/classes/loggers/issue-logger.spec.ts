@@ -1,15 +1,25 @@
-import {DefaultProcessorOptions} from '../../../__tests__/constants/default-processor-options';
-import {generateIIssue} from '../../../__tests__/functions/generate-iissue';
-import {Issue} from '../issue';
-import {IssueLogger} from './issue-logger';
-import * as core from '@actions/core';
+import {jest, beforeEach, describe, expect, it} from '@jest/globals';
+import type {Issue as IssueType} from '../issue.js';
+import type {IssueLogger as IssueLoggerType} from './issue-logger.js';
+
+jest.unstable_mockModule('@actions/core', () => ({
+  warning: jest.fn(),
+  info: jest.fn(),
+  error: jest.fn()
+}));
+
+const {DefaultProcessorOptions} =
+  await import('../../../__tests__/constants/default-processor-options.js');
+const {generateIIssue} =
+  await import('../../../__tests__/functions/generate-iissue.js');
+const {Issue} = await import('../issue.js');
+const {IssueLogger} = await import('./issue-logger.js');
+const core = await import('@actions/core');
 
 describe('IssueLogger', (): void => {
-  let issue: Issue;
-  let issueLogger: IssueLogger;
+  let issue: IssueType;
+  let issueLogger: IssueLoggerType;
   let message: string;
-
-  let coreWarningSpy: jest.SpyInstance;
 
   describe('warning()', (): void => {
     beforeEach((): void => {
@@ -21,8 +31,6 @@ describe('IssueLogger', (): void => {
         })
       );
       issueLogger = new IssueLogger(issue);
-
-      coreWarningSpy = jest.spyOn(core, 'warning').mockImplementation();
     });
 
     it('should log a warning with the given message and with the issue number as prefix', (): void => {
@@ -30,19 +38,17 @@ describe('IssueLogger', (): void => {
 
       issueLogger.warning(message);
 
-      expect(coreWarningSpy).toHaveBeenCalledTimes(1);
-      expect(coreWarningSpy).toHaveBeenCalledWith(
+      expect(jest.mocked(core.warning)).toHaveBeenCalledTimes(1);
+      expect(jest.mocked(core.warning)).toHaveBeenCalledWith(
         expect.stringContaining('[#8]')
       );
-      expect(coreWarningSpy).toHaveBeenCalledWith(
+      expect(jest.mocked(core.warning)).toHaveBeenCalledWith(
         expect.stringContaining('dummy-message')
       );
     });
   });
 
   describe('info()', (): void => {
-    let coreInfoSpy: jest.SpyInstance;
-
     beforeEach((): void => {
       message = 'dummy-message';
       issue = new Issue(
@@ -52,8 +58,6 @@ describe('IssueLogger', (): void => {
         })
       );
       issueLogger = new IssueLogger(issue);
-
-      coreInfoSpy = jest.spyOn(core, 'info').mockImplementation();
     });
 
     it('should log an information with the given message and with the issue number as prefix', (): void => {
@@ -61,17 +65,17 @@ describe('IssueLogger', (): void => {
 
       issueLogger.info(message);
 
-      expect(coreInfoSpy).toHaveBeenCalledTimes(1);
-      expect(coreInfoSpy).toHaveBeenCalledWith(expect.stringContaining('[#8]'));
-      expect(coreInfoSpy).toHaveBeenCalledWith(
+      expect(jest.mocked(core.info)).toHaveBeenCalledTimes(1);
+      expect(jest.mocked(core.info)).toHaveBeenCalledWith(
+        expect.stringContaining('[#8]')
+      );
+      expect(jest.mocked(core.info)).toHaveBeenCalledWith(
         expect.stringContaining('dummy-message')
       );
     });
   });
 
   describe('error()', (): void => {
-    let coreErrorSpy: jest.SpyInstance;
-
     beforeEach((): void => {
       message = 'dummy-message';
       issue = new Issue(
@@ -81,8 +85,6 @@ describe('IssueLogger', (): void => {
         })
       );
       issueLogger = new IssueLogger(issue);
-
-      coreErrorSpy = jest.spyOn(core, 'error').mockImplementation();
     });
 
     it('should log an error with the given message and with the issue number as prefix', (): void => {
@@ -90,11 +92,11 @@ describe('IssueLogger', (): void => {
 
       issueLogger.error(message);
 
-      expect(coreErrorSpy).toHaveBeenCalledTimes(1);
-      expect(coreErrorSpy).toHaveBeenCalledWith(
+      expect(jest.mocked(core.error)).toHaveBeenCalledTimes(1);
+      expect(jest.mocked(core.error)).toHaveBeenCalledWith(
         expect.stringContaining('[#8]')
       );
-      expect(coreErrorSpy).toHaveBeenCalledWith(
+      expect(jest.mocked(core.error)).toHaveBeenCalledWith(
         expect.stringContaining('dummy-message')
       );
     });
@@ -110,15 +112,14 @@ describe('IssueLogger', (): void => {
       })
     );
     issueLogger = new IssueLogger(issue);
-    coreWarningSpy = jest.spyOn(core, 'warning').mockImplementation();
 
     issueLogger.warning(message);
 
-    expect(coreWarningSpy).toHaveBeenCalledTimes(1);
-    expect(coreWarningSpy).toHaveBeenCalledWith(
+    expect(jest.mocked(core.warning)).toHaveBeenCalledTimes(1);
+    expect(jest.mocked(core.warning)).toHaveBeenCalledWith(
       expect.stringContaining('[#123]')
     );
-    expect(coreWarningSpy).toHaveBeenCalledWith(
+    expect(jest.mocked(core.warning)).toHaveBeenCalledWith(
       expect.stringContaining('dummy-message')
     );
   });
@@ -142,15 +143,14 @@ describe('IssueLogger', (): void => {
         })
       );
       issueLogger = new IssueLogger(issue);
-      coreWarningSpy = jest.spyOn(core, 'warning').mockImplementation();
 
       issueLogger.warning(message);
 
-      expect(coreWarningSpy).toHaveBeenCalledTimes(1);
-      expect(coreWarningSpy).toHaveBeenCalledWith(
+      expect(jest.mocked(core.warning)).toHaveBeenCalledTimes(1);
+      expect(jest.mocked(core.warning)).toHaveBeenCalledWith(
         expect.stringContaining(`[#8]`)
       );
-      expect(coreWarningSpy).toHaveBeenCalledWith(
+      expect(jest.mocked(core.warning)).toHaveBeenCalledWith(
         expect.stringContaining(
           `The ${replacement} will stale! ${replacement} will soon be closed!`
         )
@@ -177,15 +177,14 @@ describe('IssueLogger', (): void => {
         })
       );
       issueLogger = new IssueLogger(issue);
-      coreWarningSpy = jest.spyOn(core, 'warning').mockImplementation();
 
       issueLogger.warning(message);
 
-      expect(coreWarningSpy).toHaveBeenCalledTimes(1);
-      expect(coreWarningSpy).toHaveBeenCalledWith(
+      expect(jest.mocked(core.warning)).toHaveBeenCalledTimes(1);
+      expect(jest.mocked(core.warning)).toHaveBeenCalledWith(
         expect.stringContaining(`[#8]`)
       );
-      expect(coreWarningSpy).toHaveBeenCalledWith(
+      expect(jest.mocked(core.warning)).toHaveBeenCalledWith(
         expect.stringContaining(`${replacement} will stale`)
       );
     }

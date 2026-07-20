@@ -1,5 +1,6 @@
-import {Issue} from '../classes/issue';
-import {isLabeled} from './is-labeled';
+import {beforeEach, describe, expect, it} from '@jest/globals';
+import {Issue} from '../classes/issue.js';
+import {isLabeled} from './is-labeled.js';
 
 describe('isLabeled()', (): void => {
   let issue: Issue;

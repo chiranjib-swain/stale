@@ -1,10 +1,11 @@
-import {Issue} from '../src/classes/issue';
-import {IIssue} from '../src/interfaces/issue';
-import {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options';
-import {IssuesProcessorMock} from './classes/issues-processor-mock';
-import {DefaultProcessorOptions} from './constants/default-processor-options';
-import {generateIssue} from './functions/generate-issue';
-import {StateMock} from './classes/state-mock';
+import {beforeEach, describe, expect, test} from '@jest/globals';
+import {Issue} from '../src/classes/issue.js';
+import {IIssue} from '../src/interfaces/issue.js';
+import {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options.js';
+import {IssuesProcessorMock} from './classes/issues-processor-mock.js';
+import {DefaultProcessorOptions} from './constants/default-processor-options.js';
+import {generateIssue} from './functions/generate-issue.js';
+import {StateMock} from './classes/state-mock.js';
 
 let issuesProcessorBuilder: IssuesProcessorBuilder;
 let issuesProcessor: IssuesProcessorMock;

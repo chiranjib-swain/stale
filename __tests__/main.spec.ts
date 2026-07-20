@@ -1,11 +1,12 @@
+import {jest, expect, it, test} from '@jest/globals';
 import * as github from '@actions/github';
-import {Issue} from '../src/classes/issue';
-import {IComment} from '../src/interfaces/comment';
-import {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options';
-import {IssuesProcessorMock} from './classes/issues-processor-mock';
-import {DefaultProcessorOptions} from './constants/default-processor-options';
-import {generateIssue} from './functions/generate-issue';
-import {alwaysFalseStateMock} from './classes/state-mock';
+import {Issue} from '../src/classes/issue.js';
+import {IComment} from '../src/interfaces/comment.js';
+import {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options.js';
+import {IssuesProcessorMock} from './classes/issues-processor-mock.js';
+import {DefaultProcessorOptions} from './constants/default-processor-options.js';
+import {generateIssue} from './functions/generate-issue.js';
+import {alwaysFalseStateMock} from './classes/state-mock.js';
 
 test('processing an issue with no label will make it stale and close it, if it is old enough only if days-before-close is set to 0', async () => {
   const opts: IIssuesProcessorOptions = {

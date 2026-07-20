@@ -1,6 +1,7 @@
-import {DefaultProcessorOptions} from '../../__tests__/constants/default-processor-options';
-import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options';
-import {StaleOperations} from './stale-operations';
+import {beforeEach, describe, expect, it} from '@jest/globals';
+import {DefaultProcessorOptions} from '../../__tests__/constants/default-processor-options.js';
+import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options.js';
+import {StaleOperations} from './stale-operations.js';
 
 interface IHasRemainingOperationsMatrix {
   operationsPerRun: number;

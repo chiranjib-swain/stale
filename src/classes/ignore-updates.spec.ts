@@ -1,10 +1,11 @@
 /* eslint jest/no-identical-title: "off" */
-import {DefaultProcessorOptions} from '../../__tests__/constants/default-processor-options';
-import {generateIIssue} from '../../__tests__/functions/generate-iissue';
-import {IIssue} from '../interfaces/issue';
-import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options';
-import {IgnoreUpdates} from './ignore-updates';
-import {Issue} from './issue';
+import {beforeEach, describe, expect, it} from '@jest/globals';
+import {DefaultProcessorOptions} from '../../__tests__/constants/default-processor-options.js';
+import {generateIIssue} from '../../__tests__/functions/generate-iissue.js';
+import {IIssue} from '../interfaces/issue.js';
+import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options.js';
+import {IgnoreUpdates} from './ignore-updates.js';
+import {Issue} from './issue.js';
 
 describe('IgnoreUpdates', (): void => {
   let ignoreUpdates: IgnoreUpdates;

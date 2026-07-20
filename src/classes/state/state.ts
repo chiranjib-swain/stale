@@ -1,8 +1,8 @@
-import {IState} from '../../interfaces/state/state';
+import {IState} from '../../interfaces/state/state.js';
 import * as core from '@actions/core';
-import {IIssuesProcessorOptions} from '../../interfaces/issues-processor-options';
-import {IStateStorage} from '../../interfaces/state/state-storage';
-import {IIssue} from '../../interfaces/issue';
+import {IIssuesProcessorOptions} from '../../interfaces/issues-processor-options.js';
+import {IStateStorage} from '../../interfaces/state/state-storage.js';
+import {IIssue} from '../../interfaces/issue.js';
 
 export type IssueID = number;
 

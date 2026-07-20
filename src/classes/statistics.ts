@@ -1,6 +1,6 @@
-import {Issue} from './issue';
-import {Logger} from './loggers/logger';
-import {LoggerService} from '../services/logger.service';
+import {Issue} from './issue.js';
+import {Logger} from './loggers/logger.js';
+import {LoggerService} from '../services/logger.service.js';
 
 interface IGroupValue {
   name: string;

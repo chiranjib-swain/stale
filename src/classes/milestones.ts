@@ -1,10 +1,10 @@
 import deburr from 'lodash.deburr';
-import {Option} from '../enums/option';
-import {wordsToList} from '../functions/words-to-list';
-import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options';
-import {Issue} from './issue';
-import {IssueLogger} from './loggers/issue-logger';
-import {LoggerService} from '../services/logger.service';
+import {Option} from '../enums/option.js';
+import {wordsToList} from '../functions/words-to-list.js';
+import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options.js';
+import {Issue} from './issue.js';
+import {IssueLogger} from './loggers/issue-logger.js';
+import {LoggerService} from '../services/logger.service.js';
 
 type CleanMilestone = string;
 

@@ -1,4 +1,4 @@
-import {IsoOrRfcDateString} from '../types/iso-or-rfc-date-string';
+import {IsoOrRfcDateString} from '../types/iso-or-rfc-date-string.js';
 
 export interface IIssuesProcessorOptions {
   repoToken: string;

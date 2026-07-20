@@ -1,5 +1,5 @@
 import deburr from 'lodash.deburr';
-import {CleanLabel} from '../types/clean-label';
+import {CleanLabel} from '../types/clean-label.js';
 
 /**
  * @description

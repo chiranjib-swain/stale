@@ -1,12 +1,13 @@
-import {Issue} from '../src/classes/issue';
-import {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options';
-import {IssuesProcessorMock} from './classes/issues-processor-mock';
-import {DefaultProcessorOptions} from './constants/default-processor-options';
-import {generateIssue} from './functions/generate-issue';
-import {alwaysFalseStateMock} from './classes/state-mock';
-import {IState} from '../src/interfaces/state/state';
-import {IIssueEvent} from '../src/interfaces/issue-event';
-import {IssuesProcessor} from '../src/classes/issues-processor';
+import {afterEach, beforeEach, describe, expect, test} from '@jest/globals';
+import {Issue} from '../src/classes/issue.js';
+import {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options.js';
+import {IssuesProcessorMock} from './classes/issues-processor-mock.js';
+import {DefaultProcessorOptions} from './constants/default-processor-options.js';
+import {generateIssue} from './functions/generate-issue.js';
+import {alwaysFalseStateMock} from './classes/state-mock.js';
+import {IState} from '../src/interfaces/state/state.js';
+import {IIssueEvent} from '../src/interfaces/issue-event.js';
+import {IssuesProcessor} from '../src/classes/issues-processor.js';
 
 describe('remove-stale-when-updated with stale label events', (): void => {
   const markedStaleOn = '2025-01-01T00:00:00Z';
