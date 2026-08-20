@@ -51881,7 +51881,7 @@ class IssuesProcessor {
                 owner: github_context.repo.owner,
                 repo: github_context.repo.repo,
                 state: 'open',
-                per_page: 100,
+                per_page: 10,
                 direction: this.options.ascending ? 'asc' : 'desc',
                 sort: getSortField(this.options.sortBy),
                 page
