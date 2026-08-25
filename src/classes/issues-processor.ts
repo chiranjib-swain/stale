@@ -77,6 +77,8 @@ export class IssuesProcessor {
   readonly statistics: Statistics | undefined;
   private readonly _logger: Logger = new Logger();
   private readonly state: IState;
+  private readonly pageSignatures = new Map<number, string>();
+  private readonly pagePasses = new Map<number, number>();
 
   constructor(options: IIssuesProcessorOptions, state: IState) {
     this.options = options;
@@ -105,8 +107,18 @@ export class IssuesProcessor {
   }
 
   async processIssues(page: Readonly<number> = 1): Promise<number> {
-    // get the next batch of issues
     const issues: Issue[] = await this.getIssues(page);
+    const pageSignature = issues.map(issue => issue.number).join(',');
+
+    if (
+      this.options.debugOnly &&
+      this.pageSignatures.get(page) === pageSignature
+    ) {
+      return this.processIssues(page + 1);
+    }
+    this.pageSignatures.set(page, pageSignature);
+    const pagePass = (this.pagePasses.get(page) ?? 0) + 1;
+    this.pagePasses.set(page, pagePass);
 
     if (issues.length <= 0) {
       this._logger.info(
@@ -117,19 +129,21 @@ export class IssuesProcessor {
         .logStats();
 
       this.state.reset();
+      this.pageSignatures.clear();
+      this.pagePasses.clear();
 
       return this.operations.getRemainingOperationsCount();
-    } else {
-      this._logger.info(
-        `${LoggerService.yellow(
-          'Processing the batch of issues '
-        )} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(
-          ' containing '
-        )} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(
-          ` issue${issues.length > 1 ? 's' : ''}...`
-        )}`
-      );
     }
+
+    this._logger.info(
+      `${LoggerService.yellow(
+        'Processing page '
+      )} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(
+        ` (pass #${pagePass}) containing `
+      )} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(
+        ` issue${issues.length > 1 ? 's' : ''}...`
+      )}`
+    );
 
     const labelsToRemoveWhenStale: string[] = wordsToList(
       this.options.labelsToRemoveWhenStale
@@ -141,9 +155,9 @@ export class IssuesProcessor {
     const labelsToRemoveWhenUnstale: string[] = wordsToList(
       this.options.labelsToRemoveWhenUnstale
     );
+    const closedItemsCountBeforePass = this.closedIssues.length;
 
     for (const issue of issues.values()) {
-      // Stop the processing if no more operations remains
       if (!this.operations.hasRemainingOperations()) {
         break;
       }
@@ -187,13 +201,39 @@ export class IssuesProcessor {
     }
 
     this._logger.info(
-      `${LoggerService.green('Batch ')} ${LoggerService.cyan(
+      `${LoggerService.green('Page ')} ${LoggerService.cyan(
         `#${page}`
-      )} ${LoggerService.green(' processed.')}`
+      )} ${LoggerService.green(` pass #${pagePass} processed.`)}`
     );
 
-    // Do the next batch
-    return this.processIssues(page + 1);
+    const closedItemsCount =
+      this.closedIssues.length - closedItemsCountBeforePass;
+    const closedIssueNumbers = new Set(
+      this.closedIssues.map(issue => issue.number)
+    );
+    const pageContainsClosedIssue = issues.some(issue =>
+      closedIssueNumbers.has(issue.number)
+    );
+
+    if (pageContainsClosedIssue) {
+      this._logger.info(
+        `${LoggerService.yellow(
+          `${closedItemsCount} item${closedItemsCount === 1 ? '' : 's'} closed during this pass. Refreshing page `
+        )} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(
+          ' before advancing.'
+        )}`
+      );
+    } else {
+      this._logger.info(
+        `${LoggerService.green('Page ')} ${LoggerService.cyan(
+          `#${page}`
+        )} ${LoggerService.green(' is stable. Advancing to page ')} ${LoggerService.cyan(
+          `#${page + 1}`
+        )}${LoggerService.green('.')}`
+      );
+    }
+
+    return this.processIssues(pageContainsClosedIssue ? page : page + 1);
   }
 
   async processIssue(
@@ -983,7 +1023,6 @@ export class IssuesProcessor {
     const issueLogger: IssueLogger = new IssueLogger(issue);
 
     issueLogger.info(`Closing $$type for being stale`);
-    this.closedIssues.push(issue);
 
     if (closeMessage) {
       try {
@@ -1024,7 +1063,6 @@ export class IssuesProcessor {
 
     try {
       this._consumeIssueOperation(issue);
-      this.statistics?.incrementClosedItemsCount(issue);
 
       if (!this.options.debugOnly) {
         await this.client.rest.issues.update({
@@ -1036,6 +1074,9 @@ export class IssuesProcessor {
             'completed' | 'reopened' | 'not_planned' | null | undefined
         });
       }
+
+      this.closedIssues.push(issue);
+      this.statistics?.incrementClosedItemsCount(issue);
     } catch (error) {
       issueLogger.error(`Error when updating this $$type: ${error.message}`);
     }

@@ -1,0 +1,180 @@
+import {describe, expect, it} from '@jest/globals';
+import {Issue} from '../src/classes/issue.js';
+import {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options.js';
+import {IssuesProcessorMock} from './classes/issues-processor-mock.js';
+import {alwaysFalseStateMock, StateMock} from './classes/state-mock.js';
+import {DefaultProcessorOptions} from './constants/default-processor-options.js';
+import {generateIssue} from './functions/generate-issue.js';
+
+describe('pagination', (): void => {
+  it('processes every initially open pull request when earlier pages close items', async (): Promise<void> => {
+    const pageSize = 10;
+    const options: IIssuesProcessorOptions = {
+      ...DefaultProcessorOptions,
+      closePrMessage: '',
+      daysBeforePrClose: 0,
+      operationsPerRun: 100
+    };
+    const initiallyOpenPullRequests: Issue[] = Array.from(
+      {length: 25},
+      (_, index): Issue =>
+        generateIssue(
+          options,
+          index + 1,
+          `Pull request #${index + 1}`,
+          '2020-01-01T17:00:00Z',
+          '2020-01-01T17:00:00Z',
+          false,
+          true,
+          [options.stalePrLabel]
+        )
+    );
+
+    const processorReference: {current?: IssuesProcessorMock} = {};
+    const processor = new IssuesProcessorMock(
+      options,
+      alwaysFalseStateMock,
+      async page => {
+        const closedNumbers = new Set(
+          processorReference.current?.closedIssues.map(issue => issue.number) ??
+            []
+        );
+        const currentlyOpenPullRequests = initiallyOpenPullRequests.filter(
+          issue => !closedNumbers.has(issue.number)
+        );
+        const pageStart = (page - 1) * pageSize;
+
+        return currentlyOpenPullRequests.slice(pageStart, pageStart + pageSize);
+      },
+      async () => [],
+      async () => '2020-01-01T17:00:00Z'
+    );
+    processorReference.current = processor;
+
+    await processor.processIssues();
+
+    expect(processor.closedIssues.map(issue => issue.number)).toEqual(
+      initiallyOpenPullRequests.map(issue => issue.number)
+    );
+  });
+
+  it('inspects every item when only some items in an earlier page close', async (): Promise<void> => {
+    const pageSize = 10;
+    const options: IIssuesProcessorOptions = {
+      ...DefaultProcessorOptions,
+      operationsPerRun: 100
+    };
+    const initiallyOpenPullRequests = Array.from(
+      {length: 25},
+      (_, index): Issue =>
+        generateIssue(
+          options,
+          index + 1,
+          `Pull request #${index + 1}`,
+          '2020-01-01T17:00:00Z',
+          '2020-01-01T17:00:00Z',
+          false,
+          true
+        )
+    );
+    const inspectedNumbers: number[] = [];
+    const requestedPages: number[] = [];
+    const processedNumbers = new Set<number>();
+    const state = new StateMock();
+    state.addIssueToProcessed = issue => {
+      processedNumbers.add(issue.number);
+    };
+    state.isIssueProcessed = issue => processedNumbers.has(issue.number);
+    const processorReference: {current?: IssuesProcessorMock} = {};
+    const processor = new IssuesProcessorMock(options, state, async page => {
+      requestedPages.push(page);
+      const closedNumbers = new Set(
+        processorReference.current?.closedIssues.map(issue => issue.number) ??
+          []
+      );
+      const currentlyOpenPullRequests = initiallyOpenPullRequests.filter(
+        issue => !closedNumbers.has(issue.number)
+      );
+      const pageStart = (page - 1) * pageSize;
+
+      return currentlyOpenPullRequests.slice(pageStart, pageStart + pageSize);
+    });
+    processorReference.current = processor;
+    processor.processIssue = async issue => {
+      inspectedNumbers.push(issue.number);
+      if (issue.number <= 5) {
+        processor.closedIssues.push(issue);
+      }
+    };
+
+    await processor.processIssues();
+
+    expect(inspectedNumbers).toEqual(
+      initiallyOpenPullRequests.map(issue => issue.number)
+    );
+    expect(requestedPages).toEqual([1, 1, 2, 3]);
+  });
+
+  it('processes every pull request when regular issues share the paginated result', async (): Promise<void> => {
+    const pageSize = 10;
+    const options: IIssuesProcessorOptions = {
+      ...DefaultProcessorOptions,
+      closePrMessage: '',
+      daysBeforePrClose: 0,
+      daysBeforeIssueStale: -1,
+      daysBeforeIssueClose: -1,
+      operationsPerRun: 100
+    };
+    const pullRequests = Array.from({length: 25}, (_, index): Issue =>
+      generateIssue(
+        options,
+        index + 1,
+        `Pull request #${index + 1}`,
+        '2020-01-01T17:00:00Z',
+        '2020-01-01T17:00:00Z',
+        false,
+        true,
+        [options.stalePrLabel]
+      )
+    );
+    const regularIssues = Array.from({length: 7}, (_, index): Issue =>
+      generateIssue(
+        options,
+        100 + index,
+        `Issue #${100 + index}`,
+        '2020-01-01T17:00:00Z'
+      )
+    );
+    const initiallyOpenItems = [
+      ...pullRequests.slice(0, 18),
+      ...regularIssues,
+      ...pullRequests.slice(18)
+    ];
+    const processorReference: {current?: IssuesProcessorMock} = {};
+    const processor = new IssuesProcessorMock(
+      options,
+      alwaysFalseStateMock,
+      async page => {
+        const closedNumbers = new Set(
+          processorReference.current?.closedIssues.map(issue => issue.number) ??
+            []
+        );
+        const currentlyOpenItems = initiallyOpenItems.filter(
+          issue => !closedNumbers.has(issue.number)
+        );
+        const pageStart = (page - 1) * pageSize;
+
+        return currentlyOpenItems.slice(pageStart, pageStart + pageSize);
+      },
+      async () => [],
+      async () => '2020-01-01T17:00:00Z'
+    );
+    processorReference.current = processor;
+
+    await processor.processIssues();
+
+    expect(processor.closedIssues.map(issue => issue.number)).toEqual(
+      pullRequests.map(issue => issue.number)
+    );
+  });
+});

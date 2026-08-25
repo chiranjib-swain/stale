@@ -217,8 +217,8 @@ describe('state', (): void => {
 
     await processor.processIssues(1);
     // make sure all issues are proceeded
-    expect(jest.mocked(core.info).mock.calls[71][0]).toContain(
-      'No more issues found to process. Exiting...'
+    expect(jest.mocked(core.info)).toHaveBeenCalledWith(
+      expect.stringContaining('No more issues found to process. Exiting...')
     );
 
     expect(resetSpy).toHaveBeenCalledTimes(1);
