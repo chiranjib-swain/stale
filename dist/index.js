@@ -51712,7 +51712,7 @@ class IssuesProcessor {
             }
         }
         // exemptIssueTypes wins if both it and onlyIssueTypes are specified
-        if (this.options.exemptIssueTypes) {
+        if (this.options.exemptIssueTypes && !issue.isPullRequest) {
             const exemptTypes = this.options.exemptIssueTypes
                 .split(',')
                 .map(t => t.trim().toLowerCase())
