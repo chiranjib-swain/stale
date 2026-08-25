@@ -1,5 +1,6 @@
-import {Issue} from '../classes/issue';
-import {isPullRequest} from './is-pull-request';
+import {beforeEach, describe, expect, it} from '@jest/globals';
+import {Issue} from '../classes/issue.js';
+import {isPullRequest} from './is-pull-request.js';
 
 describe('isPullRequest()', (): void => {
   let issue: Issue;

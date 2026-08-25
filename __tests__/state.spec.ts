@@ -1,12 +1,31 @@
-import {IStateStorage} from '../src/interfaces/state/state-storage';
-import {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options';
-import {DefaultProcessorOptions} from './constants/default-processor-options';
-import {Issue} from '../src/classes/issue';
-import {generateIssue} from './functions/generate-issue';
-import {IssuesProcessorMock} from './classes/issues-processor-mock';
-import {IssueID, State} from '../src/classes/state/state';
-import {IState} from '../src/interfaces/state/state';
-import * as core from '@actions/core';
+import {jest, afterEach, describe, expect, it} from '@jest/globals';
+import type {IStateStorage} from '../src/interfaces/state/state-storage.js';
+import type {IIssuesProcessorOptions} from '../src/interfaces/issues-processor-options.js';
+import {DefaultProcessorOptions} from './constants/default-processor-options.js';
+import {Issue} from '../src/classes/issue.js';
+import {generateIssue} from './functions/generate-issue.js';
+import type {IState} from '../src/interfaces/state/state.js';
+
+jest.unstable_mockModule('@actions/core', () => ({
+  debug: jest.fn(),
+  info: jest.fn(),
+  warning: jest.fn(),
+  error: jest.fn(),
+  setFailed: jest.fn(),
+  getInput: jest.fn(),
+  group: jest
+    .fn()
+    .mockImplementation((...args: unknown[]) =>
+      (args[1] as () => Promise<unknown>)()
+    )
+}));
+
+const {State} = await import('../src/classes/state/state.js');
+const {IssuesProcessorMock} =
+  await import('./classes/issues-processor-mock.js');
+const core = await import('@actions/core');
+
+type IssueID = number;
 
 const stateStorage: IStateStorage = {
   restore(): Promise<string> {
@@ -21,17 +40,7 @@ const getProcessedIssuesIDs = (state: IState): Set<IssueID> =>
   (state as unknown as {processedIssuesIDs: Set<IssueID>}).processedIssuesIDs;
 
 describe('state', (): void => {
-  let debugSpy: jest.SpyInstance;
-  let infoSpy: jest.SpyInstance;
-  let warningSpy: jest.SpyInstance;
-  beforeEach(() => {
-    debugSpy = jest.spyOn(core, 'debug');
-    infoSpy = jest.spyOn(core, 'info');
-    warningSpy = jest.spyOn(core, 'warning');
-  });
-
   afterEach(() => {
-    jest.resetAllMocks();
     jest.clearAllMocks();
   });
 
@@ -85,8 +94,10 @@ describe('state', (): void => {
     expect(addIssueToProcessedSpy).toHaveBeenCalledTimes(1);
     expect(addIssueToProcessedSpy).toHaveBeenCalledWith(testIssue1);
 
-    expect(debugSpy).toHaveBeenCalledWith('state: reset');
-    expect(debugSpy).toHaveBeenCalledWith('state: mark 1 as processed');
+    expect(jest.mocked(core.debug)).toHaveBeenCalledWith('state: reset');
+    expect(jest.mocked(core.debug)).toHaveBeenCalledWith(
+      'state: mark 1 as processed'
+    );
   });
 
   it('issueProcessor should skip the issue marked as proceeded', async () => {
@@ -109,7 +120,7 @@ describe('state', (): void => {
     const TestIssueList: Issue[] = [testIssue1, testIssue2];
     const state = new State(stateStorage, opts);
     state.addIssueToProcessed(testIssue1);
-    debugSpy.mockClear();
+    jest.mocked(core.debug).mockClear();
     const addIssueToProcessedSpy = jest.spyOn(state, 'addIssueToProcessed');
     const isIssueProcessedSpy = jest.spyOn(state, 'isIssueProcessed');
     const processor = new IssuesProcessorMock(
@@ -129,8 +140,10 @@ describe('state', (): void => {
     expect(processor.staleIssues.length).toStrictEqual(1);
     expect(processor.closedIssues.length).toStrictEqual(1);
 
-    expect(debugSpy).toHaveBeenCalledWith('state: reset');
-    expect(debugSpy).toHaveBeenCalledWith('state: mark 2 as processed');
+    expect(jest.mocked(core.debug)).toHaveBeenCalledWith('state: reset');
+    expect(jest.mocked(core.debug)).toHaveBeenCalledWith(
+      'state: mark 2 as processed'
+    );
   });
 
   it('state should not be reset if not all issues are proceeded', async () => {
@@ -164,12 +177,14 @@ describe('state', (): void => {
 
     await processor.processIssues(1);
     // make sure not all issues are proceeded
-    expect(warningSpy.mock.calls[2][0]).toContain(
+    expect(jest.mocked(core.warning).mock.calls[2][0]).toContain(
       'No more operations left! Exiting...'
     );
 
     expect(resetSpy).toHaveBeenCalledTimes(0);
-    expect(debugSpy).toHaveBeenCalledWith('state: mark 1 as processed');
+    expect(jest.mocked(core.debug)).toHaveBeenCalledWith(
+      'state: mark 1 as processed'
+    );
   });
 
   it('state should be reset if all issues are proceeded', async () => {
@@ -202,12 +217,16 @@ describe('state', (): void => {
 
     await processor.processIssues(1);
     // make sure all issues are proceeded
-    expect(infoSpy.mock.calls[71][0]).toContain(
+    expect(jest.mocked(core.info).mock.calls[71][0]).toContain(
       'No more issues found to process. Exiting...'
     );
 
     expect(resetSpy).toHaveBeenCalledTimes(1);
-    expect(debugSpy).toHaveBeenCalledWith('state: mark 1 as processed');
-    expect(debugSpy).toHaveBeenCalledWith('state: mark 2 as processed');
+    expect(jest.mocked(core.debug)).toHaveBeenCalledWith(
+      'state: mark 1 as processed'
+    );
+    expect(jest.mocked(core.debug)).toHaveBeenCalledWith(
+      'state: mark 2 as processed'
+    );
   });
 });

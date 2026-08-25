@@ -1,4 +1,5 @@
-import {wordsToList} from './words-to-list';
+import {beforeEach, describe, expect, it} from '@jest/globals';
+import {wordsToList} from './words-to-list.js';
 
 describe('wordsToList()', (): void => {
   let words: string;

@@ -1,8 +1,18 @@
-import {IssueID, State} from './state';
-import {IIssuesProcessorOptions} from '../../interfaces/issues-processor-options';
-import {IIssue} from '../../interfaces/issue';
-import {IState} from '../../interfaces/state/state';
-import * as core from '@actions/core';
+import {jest, afterEach, describe, expect, it} from '@jest/globals';
+import type {IIssue} from '../../interfaces/issue.js';
+import type {IIssuesProcessorOptions} from '../../interfaces/issues-processor-options.js';
+import type {IState} from '../../interfaces/state/state.js';
+
+jest.unstable_mockModule('@actions/core', () => ({
+  debug: jest.fn(),
+  info: jest.fn(),
+  warning: jest.fn()
+}));
+
+const {State} = await import('./state.js');
+const core = await import('@actions/core');
+
+type IssueID = number;
 
 const mockStorage = {
   save: () => Promise.resolve(),
@@ -13,17 +23,7 @@ const getProcessedIssuesIDs = (state: IState): Set<IssueID> =>
   (state as unknown as {processedIssuesIDs: Set<IssueID>}).processedIssuesIDs;
 
 describe('State', () => {
-  let debugSpy: jest.SpyInstance;
-  let infoSpy: jest.SpyInstance;
-  let warningSpy: jest.SpyInstance;
-  beforeEach(() => {
-    debugSpy = jest.spyOn(core, 'debug');
-    infoSpy = jest.spyOn(core, 'info');
-    warningSpy = jest.spyOn(core, 'warning');
-  });
-
   afterEach(() => {
-    jest.resetAllMocks();
     jest.clearAllMocks();
   });
 
@@ -34,7 +34,7 @@ describe('State', () => {
         {} as unknown as IIssuesProcessorOptions
       );
       expect(getProcessedIssuesIDs(state)).toEqual(new Set());
-      expect(debugSpy).not.toHaveBeenCalled();
+      expect(jest.mocked(core.debug)).not.toHaveBeenCalled();
     });
     it('reset state should not contain any issues marked as proceeded', async () => {
       const state = new State(
@@ -45,8 +45,8 @@ describe('State', () => {
       expect(getProcessedIssuesIDs(state)).not.toEqual(new Set());
       state.reset();
       expect(getProcessedIssuesIDs(state)).toEqual(new Set());
-      expect(debugSpy).toHaveBeenCalledTimes(2);
-      expect(debugSpy).toHaveBeenCalledWith('state: reset');
+      expect(jest.mocked(core.debug)).toHaveBeenCalledTimes(2);
+      expect(jest.mocked(core.debug)).toHaveBeenCalledWith('state: reset');
     });
   });
   describe('marking as proceeded', () => {
@@ -74,44 +74,50 @@ describe('State', () => {
       expect(
         state.isIssueProcessed({number: 4} as unknown as IIssue)
       ).toBeFalsy();
-      expect(debugSpy).toHaveBeenCalledTimes(3);
-      expect(debugSpy).toHaveBeenCalledWith('state: mark 1 as processed');
-      expect(debugSpy).toHaveBeenCalledWith('state: mark 2 as processed');
-      expect(debugSpy).toHaveBeenCalledWith('state: mark 3 as processed');
+      expect(jest.mocked(core.debug)).toHaveBeenCalledTimes(3);
+      expect(jest.mocked(core.debug)).toHaveBeenCalledWith(
+        'state: mark 1 as processed'
+      );
+      expect(jest.mocked(core.debug)).toHaveBeenCalledWith(
+        'state: mark 2 as processed'
+      );
+      expect(jest.mocked(core.debug)).toHaveBeenCalledWith(
+        'state: mark 3 as processed'
+      );
     });
   });
   describe('persisting', () => {
-    it('[1,2,3] should be serialized and persisted as to "1|2|3|', async () => {
-      const mockStorage = {
-        save: jest.fn().mockReturnValue(Promise.resolve()),
+    it('[1,2,3] should be serialized and persisted as "1|2|3|', async () => {
+      const localStorage = {
+        save: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
         async restore(): Promise<string> {
           return '';
         }
       };
       const state = new State(
-        mockStorage,
+        localStorage,
         {} as unknown as IIssuesProcessorOptions
       );
       state.addIssueToProcessed({number: 1} as unknown as IIssue);
       state.addIssueToProcessed({number: 2} as unknown as IIssue);
       state.addIssueToProcessed({number: 3} as unknown as IIssue);
       await state.persist();
-      expect(mockStorage.save).toHaveBeenCalledTimes(1);
-      expect(mockStorage.save).toHaveBeenCalledWith('1|2|3');
-      expect(infoSpy).toHaveBeenCalledTimes(1);
-      expect(infoSpy).toHaveBeenCalledWith(
+      expect(localStorage.save).toHaveBeenCalledTimes(1);
+      expect(localStorage.save).toHaveBeenCalledWith('1|2|3');
+      expect(jest.mocked(core.info)).toHaveBeenCalledTimes(1);
+      expect(jest.mocked(core.info)).toHaveBeenCalledWith(
         'state: persisting info about 3 issue(s)'
       );
     });
   });
   describe('rehydrating', () => {
     it('"1|2|3" should be rehydrate to the IState with issues 1,2,3 marked as proceeded', async () => {
-      const mockStorage = {
+      const localStorage = {
         save: () => Promise.resolve(),
         restore: () => Promise.resolve('1|2|3')
       };
       const state = new State(
-        mockStorage,
+        localStorage,
         {} as unknown as IIssuesProcessorOptions
       );
       await state.restore();
@@ -119,41 +125,41 @@ describe('State', () => {
         state as unknown as {processedIssuesIDs: Set<IssueID>}
       ).processedIssuesIDs;
       expect(processedIssuesIDs).toEqual(new Set([1, 2, 3]));
-      expect(infoSpy).toHaveBeenCalledTimes(1);
-      expect(infoSpy).toHaveBeenCalledWith(
+      expect(jest.mocked(core.info)).toHaveBeenCalledTimes(1);
+      expect(jest.mocked(core.info)).toHaveBeenCalledWith(
         'state: restored with info about 3 issue(s)'
       );
     });
   });
   describe('debugOnly', () => {
     it('state should persisted if debugOnly not set', () => {
-      const mockStorage = {
-        save: jest.fn().mockReturnValue(Promise.resolve()),
+      const localStorage = {
+        save: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
         async restore(): Promise<string> {
           return '';
         }
       };
       const state = new State(
-        mockStorage,
+        localStorage,
         {} as unknown as IIssuesProcessorOptions
       );
       state.persist();
-      expect(mockStorage.save).toHaveBeenCalledTimes(1);
+      expect(localStorage.save).toHaveBeenCalledTimes(1);
     });
     it('state should not be persisted if debugOnly set true', () => {
-      const mockStorage = {
-        save: jest.fn().mockReturnValue(Promise.resolve()),
+      const localStorage = {
+        save: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
         async restore(): Promise<string> {
           return '';
         }
       };
-      const state = new State(mockStorage, {
+      const state = new State(localStorage, {
         debugOnly: true
       } as unknown as IIssuesProcessorOptions);
       state.persist();
-      expect(mockStorage.save).not.toHaveBeenCalled();
-      expect(warningSpy).toHaveBeenCalledTimes(1);
-      expect(warningSpy).toHaveBeenCalledWith(
+      expect(localStorage.save).not.toHaveBeenCalled();
+      expect(jest.mocked(core.warning)).toHaveBeenCalledTimes(1);
+      expect(jest.mocked(core.warning)).toHaveBeenCalledWith(
         'The state is not persisted in the debug mode'
       );
     });

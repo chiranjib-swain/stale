@@ -1,4 +1,4 @@
-import {HumanizedDate} from '../../types/humanized-date';
+import {HumanizedDate} from '../../types/humanized-date.js';
 
 export function getHumanizedDate(date: Readonly<Date>): HumanizedDate {
   const year: number = date.getFullYear();

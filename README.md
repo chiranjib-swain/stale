@@ -3,6 +3,10 @@
 [![Basic validation](https://github.com/actions/stale/actions/workflows/basic-validation.yml/badge.svg?branch=main)](https://github.com/actions/stale/actions/workflows/basic-validation.yml)
 [![e2e tests](https://github.com/actions/stale/actions/workflows/e2e-tests.yml/badge.svg?branch=main)](https://github.com/actions/stale/actions/workflows/e2e-tests.yml)
 
+## What's changed in V11
+
+- **Migrated to ESM** internally to support the latest `@actions/*` package versions. No changes to action inputs, outputs, or behavior.
+
 ## Breaking changes in V10
 
 - Upgraded action from node20 to node 24
@@ -578,6 +582,8 @@ Default value: unset
 A comma separated list of allowed issue types. Only issues with a matching type will be processed (e.g.: `bug,question`).
 
 If unset (or an empty string), this option will not alter the stale workflow.
+
+This option does not affect PRs.
 
 Default value: unset
 

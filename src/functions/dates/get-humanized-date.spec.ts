@@ -1,4 +1,5 @@
-import {getHumanizedDate} from './get-humanized-date';
+import {beforeEach, describe, expect, it} from '@jest/globals';
+import {getHumanizedDate} from './get-humanized-date.js';
 
 describe('getHumanizedDate()', (): void => {
   let date: Date;

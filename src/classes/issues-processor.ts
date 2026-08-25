@@ -1,35 +1,34 @@
 import * as core from '@actions/core';
 import {context, getOctokit} from '@actions/github';
-import {GitHub} from '@actions/github/lib/utils';
-import {Option} from '../enums/option';
-import {getHumanizedDate} from '../functions/dates/get-humanized-date';
-import {isDateMoreRecentThan} from '../functions/dates/is-date-more-recent-than';
-import {isValidDate} from '../functions/dates/is-valid-date';
-import {isBoolean} from '../functions/is-boolean';
-import {isLabeled} from '../functions/is-labeled';
-import {cleanLabel} from '../functions/clean-label';
-import {shouldMarkWhenStale} from '../functions/should-mark-when-stale';
-import {wordsToList} from '../functions/words-to-list';
-import {IComment} from '../interfaces/comment';
-import {IIssueEvent} from '../interfaces/issue-event';
-import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options';
-import {IPullRequest} from '../interfaces/pull-request';
-import {Assignees} from './assignees';
-import {IgnoreUpdates} from './ignore-updates';
-import {ExemptDraftPullRequest} from './exempt-draft-pull-request';
-import {Issue} from './issue';
-import {IssueLogger} from './loggers/issue-logger';
-import {Logger} from './loggers/logger';
-import {Milestones} from './milestones';
-import {StaleOperations} from './stale-operations';
-import {Statistics} from './statistics';
-import {LoggerService} from '../services/logger.service';
-import {OctokitIssue} from '../interfaces/issue';
+import {Option} from '../enums/option.js';
+import {getHumanizedDate} from '../functions/dates/get-humanized-date.js';
+import {isDateMoreRecentThan} from '../functions/dates/is-date-more-recent-than.js';
+import {isValidDate} from '../functions/dates/is-valid-date.js';
+import {isBoolean} from '../functions/is-boolean.js';
+import {isLabeled} from '../functions/is-labeled.js';
+import {cleanLabel} from '../functions/clean-label.js';
+import {shouldMarkWhenStale} from '../functions/should-mark-when-stale.js';
+import {wordsToList} from '../functions/words-to-list.js';
+import {IComment} from '../interfaces/comment.js';
+import {IIssueEvent} from '../interfaces/issue-event.js';
+import {IIssuesProcessorOptions} from '../interfaces/issues-processor-options.js';
+import {IPullRequest} from '../interfaces/pull-request.js';
+import {Assignees} from './assignees.js';
+import {IgnoreUpdates} from './ignore-updates.js';
+import {ExemptDraftPullRequest} from './exempt-draft-pull-request.js';
+import {Issue} from './issue.js';
+import {IssueLogger} from './loggers/issue-logger.js';
+import {Logger} from './loggers/logger.js';
+import {Milestones} from './milestones.js';
+import {StaleOperations} from './stale-operations.js';
+import {Statistics} from './statistics.js';
+import {LoggerService} from '../services/logger.service.js';
+import {OctokitIssue} from '../interfaces/issue.js';
 import {retry} from '@octokit/plugin-retry';
-import {IState} from '../interfaces/state/state';
-import {IRateLimit} from '../interfaces/rate-limit';
-import {RateLimit} from './rate-limit';
-import {getSortField} from '../functions/get-sort-field';
+import {IState} from '../interfaces/state/state.js';
+import {IRateLimit} from '../interfaces/rate-limit.js';
+import {RateLimit} from './rate-limit.js';
+import {getSortField} from '../functions/get-sort-field.js';
 
 /***
  * Handle processing of issues for staleness/closure.
@@ -67,7 +66,7 @@ export class IssuesProcessor {
   }
 
   readonly operations: StaleOperations;
-  readonly client: InstanceType<typeof GitHub>;
+  readonly client: ReturnType<typeof getOctokit>;
   readonly options: IIssuesProcessorOptions;
   readonly staleIssues: Issue[] = [];
   readonly closedIssues: Issue[] = [];
@@ -252,7 +251,7 @@ export class IssuesProcessor {
       return; // If the issue has an 'include-only-assigned' option set, process only issues with nonempty assignees list
     }
 
-    if (this.options.onlyIssueTypes) {
+    if (this.options.onlyIssueTypes && !issue.isPullRequest) {
       const allowedTypes = this.options.onlyIssueTypes
         .split(',')
         .map(t => t.trim().toLowerCase())
@@ -617,7 +616,9 @@ export class IssuesProcessor {
           new Issue(this.options, issue as Readonly<OctokitIssue>)
       );
     } catch (error) {
-      throw Error(`Getting issues was blocked by the error: ${error.message}`);
+      throw Error(`Getting issues was blocked by the error: ${error.message}`, {
+        cause: error
+      });
     }
   }
 
@@ -626,7 +627,7 @@ export class IssuesProcessor {
   async getLabelCreationDate(
     issue: Issue,
     label: string
-  ): Promise<string | undefined> {
+  ): Promise<{creationDate?: string; events: IIssueEvent[]}> {
     const issueLogger: IssueLogger = new IssueLogger(issue);
 
     issueLogger.info(`Checking for label on this $$type`);
@@ -641,6 +642,7 @@ export class IssuesProcessor {
     });
 
     const events: IIssueEvent[] = await this.client.paginate(options);
+
     const reversedEvents = events.reverse();
 
     const staleLabeledEvent = reversedEvents.find(
@@ -651,10 +653,51 @@ export class IssuesProcessor {
 
     if (!staleLabeledEvent) {
       // Must be old rather than labeled
-      return undefined;
+      return {creationDate: undefined, events};
     }
 
-    return staleLabeledEvent.created_at;
+    return {creationDate: staleLabeledEvent.created_at, events};
+  }
+
+  protected async hasOnlyStaleLabelingEventsSince(
+    issue: Issue,
+    sinceDate: string,
+    staleLabel: string,
+    events: IIssueEvent[]
+  ): Promise<boolean> {
+    const issueLogger: IssueLogger = new IssueLogger(issue);
+
+    issueLogger.info(
+      `Checking if only stale label added events on $$type since: ${LoggerService.cyan(
+        sinceDate
+      )}`
+    );
+
+    if (!sinceDate) {
+      return false;
+    }
+
+    const sinceTimestamp = new Date(sinceDate).getTime();
+    if (Number.isNaN(sinceTimestamp)) {
+      return false;
+    }
+
+    const relevantEvents = events.filter(event => {
+      const eventTimestamp = new Date(event.created_at).getTime();
+      return !Number.isNaN(eventTimestamp) && eventTimestamp >= sinceTimestamp;
+    });
+
+    if (relevantEvents.length === 0) {
+      return false;
+    }
+
+    return relevantEvents.every(event => {
+      if (event.event !== 'labeled') {
+        return false;
+      }
+
+      return cleanLabel(event.label.name) === cleanLabel(staleLabel);
+    });
   }
 
   async getPullRequest(issue: Issue): Promise<IPullRequest | undefined | void> {
@@ -678,11 +721,22 @@ export class IssuesProcessor {
 
   async getRateLimit(): Promise<IRateLimit | undefined> {
     const logger: Logger = new Logger();
+
     try {
       const rateLimitResult = await this.client.rest.rateLimit.get();
       return new RateLimit(rateLimitResult.data.rate);
-    } catch (error) {
-      logger.error(`Error when getting rateLimit: ${error.message}`);
+    } catch (error: unknown) {
+      const status = (error as {status?: number})?.status;
+      const message = (error as {message?: string})?.message ?? String(error);
+
+      if (status === 404 && message.includes('Rate limiting is not enabled')) {
+        logger.warning(
+          'Rate limiting is not enabled on this instance. Proceeding without rate limit checks.'
+        );
+        return undefined;
+      }
+
+      logger.error(`Error when getting rateLimit: ${message}`);
     }
   }
 
@@ -698,8 +752,11 @@ export class IssuesProcessor {
     closeLabel?: string
   ) {
     const issueLogger: IssueLogger = new IssueLogger(issue);
-    const markedStaleOn: string =
-      (await this.getLabelCreationDate(issue, staleLabel)) || issue.updated_at;
+    const {creationDate, events} = await this.getLabelCreationDate(
+      issue,
+      staleLabel
+    );
+    const markedStaleOn: string = creationDate || issue.updated_at;
     issueLogger.info(
       `$$type marked stale on: ${LoggerService.cyan(markedStaleOn)}`
     );
@@ -751,11 +808,32 @@ export class IssuesProcessor {
 
     // The issue.updated_at and markedStaleOn are not always exactly in sync (they can be off by a second or 2)
     // isDateMoreRecentThan makes sure they are not the same date within a certain tolerance (15 seconds in this case)
-    const issueHasUpdateSinceStale = isDateMoreRecentThan(
+    let issueHasUpdateSinceStale = isDateMoreRecentThan(
       new Date(issue.updated_at),
       new Date(markedStaleOn),
       15
     );
+
+    // Check if the only update was the stale label being added
+    if (
+      issueHasUpdateSinceStale &&
+      shouldRemoveStaleWhenUpdated &&
+      !issue.markedStaleThisRun
+    ) {
+      const onlyStaleLabelAdded = await this.hasOnlyStaleLabelingEventsSince(
+        issue,
+        markedStaleOn,
+        staleLabel,
+        events
+      );
+
+      if (onlyStaleLabelAdded) {
+        issueHasUpdateSinceStale = false;
+        issueLogger.info(
+          `Ignoring $$type update since only the stale label was added`
+        );
+      }
+    }
 
     issueLogger.info(
       `$$type has been updated since it was marked stale: ${LoggerService.cyan(
@@ -972,7 +1050,8 @@ export class IssuesProcessor {
           repo: context.repo.repo,
           issue_number: issue.number,
           state: 'closed',
-          state_reason: this.options.closeIssueReason || undefined
+          state_reason: (this.options.closeIssueReason || undefined) as
+            'completed' | 'reopened' | 'not_planned' | null | undefined
         });
       }
     } catch (error) {
@@ -1288,16 +1367,14 @@ export class IssuesProcessor {
   }
 
   private _getDaysBeforeIssueStaleUsedOptionName():
-    | Option.DaysBeforeStale
-    | Option.DaysBeforeIssueStale {
+    Option.DaysBeforeStale | Option.DaysBeforeIssueStale {
     return isNaN(this.options.daysBeforeIssueStale)
       ? Option.DaysBeforeStale
       : Option.DaysBeforeIssueStale;
   }
 
   private _getDaysBeforePrStaleUsedOptionName():
-    | Option.DaysBeforeStale
-    | Option.DaysBeforePrStale {
+    Option.DaysBeforeStale | Option.DaysBeforePrStale {
     return isNaN(this.options.daysBeforePrStale)
       ? Option.DaysBeforeStale
       : Option.DaysBeforePrStale;
