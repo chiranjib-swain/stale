@@ -115,6 +115,62 @@ describe('pagination', (): void => {
     expect(requestedPages).toEqual([1, 1, 2, 3]);
   });
 
+  it('waits for repeated stale pages without processing items twice', async (): Promise<void> => {
+    const options: IIssuesProcessorOptions = {
+      ...DefaultProcessorOptions,
+      debugOnly: false,
+      operationsPerRun: 100
+    };
+    const pullRequests = Array.from({length: 14}, (_, index): Issue =>
+      generateIssue(
+        options,
+        index + 1,
+        `Pull request #${index + 1}`,
+        '2020-01-01T17:00:00Z',
+        '2020-01-01T17:00:00Z',
+        false,
+        true
+      )
+    );
+    const requestedPages: number[] = [];
+    const inspectedNumbers: number[] = [];
+    const processedNumbers = new Set<number>();
+    const state = new StateMock();
+    state.addIssueToProcessed = issue => {
+      processedNumbers.add(issue.number);
+    };
+    state.isIssueProcessed = issue => processedNumbers.has(issue.number);
+    let pageOneRequests = 0;
+    const processor = new IssuesProcessorMock(options, state, async page => {
+      requestedPages.push(page);
+
+      if (page !== 1) {
+        return [];
+      }
+
+      pageOneRequests += 1;
+      if (pageOneRequests === 1) {
+        return pullRequests.slice(0, 10);
+      }
+      if (pageOneRequests <= 5) {
+        return pullRequests.slice(2, 12);
+      }
+
+      return pullRequests.slice(4, 14);
+    });
+    processor.processIssue = async issue => {
+      inspectedNumbers.push(issue.number);
+      if (issue.number <= 4) {
+        processor.closedIssues.push(issue);
+      }
+    };
+
+    await processor.processIssues();
+
+    expect(inspectedNumbers).toEqual(pullRequests.map(issue => issue.number));
+    expect(requestedPages).toEqual([1, 1, 1, 1, 1, 1, 2]);
+  });
+
   it('processes every pull request when regular issues share the paginated result', async (): Promise<void> => {
     const pageSize = 10;
     const options: IIssuesProcessorOptions = {

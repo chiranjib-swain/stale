@@ -51604,6 +51604,7 @@ class IssuesProcessor {
     state;
     pageSignatures = new Map();
     pagePasses = new Map();
+    waitingPageSignatures = new Map();
     constructor(options, state) {
         this.options = options;
         this.state = state;
@@ -51636,22 +51637,23 @@ class IssuesProcessor {
             this.state.reset();
             this.pageSignatures.clear();
             this.pagePasses.clear();
+            this.waitingPageSignatures.clear();
             return this.operations.getRemainingOperationsCount();
         }
-        this._logger.info(`${LoggerService.yellow('Processing page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(` (pass #${pagePass}) containing `)} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(` issue${issues.length > 1 ? 's' : ''}...`)}`);
+        const unprocessedIssues = issues.filter(issue => !this.state.isIssueProcessed(issue));
+        const previouslyProcessedItemsCount = issues.length - unprocessedIssues.length;
+        if (unprocessedIssues.length > 0) {
+            this._logger.info(`${LoggerService.yellow('Processing page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(` (pass #${pagePass}): `)} ${LoggerService.cyan(unprocessedIssues.length)} ${LoggerService.yellow(`new item${unprocessedIssues.length === 1 ? '' : 's'} from `)} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(`fetched (${previouslyProcessedItemsCount} previously processed)...`)}`);
+        }
         const labelsToRemoveWhenStale = wordsToList(this.options.labelsToRemoveWhenStale);
         const labelsToAddWhenUnstale = wordsToList(this.options.labelsToAddWhenUnstale);
         const labelsToRemoveWhenUnstale = wordsToList(this.options.labelsToRemoveWhenUnstale);
         const closedItemsCountBeforePass = this.closedIssues.length;
-        for (const issue of issues.values()) {
+        for (const issue of unprocessedIssues.values()) {
             if (!this.operations.hasRemainingOperations()) {
                 break;
             }
             const issueLogger = new IssueLogger(issue);
-            if (this.state.isIssueProcessed(issue)) {
-                issueLogger.info('           $$type skipped due being processed during the previous run');
-                continue;
-            }
             await issueLogger.grouping(`$$type #${issue.number}`, async () => {
                 await this.processIssue(issue, labelsToAddWhenUnstale, labelsToRemoveWhenUnstale, labelsToRemoveWhenStale);
             });
@@ -51665,14 +51667,24 @@ class IssuesProcessor {
                 .logStats();
             return 0;
         }
-        this._logger.info(`${LoggerService.green('Page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.green(` pass #${pagePass} processed.`)}`);
+        if (unprocessedIssues.length > 0) {
+            this._logger.info(`${LoggerService.green('Page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.green(` pass #${pagePass} processed.`)}`);
+        }
         const closedItemsCount = this.closedIssues.length - closedItemsCountBeforePass;
         const closedIssueNumbers = new Set(this.closedIssues.map(issue => issue.number));
-        const pageContainsClosedIssue = issues.some(issue => closedIssueNumbers.has(issue.number));
-        if (pageContainsClosedIssue) {
-            this._logger.info(`${LoggerService.yellow(`${closedItemsCount} item${closedItemsCount === 1 ? '' : 's'} closed during this pass. Refreshing page `)} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(' before advancing.')}`);
+        const visibleClosedIssueNumbers = issues
+            .filter(issue => closedIssueNumbers.has(issue.number))
+            .map(issue => issue.number);
+        const pageContainsClosedIssue = visibleClosedIssueNumbers.length > 0;
+        const waitingPageSignature = visibleClosedIssueNumbers.join(',');
+        const waitingPageChanged = this.waitingPageSignatures.get(page) !== waitingPageSignature;
+        this.waitingPageSignatures.set(page, waitingPageSignature);
+        if (pageContainsClosedIssue &&
+            (closedItemsCount > 0 || waitingPageChanged)) {
+            this._logger.info(`${LoggerService.yellow(`${visibleClosedIssueNumbers.length} previously closed item${visibleClosedIssueNumbers.length === 1 ? '' : 's'} still visible on page `)} ${LoggerService.cyan(`#${page}`)}${LoggerService.yellow('. Waiting for GitHub before advancing.')}`);
         }
-        else {
+        if (!pageContainsClosedIssue) {
+            this.waitingPageSignatures.delete(page);
             this._logger.info(`${LoggerService.green('Page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.green(' is stable. Advancing to page ')} ${LoggerService.cyan(`#${page + 1}`)}${LoggerService.green('.')}`);
         }
         return this.processIssues(pageContainsClosedIssue ? page : page + 1);
