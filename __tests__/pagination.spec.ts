@@ -164,11 +164,17 @@ describe('pagination', (): void => {
         processor.closedIssues.push(issue);
       }
     };
+    const waitCalls: number[] = [];
+    processor.wait = async (milliseconds: number) => {
+      waitCalls.push(milliseconds);
+    };
 
     await processor.processIssues();
 
     expect(inspectedNumbers).toEqual(pullRequests.map(issue => issue.number));
     expect(requestedPages).toEqual([1, 1, 1, 1, 1, 1, 2]);
+    // backoff increases between retries of the same unchanged page, capped at 5000ms
+    expect(waitCalls).toEqual([500, 1000, 2000, 4000, 5000]);
   });
 
   it('processes every pull request when regular issues share the paginated result', async (): Promise<void> => {

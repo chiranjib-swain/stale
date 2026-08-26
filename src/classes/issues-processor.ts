@@ -107,6 +107,11 @@ export class IssuesProcessor {
     }
   }
 
+  // overridable so tests don't incur real delays
+  async wait(milliseconds: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
+  }
+
   async processIssues(page: Readonly<number> = 1): Promise<number> {
     const issues: Issue[] = await this.getIssues(page);
     const pageSignature = issues.map(issue => issue.number).join(',');
@@ -137,11 +142,27 @@ export class IssuesProcessor {
       return this.operations.getRemainingOperationsCount();
     }
 
-    const unprocessedIssues = issues.filter(
-      issue => !this.state.isIssueProcessed(issue)
-    );
-    const previouslyProcessedItemsCount =
-      issues.length - unprocessedIssues.length;
+    const unprocessedIssues: Issue[] = [];
+    const previouslyProcessedIssues: Issue[] = [];
+
+    for (const issue of issues) {
+      if (this.state.isIssueProcessed(issue)) {
+        previouslyProcessedIssues.push(issue);
+      } else {
+        unprocessedIssues.push(issue);
+      }
+    }
+
+    // A previous-run skip is only detectable on a page's first fetch this run;
+    // later passes re-see the same items because we're waiting on GitHub, not because of restored state.
+    if (pagePass === 1) {
+      for (const issue of previouslyProcessedIssues) {
+        const issueLogger: IssueLogger = new IssueLogger(issue);
+        issueLogger.info(
+          '           $$type skipped due being processed during the previous run'
+        );
+      }
+    }
 
     if (unprocessedIssues.length > 0) {
       this._logger.info(
@@ -152,7 +173,7 @@ export class IssuesProcessor {
         )} ${LoggerService.cyan(unprocessedIssues.length)} ${LoggerService.yellow(
           `new item${unprocessedIssues.length === 1 ? '' : 's'} from `
         )} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(
-          `fetched (${previouslyProcessedItemsCount} previously processed)...`
+          `fetched (${previouslyProcessedIssues.length} previously processed)...`
         )}`
       );
     }
@@ -228,6 +249,8 @@ export class IssuesProcessor {
       this.waitingPageSignatures.get(page) !== waitingPageSignature;
     this.waitingPageSignatures.set(page, waitingPageSignature);
 
+    const backoffMilliseconds = Math.min(500 * 2 ** (pagePass - 1), 5000);
+
     if (
       pageContainsClosedIssue &&
       (closedItemsCount > 0 || waitingPageChanged)
@@ -238,9 +261,13 @@ export class IssuesProcessor {
             visibleClosedIssueNumbers.length === 1 ? '' : 's'
           } still visible on page `
         )} ${LoggerService.cyan(`#${page}`)}${LoggerService.yellow(
-          '. Waiting for GitHub before advancing.'
+          `. Waiting ${backoffMilliseconds}ms for GitHub before advancing.`
         )}`
       );
+    }
+
+    if (pageContainsClosedIssue) {
+      await this.wait(backoffMilliseconds);
     }
 
     if (!pageContainsClosedIssue) {

@@ -144,6 +144,16 @@ describe('state', (): void => {
     expect(jest.mocked(core.debug)).toHaveBeenCalledWith(
       'state: mark 2 as processed'
     );
+    // items restored from a previous run's persisted state must remain visible in the log
+    expect(
+      jest
+        .mocked(core.info)
+        .mock.calls.some(call =>
+          call[0].includes(
+            'issue skipped due being processed during the previous run'
+          )
+        )
+    ).toBe(true);
   });
 
   it('state should not be reset if not all issues are proceeded', async () => {
