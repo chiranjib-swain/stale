@@ -51662,7 +51662,7 @@ class IssuesProcessor {
                 issueLogger.info('           $$type skipped due being processed during the previous run');
             }
         }
-        if (unprocessedIssues.length > 0) {
+        if (unprocessedIssues.length > 0 || pagePass === 1) {
             this._logger.info(`${LoggerService.yellow('Processing page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(` (pass #${pagePass}): `)} ${LoggerService.cyan(unprocessedIssues.length)} ${LoggerService.yellow(`new item${unprocessedIssues.length === 1 ? '' : 's'} from `)} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(`fetched (${previouslyProcessedIssues.length} previously processed)...`)}`);
         }
         const labelsToRemoveWhenStale = wordsToList(this.options.labelsToRemoveWhenStale);
@@ -51687,7 +51687,7 @@ class IssuesProcessor {
                 .logStats();
             return 0;
         }
-        if (unprocessedIssues.length > 0) {
+        if (unprocessedIssues.length > 0 || pagePass === 1) {
             this._logger.info(`${LoggerService.green('Page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.green(` pass #${pagePass} processed.`)}`);
         }
         const closedItemsCount = this.closedIssues.length - closedItemsCountBeforePass;

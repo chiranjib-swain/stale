@@ -164,7 +164,7 @@ export class IssuesProcessor {
       }
     }
 
-    if (unprocessedIssues.length > 0) {
+    if (unprocessedIssues.length > 0 || pagePass === 1) {
       this._logger.info(
         `${LoggerService.yellow(
           'Processing page '
@@ -227,7 +227,7 @@ export class IssuesProcessor {
       return 0;
     }
 
-    if (unprocessedIssues.length > 0) {
+    if (unprocessedIssues.length > 0 || pagePass === 1) {
       this._logger.info(
         `${LoggerService.green('Page ')} ${LoggerService.cyan(
           `#${page}`
