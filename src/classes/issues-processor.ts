@@ -155,15 +155,6 @@ export class IssuesProcessor {
 
     // A previous-run skip is only detectable on a page's first fetch this run;
     // later passes re-see the same items because we're waiting on GitHub, not because of restored state.
-    if (pagePass === 1) {
-      for (const issue of previouslyProcessedIssues) {
-        const issueLogger: IssueLogger = new IssueLogger(issue);
-        issueLogger.info(
-          '           $$type skipped due being processed during the previous run'
-        );
-      }
-    }
-
     if (unprocessedIssues.length > 0 || pagePass === 1) {
       this._logger.info(
         `${LoggerService.yellow(
@@ -176,6 +167,15 @@ export class IssuesProcessor {
           `fetched (${previouslyProcessedIssues.length} previously processed)...`
         )}`
       );
+    }
+
+    if (pagePass === 1) {
+      for (const issue of previouslyProcessedIssues) {
+        const issueLogger: IssueLogger = new IssueLogger(issue);
+        issueLogger.info(
+          '           $$type skipped due being processed during the previous run'
+        );
+      }
     }
 
     const labelsToRemoveWhenStale: string[] = wordsToList(

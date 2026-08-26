@@ -51656,14 +51656,14 @@ class IssuesProcessor {
         }
         // A previous-run skip is only detectable on a page's first fetch this run;
         // later passes re-see the same items because we're waiting on GitHub, not because of restored state.
+        if (unprocessedIssues.length > 0 || pagePass === 1) {
+            this._logger.info(`${LoggerService.yellow('Processing page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(` (pass #${pagePass}): `)} ${LoggerService.cyan(unprocessedIssues.length)} ${LoggerService.yellow(`new item${unprocessedIssues.length === 1 ? '' : 's'} from `)} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(`fetched (${previouslyProcessedIssues.length} previously processed)...`)}`);
+        }
         if (pagePass === 1) {
             for (const issue of previouslyProcessedIssues) {
                 const issueLogger = new IssueLogger(issue);
                 issueLogger.info('           $$type skipped due being processed during the previous run');
             }
-        }
-        if (unprocessedIssues.length > 0 || pagePass === 1) {
-            this._logger.info(`${LoggerService.yellow('Processing page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(` (pass #${pagePass}): `)} ${LoggerService.cyan(unprocessedIssues.length)} ${LoggerService.yellow(`new item${unprocessedIssues.length === 1 ? '' : 's'} from `)} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(`fetched (${previouslyProcessedIssues.length} previously processed)...`)}`);
         }
         const labelsToRemoveWhenStale = wordsToList(this.options.labelsToRemoveWhenStale);
         const labelsToAddWhenUnstale = wordsToList(this.options.labelsToAddWhenUnstale);
