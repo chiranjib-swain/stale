@@ -51605,6 +51605,7 @@ class IssuesProcessor {
     pageSignatures = new Map();
     pagePasses = new Map();
     waitingPageSignatures = new Map();
+    firstPassFetchCounts = new Map();
     constructor(options, state) {
         this.options = options;
         this.state = state;
@@ -51642,8 +51643,13 @@ class IssuesProcessor {
             this.pageSignatures.clear();
             this.pagePasses.clear();
             this.waitingPageSignatures.clear();
+            this.firstPassFetchCounts.clear();
             return this.operations.getRemainingOperationsCount();
         }
+        if (pagePass === 1) {
+            this.firstPassFetchCounts.set(page, issues.length);
+        }
+        const fetchCountShrank = issues.length < (this.firstPassFetchCounts.get(page) ?? issues.length);
         const unprocessedIssues = [];
         const previouslyProcessedIssues = [];
         for (const issue of issues) {
@@ -51657,7 +51663,9 @@ class IssuesProcessor {
         // A previous-run skip is only detectable on a page's first fetch this run;
         // later passes re-see the same items because we're waiting on GitHub, not because of restored state.
         if (unprocessedIssues.length > 0 || pagePass === 1) {
-            this._logger.info(`${LoggerService.yellow('Processing page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(` (pass #${pagePass}): `)} ${LoggerService.cyan(unprocessedIssues.length)} ${LoggerService.yellow(`new item${unprocessedIssues.length === 1 ? '' : 's'} from `)} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(`fetched (${previouslyProcessedIssues.length} previously processed)...`)}`);
+            this._logger.info(`${LoggerService.yellow('Processing page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(` (pass #${pagePass}): `)} ${LoggerService.cyan(unprocessedIssues.length)} ${LoggerService.yellow(`new item${unprocessedIssues.length === 1 ? '' : 's'} from `)} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(`fetched (${previouslyProcessedIssues.length} previously processed)${fetchCountShrank
+                ? '; page shrank as GitHub caught up with closures'
+                : ''}...`)}`);
         }
         if (pagePass === 1) {
             for (const issue of previouslyProcessedIssues) {

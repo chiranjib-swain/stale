@@ -80,6 +80,7 @@ export class IssuesProcessor {
   private readonly pageSignatures = new Map<number, string>();
   private readonly pagePasses = new Map<number, number>();
   private readonly waitingPageSignatures = new Map<number, string>();
+  private readonly firstPassFetchCounts = new Map<number, number>();
 
   constructor(options: IIssuesProcessorOptions, state: IState) {
     this.options = options;
@@ -138,9 +139,16 @@ export class IssuesProcessor {
       this.pageSignatures.clear();
       this.pagePasses.clear();
       this.waitingPageSignatures.clear();
+      this.firstPassFetchCounts.clear();
 
       return this.operations.getRemainingOperationsCount();
     }
+
+    if (pagePass === 1) {
+      this.firstPassFetchCounts.set(page, issues.length);
+    }
+    const fetchCountShrank =
+      issues.length < (this.firstPassFetchCounts.get(page) ?? issues.length);
 
     const unprocessedIssues: Issue[] = [];
     const previouslyProcessedIssues: Issue[] = [];
@@ -164,7 +172,11 @@ export class IssuesProcessor {
         )} ${LoggerService.cyan(unprocessedIssues.length)} ${LoggerService.yellow(
           `new item${unprocessedIssues.length === 1 ? '' : 's'} from `
         )} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(
-          `fetched (${previouslyProcessedIssues.length} previously processed)...`
+          `fetched (${previouslyProcessedIssues.length} previously processed)${
+            fetchCountShrank
+              ? '; page shrank as GitHub caught up with closures'
+              : ''
+          }...`
         )}`
       );
     }
