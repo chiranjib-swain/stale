@@ -51662,10 +51662,13 @@ class IssuesProcessor {
         }
         // A previous-run skip is only detectable on a page's first fetch this run;
         // later passes re-see the same items because we're waiting on GitHub, not because of restored state.
-        if (unprocessedIssues.length > 0 || pagePass === 1) {
-            this._logger.info(`${LoggerService.yellow('Processing page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(` (pass #${pagePass}): `)} ${LoggerService.cyan(unprocessedIssues.length)} ${LoggerService.yellow(`new item${unprocessedIssues.length === 1 ? '' : 's'} from `)} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(`fetched (${previouslyProcessedIssues.length} previously processed)${fetchCountShrank
-                ? '; page shrank as GitHub caught up with closures'
-                : ''}...`)}`);
+        // silent retries (no new items, not the first fetch) stay fully quiet to avoid no-op noise
+        const isVisiblePass = unprocessedIssues.length > 0 || pagePass === 1;
+        if (isVisiblePass) {
+            this._logger.info(`${LoggerService.yellow('Processing page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.yellow(': ')} ${LoggerService.cyan(unprocessedIssues.length)} ${LoggerService.yellow(`new item${unprocessedIssues.length === 1 ? '' : 's'} out of `)} ${LoggerService.cyan(issues.length)} ${LoggerService.yellow(`fetched (${previouslyProcessedIssues.length} previously processed)...`)}`);
+            if (fetchCountShrank) {
+                this._logger.info(`${LoggerService.green('Page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.green(' shrank as GitHub reflected the closures.')}`);
+            }
         }
         if (pagePass === 1) {
             for (const issue of previouslyProcessedIssues) {
@@ -51695,8 +51698,8 @@ class IssuesProcessor {
                 .logStats();
             return 0;
         }
-        if (unprocessedIssues.length > 0 || pagePass === 1) {
-            this._logger.info(`${LoggerService.green('Page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.green(` pass #${pagePass} processed.`)}`);
+        if (isVisiblePass) {
+            this._logger.info(`${LoggerService.green('Page ')} ${LoggerService.cyan(`#${page}`)} ${LoggerService.green(' processed.')}`);
         }
         const closedItemsCount = this.closedIssues.length - closedItemsCountBeforePass;
         const closedIssueNumbers = new Set(this.closedIssues.map(issue => issue.number));
@@ -51710,7 +51713,7 @@ class IssuesProcessor {
         const backoffMilliseconds = Math.min(500 * 2 ** (pagePass - 1), 5000);
         if (pageContainsClosedIssue &&
             (closedItemsCount > 0 || waitingPageChanged)) {
-            this._logger.info(`${LoggerService.yellow(`${visibleClosedIssueNumbers.length} previously closed item${visibleClosedIssueNumbers.length === 1 ? '' : 's'} still visible on page `)} ${LoggerService.cyan(`#${page}`)}${LoggerService.yellow(`. Waiting ${backoffMilliseconds}ms for GitHub before advancing.`)}`);
+            this._logger.info(`${LoggerService.yellow(`${visibleClosedIssueNumbers.length} previously closed item${visibleClosedIssueNumbers.length === 1 ? '' : 's'} still visible on page `)} ${LoggerService.cyan(`#${page}`)}${LoggerService.yellow(`. Waiting ${backoffMilliseconds}ms for GitHub to catch up with closures.`)}`);
         }
         if (pageContainsClosedIssue) {
             await this.wait(backoffMilliseconds);
