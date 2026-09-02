@@ -238,6 +238,129 @@ tuned per run to land exactly on page boundaries:
 - First pass (log-order fix): https://github.com/chiranjib-swain/labeler-test/actions/runs/32994156207 · https://github.com/chiranjib-swain/labeler-test/actions/runs/32994359597 · https://github.com/chiranjib-swain/labeler-test/actions/runs/32994582089 · https://github.com/chiranjib-swain/labeler-test/actions/runs/32994861599
 - Final retest on commit `10f6df3`: https://github.com/chiranjib-swain/labeler-test/actions/runs/33383586955 · https://github.com/chiranjib-swain/labeler-test/actions/runs/33383681613 · https://github.com/chiranjib-swain/labeler-test/actions/runs/33383770213 · https://github.com/chiranjib-swain/labeler-test/actions/runs/33383873772
 
+### 6.5 Low `operations-per-run` cutting a run off mid-page, then resuming
+
+A remaining open question after 6.4: those cache tests never had closures happening
+*while* the run got cut off — they landed cleanly on page boundaries. This test
+deliberately picks an `operations-per-run` value that stops the run **mid-page**, partway
+through closing items, then dispatches a follow-up run to confirm nothing gets skipped
+and nothing is double-processed. Run against both `main` and the fixed branch for
+comparison, using the same fixture (4 closable PRs on page 3 + 21 exempt).
+
+| | Baseline (`da02705`) | Fixed (`10f6df3`) |
+|---|---|---|
+| Run 1 (ops=11) | Closed `#14,#13,#12`, stopped before `#11`, cache=23 | Identical |
+| Run 2 (ops=1000) | Page 3 refetched with 9 items (GitHub already caught up), closed `#11`, completed | Page 3 refetched with 9 items, detected 1 previously-closed item still visible, waited 500ms, confirmed stable, closed `#11`, completed |
+| Final result | `Closed: 11,12,13,14` — no skips | Identical — no skips |
+
+- Baseline run 1: https://github.com/v-chiranjib-swain/labeler-test/actions/runs/33501481729
+- Baseline run 2 (resume): https://github.com/v-chiranjib-swain/labeler-test/actions/runs/33501851492
+- Fixed run 1: https://github.com/v-chiranjib-swain/labeler-test/actions/runs/33502616076
+- Fixed run 2 (resume): https://github.com/v-chiranjib-swain/labeler-test/actions/runs/33502857561
+
+**Finding:** `main` avoids the pagination bug in this specific combo only because it
+always restarts at page 1 on every fresh run — it never carries any notion of "which
+page was I on" across runs, so the same-run advancement flaw simply doesn't apply here.
+The fixed branch behaves identically for the steady-state outcome, but additionally
+proved it can detect and wait out a *previous* run's closures still lingering in a
+freshly fetched page (the `1 previously closed item still visible` line on run 2) —
+strictly more defensive than `main`, not less.
+
+### 6.6 Low `operations-per-run` cutting a run off mid-*retry* pass, then resuming
+
+6.5 cut a run off during a page's **first** pass. This test targets a narrower case:
+the cutoff happens during a **retry** pass, after items have already shifted into view
+that weren't visible on the first fetch of that page. The fixture adds a 5th closable
+PR (`#3`), positioned beyond page 3's original boundary so it only becomes reachable
+once earlier closures shrink the page — i.e. it can only be discovered on a retry, not
+the initial pass. `operations-per-run=16` is tuned so pass 1 fully closes `#11`-`#14`
+(15 ops) and the run is cut off while processing `#3` during pass 2's retry.
+
+**Baseline (`main`, commit `da02705`) — run 1 only, ops=16:**
+
+```text
+Processing the batch of issues #3 containing 10 issues...
+[#14] Closing pull request for being stale
+[#13] Closing pull request for being stale
+[#12] Closing pull request for being stale
+[#11] Closing pull request for being stale
+Batch #3 processed.
+Processing the batch of issues #4 containing 0 issues...
+No more issues found to process. Exiting...
+Closed PRs: 4
+Operations performed: 16
+```
+
+`main` closes `#11`-`#14`, then immediately advances to page 4 (blind `page + 1`).
+Because GitHub's read-after-write consistency happened to be fast enough that page 4
+came back empty, `main` treated this as "no more pages" and exited — **`#3` was never
+fetched, never seen, and silently skipped.** No error, no warning, no wasted
+operations (`16` used out of `16` budget, so nothing even looked like it ran out). This
+is arguably the cleanest, most concerning reproduction of the bug found in this whole
+investigation: it doesn't require operations exhaustion at all, just page-shrinkage
+timing racing against the blind page-advance.
+
+- Baseline run (bug reproduced, `#3` skipped): https://github.com/v-chiranjib-swain/labeler-test/actions/runs/33505567164
+
+**Fixed branch (`10f6df3`) — run 1 (ops=16), then run 2 (resume, ops=1000):**
+
+```text
+Processing page  #3 :  10 new items out of  10 fetched (0 previously processed)...
+[#14] Closing pull request for being stale
+[#13] Closing pull request for being stale
+[#12] Closing pull request for being stale
+[#11] Closing pull request for being stale
+Page  #3  processed.
+4 previously closed items still visible on page  #3. Waiting 500ms for GitHub to catch up with closures.
+
+Processing page  #3 :  2 new items out of  8 fetched (6 previously processed)...
+Page  #3  shrank as GitHub reflected the closures.
+[#3] Closing pull request for being stale
+::warning::You have exceeded the number of operations per run, exiting...
+Operations performed: 16
+```
+
+The retry pass (pass 2) fetches the now-shrunk page 3, discovers `#3` for the first
+time (it was beyond the original page-3 boundary), starts closing it — and the
+operations budget runs out mid-close. The run stops. Cache persists 30 processed IDs
+so the next run knows exactly what's already been handled.
+
+- Fixed run 1 (cutoff mid-retry, `#3` in flight): https://github.com/v-chiranjib-swain/labeler-test/actions/runs/33507976772
+
+Resume run (ops=1000) picks up from the persisted cache, re-fetches pages 1-2 (all
+previously processed, skip-logged), reaches page 3 with `2 new items out of 8 fetched
+(6 previously processed)`, skips the 6 already-handled issues, and closes `#3`:
+
+```text
+Processing page  #3 :  2 new items out of  8 fetched (6 previously processed)...
+[#3] Closing pull request for being stale
+Page  #3  processed.
+1 previously closed item still visible on page  #3. Waiting 500ms for GitHub to catch up with closures.
+Page  #3  is stable. Advancing to page  #4.
+No more issues found to process. Exiting...
+Closed PRs: 1
+Operations performed: 11
+state: persisting info about 0 issue(s)
+```
+
+- Fixed run 2 (resume, completes correctly): https://github.com/v-chiranjib-swain/labeler-test/actions/runs/33508583047
+
+**Final state after resume:** `Closed: 3,11,12,13,14` (all 5 intended closable PRs),
+`Open: 20` (all exempt PRs untouched), cache reset to empty on natural completion.
+
+| | Baseline (`main`) | Fixed branch |
+|---|---|---|
+| `#3` reachable only via retry | Never discovered — skipped silently | Discovered on retry pass 2 |
+| Cutoff mid-retry | N/A (bug already manifested before any cutoff) | Handled — state persisted, resume closes `#3`, no skips |
+| Operations wasted on bug | 0 (didn't even need to run out) | N/A — no bug to begin with |
+
+**Finding:** This is the strongest evidence yet for the fix. `main`'s failure mode here
+requires *no* operations exhaustion whatsoever — just ordinary eventual-consistency
+timing on GitHub's side combined with the blind `page + 1` advance. The fixed branch's
+same-page retry logic is what allows `#3` to be discovered at all, and its
+cache/state persistence is what allows a mid-retry cutoff to resume correctly instead
+of re-skipping or double-processing anything.
+
 ---
 
 ## 7. Notable Findings During Testing
@@ -257,6 +380,10 @@ tuned per run to land exactly on page boundaries:
   each item itself costs 0 operations, so `operations-per-run` acts purely as "how many
   page-fetches are allowed" in that scenario — useful for designing deterministic
   multi-run cache tests.
+- **The GitHub account/fork owner was renamed** partway through testing
+  (`chiranjib-swain` → `v-chiranjib-swain`). Git remotes and every workflow `uses:`
+  reference had to be updated to the new owner; GitHub's redirect kept old links working
+  temporarily, but new commits/pushes should always target the canonical name.
 
 ---
 
@@ -265,7 +392,9 @@ tuned per run to land exactly on page boundaries:
 - No eligible PR was skipped in any live test, across three different closure
   positions (page 1, page 3, and a full-list closure scenario).
 - Operations-per-run and state-caching semantics are unchanged from `main` when no
-  closures occur (verified across a full 4-run cache lifecycle, twice).
+  closures occur (verified across a full 4-run cache lifecycle, twice) **and when
+  closures happen while a run is cut off mid-page by a low operations budget**
+  (verified against both `main` and the fixed branch — see §6.5).
 - Logs are accurate, non-noisy, and self-explanatory for every scenario tested: stable
   pages, same-page retries, shrinking pages, and cross-run resumption.
 - All 30 local test suites (1364 tests) pass; format, lint, and build are clean at the
